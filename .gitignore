@@ -10,3 +10,5 @@ artifacts/
 *.vs/
 
 .fake
+.fake
+.backup/
