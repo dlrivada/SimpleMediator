@@ -8,16 +8,16 @@
 ## Coverage Matrix
 
 - Requests
-  - Command handling lifecycle → unit tests (`SimpleMediator.Tests`)
-  - Query behavior invariants → property tests (`ConfigurationProperties`)
-  - Pipeline wiring contracts → contract tests (`PipelineBehaviorContracts`)
+  - `REQ-REQ-LIFECYCLE`: Command handling lifecycle → unit tests (`SimpleMediator.Tests`)
+  - `REQ-REQ-QUERY`: Query behavior invariants → property tests (`ConfigurationProperties`)
+  - `REQ-REQ-PIPELINE`: Pipeline wiring contracts → contract tests (`PipelineBehaviorContracts`)
 - Notifications
-  - Publish ordering and cancellation behavior → property tests (`NotificationProperties`)
-  - Multi-handler registration expectations → contract tests (`HandlerRegistrationContracts`)
+  - `REQ-NOT-ORDER`: Publish ordering and cancellation behavior → property tests (`NotificationProperties`)
+  - `REQ-NOT-MULTI`: Multi-handler registration expectations → contract tests (`HandlerRegistrationContracts`)
 - Configuration
-  - Service registration lifetimes → contract tests (`ServiceRegistrationContracts`)
-  - Assembly scanning cache behavior → unit tests (`SimpleMediator.Tests` pending refactor)
-  - Custom configuration edge cases → contract tests (`ConfigurationEdgeCaseContracts`)
+  - `REQ-CONF-LIFETIME`: Service registration lifetimes → contract tests (`ServiceRegistrationContracts`)
+  - `REQ-CONF-SCAN`: Assembly scanning cache behavior → unit tests (`SimpleMediator.Tests` pending refactor)
+  - `REQ-CONF-EDGE`: Custom configuration edge cases → contract tests (`ConfigurationEdgeCaseContracts`)
 
 ## Gaps & Planned Work
 

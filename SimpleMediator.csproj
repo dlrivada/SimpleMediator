@@ -27,8 +27,11 @@
 
   <ItemGroup>
     <Compile Remove="tests\**\*.cs" />
+    <Compile Remove="benchmarks\**\*.cs" />
     <EmbeddedResource Remove="tests\**\*" />
+    <EmbeddedResource Remove="benchmarks\**\*" />
     <None Remove="tests\**\*" />
+    <None Remove="benchmarks\**\*" />
   </ItemGroup>
 
   <ItemGroup>

@@ -22,7 +22,7 @@ This roadmap tracks the effort to bring SimpleMediator to the same multi-layered
 | Property Tests | Create `SimpleMediator.PropertyTests` with FsCheck generators | Copilot | 🚧 In progress | Configuration, pipeline determinism, and notification publish ordering covered |
 | Contract Tests | Ensure handlers/behaviors honor interfaces across implementations | Copilot | 🚧 In progress | DI registrations cover pipelines, handlers, processors, and multi-assembly edge cases |
 | Mutation Testing | Configure Stryker.NET thresholds and CI integration | Copilot | 🚧 In progress | Config scaffolded via `stryker-config.json`; thresholds high 85, low 70, break 65 |
-| Performance Benchmarks | Add BenchmarkDotNet project & publish results doc | Copilot | ⏳ Planned | Measure send/publish overhead & allocations |
+| Performance Benchmarks | Add BenchmarkDotNet project & publish results doc | Copilot | 🚧 In progress | Benchmark project scaffolded with send/publish scenarios |
 | Load Harness | Prototype NBomber (or console) throughput tests | Copilot | ⏳ Planned | Document CPU/memory requirements |
 | Documentation | Publish guides (`docs/en/guides`) & requirements mapping | Copilot | 🚧 In progress | Testing, requirements, mutation, and performance guide skeletons committed |
 
@@ -44,12 +44,13 @@ Status legend: ✅ Done · 🚧 In progress · ⏳ Planned · ⚠️ Blocked
 - **2025-12-06** — Requirements, mutation, and performance guide outlines added to `docs/en/guides`.
 - **2025-12-06** — Configuration edge-case contracts verify multi-assembly scans and fallback behavior.
 - **2025-12-06** — Stryker.NET scaffold committed via `stryker-config.json` aligning with roadmap thresholds.
+- **2025-12-06** — BenchmarkDotNet project (`SimpleMediator.Benchmarks`) added with instrumentation scenarios and execution guide updates.
 
 ## Upcoming Actions
 
 1. Integrate Stryker.NET execution into local workflow and CI (validate runtime costs).
-2. Scaffold BenchmarkDotNet project to begin capturing baseline performance metrics.
-3. Expand requirements mapping with scenario identifiers tied to roadmap objectives.
+2. Capture baseline BenchmarkDotNet results and publish under `artifacts/performance/`.
+3. Extend requirements mapping with links from roadmap items to scenario identifiers.
 
 ---
 

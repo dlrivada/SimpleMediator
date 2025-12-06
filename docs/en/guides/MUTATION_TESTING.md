@@ -8,6 +8,7 @@
 ## Prerequisites
 
 - .NET 10 SDK installed.
+- Install Stryker CLI (`dotnet tool install --global dotnet-stryker`) if not already available.
 - Restore dependencies with `dotnet restore SimpleMediator.sln` prior to running Stryker.
 
 ## Running The Suite
