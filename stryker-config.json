@@ -1,0 +1,20 @@
+{
+  "$schema": "https://stryker-mutator.io/schema/stryker.schema.json",
+  "solution": "SimpleMediator.sln",
+  "project": "SimpleMediator.csproj",
+  "testProjects": [
+    "tests/SimpleMediator.Tests/SimpleMediator.Tests.csproj",
+    "tests/SimpleMediator.PropertyTests/SimpleMediator.PropertyTests.csproj",
+    "tests/SimpleMediator.ContractTests/SimpleMediator.ContractTests.csproj"
+  ],
+  "reporters": [
+    "progress",
+    "html",
+    "cleartext"
+  ],
+  "thresholds": {
+    "high": 85,
+    "low": 70,
+    "break": 65
+  }
+}
