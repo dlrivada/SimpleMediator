@@ -20,7 +20,7 @@ This roadmap tracks the effort to bring SimpleMediator to the same multi-layered
 | Coverage Baseline | Collect current `dotnet test` coverage report and archive results | Copilot | ✅ Done | Release run on 2025-12-06 — 89.1% line / 68.4% branch (see `artifacts/coverage/latest`) |
 | Unit Expansion | Increase coverage for mediator core, behaviors, metrics | Copilot | ⏳ Planned | Target ≥90% lines for `SimpleMediator` namespace |
 | Property Tests | Create `SimpleMediator.PropertyTests` with FsCheck generators | Copilot | 🚧 In progress | Configuration + pipeline/handler determinism covered; generators bounded; prepping contract surface |
-| Contract Tests | Ensure handlers/behaviors honor interfaces across implementations | Copilot | 🚧 In progress | Pipeline behaviors verified; DI registrations cover specialized pipelines and processors |
+| Contract Tests | Ensure handlers/behaviors honor interfaces across implementations | Copilot | 🚧 In progress | DI registrations cover pipelines, handlers, and processors |
 | Mutation Testing | Configure Stryker.NET thresholds and CI integration | Copilot | ⏳ Planned | Thresholds: high 85, low 70, break 65 |
 | Performance Benchmarks | Add BenchmarkDotNet project & publish results doc | Copilot | ⏳ Planned | Measure send/publish overhead & allocations |
 | Load Harness | Prototype NBomber (or console) throughput tests | Copilot | ⏳ Planned | Document CPU/memory requirements |
@@ -39,12 +39,13 @@ Status legend: ✅ Done · 🚧 In progress · ⏳ Planned · ⚠️ Blocked
 - **2025-12-06** — Contract test project introduced to enforce pipeline interface contracts via reflection.
 - **2025-12-06** — Authored testing guide (`docs/en/guides/TESTING.md`) covering suites, commands, and coverage workflow.
 - **2025-12-06** — Contract suite validates DI registration for specialized pipelines and configured request processors.
+- **2025-12-06** — Handler registration contracts ensure scoped lifetime, deduplication, and multi-notification support.
 
 ## Upcoming Actions
 
-1. Extend contract suite to validate DI registrations for command/query behaviors and processors.
-2. Add notification publish/order properties to round out mediator invariants.
-3. Outline remaining documentation deliverables (requirements mapping, mutation/perf guides).
+1. Add notification publish/order properties to round out mediator invariants.
+2. Outline remaining documentation deliverables (requirements mapping, mutation/perf guides).
+3. Design contract coverage for mediator configuration edge cases (e.g., multiple assembly scans).
 
 ---
 
