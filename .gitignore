@@ -12,3 +12,4 @@ artifacts/
 .fake
 .fake
 .backup/
+tests/**/TestResults/

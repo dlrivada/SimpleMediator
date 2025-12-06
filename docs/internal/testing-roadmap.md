@@ -17,7 +17,7 @@ This roadmap tracks the effort to bring SimpleMediator to the same multi-layered
 | Area | Scope | Owner | Status | Notes |
 |------|-------|-------|--------|-------|
 | Foundation | Relocate imported reference docs, update `.gitignore`, create roadmap doc | Copilot | ✅ Done | Zip moved to `.backup/`, roadmap created |
-| Coverage Baseline | Collect current `dotnet test` coverage report and archive results | Copilot | ⏳ Planned | Run with `--collect:"XPlat Code Coverage"` and generate HTML summary |
+| Coverage Baseline | Collect current `dotnet test` coverage report and archive results | Copilot | ✅ Done | Release run on 2025-12-06 — 89.1% line / 68.4% branch (see `artifacts/coverage/latest`) |
 | Unit Expansion | Increase coverage for mediator core, behaviors, metrics | Copilot | ⏳ Planned | Target ≥90% lines for `SimpleMediator` namespace |
 | Property Tests | Create `SimpleMediator.PropertyTests` with FsCheck generators | Copilot | ⏳ Planned | Focus on pipeline ordering, handler determinism |
 | Contract Tests | Ensure handlers/behaviors honor interfaces across implementations | Copilot | ⏳ Planned | Mirror LSP checks from vacations pilot |
@@ -31,13 +31,13 @@ Status legend: ✅ Done · 🚧 In progress · ⏳ Planned · ⚠️ Blocked
 ## Progress Log
 
 - **2025-12-06** — Imported reference documentation moved to `.backup/`; roadmap established.
+- **2025-12-06** — Captured Release coverage baseline (lines 89.1%, branches 68.4%); reports stored in `artifacts/coverage/latest`.
 
 ## Upcoming Actions
 
-1. Capture baseline coverage numbers and archive HTML report in `artifacts/coverage`.
-2. Scaffold property test project (`SimpleMediator.PropertyTests`) with initial generators and pipeline invariants.
-3. Draft contract test structure ensuring behaviors/decorators remain transparent.
-4. Document execution commands in a new `docs/en/guides/TESTING.md` section tailored to SimpleMediator.
+1. Scaffold property test project (`SimpleMediator.PropertyTests`) with initial generators and pipeline invariants.
+2. Draft contract test structure ensuring behaviors/decorators remain transparent.
+3. Document execution commands in a new `docs/en/guides/TESTING.md` section tailored to SimpleMediator.
 
 ---
 
