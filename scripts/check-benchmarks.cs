@@ -60,7 +60,8 @@ if (lines.Length < 2)
     Environment.Exit(1);
 }
 
-var headers = lines[0].Split(';');
+var delimiter = DetectDelimiter(lines[0]);
+var headers = SplitColumns(lines[0], delimiter);
 int methodIndex = Array.IndexOf(headers, "Method");
 int meanIndex = Array.IndexOf(headers, "Mean");
 int allocatedIndex = Array.IndexOf(headers, "Allocated");
@@ -87,7 +88,7 @@ foreach (var line in lines.Skip(1))
         continue;
     }
 
-    var columns = line.Split(';');
+    var columns = SplitColumns(line, delimiter);
     if (columns.Length <= Math.Max(methodIndex, Math.Max(meanIndex, allocatedIndex)))
     {
         continue;
@@ -163,6 +164,34 @@ static string? LocateLatestPerformanceDirectory()
         .EnumerateDirectories(root)
         .OrderBy(path => path, StringComparer.Ordinal)
         .LastOrDefault();
+}
+
+static char DetectDelimiter(string headerLine)
+{
+    if (headerLine.Contains(';'))
+    {
+        return ';';
+    }
+
+    if (headerLine.Contains(','))
+    {
+        return ',';
+    }
+
+    if (headerLine.Contains('\t'))
+    {
+        return '\t';
+    }
+
+    return ';';
+}
+
+static string[] SplitColumns(string line, char delimiter)
+{
+    return line
+        .Split(delimiter)
+        .Select(part => part.Trim().Trim('\"'))
+        .ToArray();
 }
 
 static double ParseDuration(string value)
