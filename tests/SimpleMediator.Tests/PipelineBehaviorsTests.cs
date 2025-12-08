@@ -700,17 +700,27 @@ public sealed class PipelineBehaviorsTests
     {
         private readonly ActivityListener _listener;
         private readonly List<Activity> _activities;
+        private readonly DateTime _startedAtUtc;
 
         private ActivityTestListener(out List<Activity> activities)
         {
             _activities = new List<Activity>();
             activities = _activities;
+            _startedAtUtc = DateTime.UtcNow;
             _listener = new ActivityListener
             {
                 ShouldListenTo = source => source.Name == "SimpleMediator",
                 Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
                 SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
-                ActivityStopped = activity => _activities.Add(activity)
+                ActivityStopped = activity =>
+                {
+                    // Ignore activities that started before this listener subscribed so concurrent
+                    // tests wrapping up earlier telemetry do not leak into these assertions.
+                    if (activity.StartTimeUtc >= _startedAtUtc)
+                    {
+                        _activities.Add(activity);
+                    }
+                }
             };
             ActivitySource.AddActivityListener(_listener);
         }
