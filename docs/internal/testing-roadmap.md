@@ -24,7 +24,7 @@ This roadmap tracks the effort to bring SimpleMediator to the same multi-layered
 | Mutation Testing | Configure Stryker.NET thresholds and CI integration | Copilot | `REQ-QUAL-MUTATION` | ✅ Done | CI pipeline runs `scripts/run-stryker.cs`, invokes `scripts/update-mutation-summary.cs`, publishes HTML/JSON artifacts, and enforces the 93.74% baseline (449 killed / 2 survived). |
 | Performance Benchmarks | Add BenchmarkDotNet project & publish results doc | Copilot | `REQ-PERF-BASELINE` | ✅ Done | Baseline run captured 2025-12-08 with reports under `artifacts/performance/2025-12-08.000205`; CI now executes benchmarks and enforces regression thresholds. |
 | Load Harness | Prototype NBomber (or console) throughput tests | Copilot | `REQ-LOAD-THROUGHPUT` | ✅ Done | Console harness with metrics collection committed; NBomber project + profiles (`send-burst`, `mixed-traffic`) now run via `scripts/run-load-harness.cs -- --nbomber <alias>`. CI executes the send-burst profile, enforces baseline thresholds from `ci/nbomber-thresholds.json` via `scripts/summarize-nbomber-run.cs`, and uploads artifacts under `artifacts/load-metrics/`. |
-| Documentation | Publish guides (`docs/en/guides`) & requirements mapping | Copilot | — | 🚧 In progress | Testing, requirements, mutation, and performance guide skeletons committed; automation scripts must be single-file C# apps executed via `dotnet run --file script.cs` |
+| Documentation | Publish guides (`docs/en/guides`) & requirements mapping | Copilot | — | ✅ Done | Requirements guide published, mapping aligned, README quality checklist added, and script execution guidelines documented. |
 
 Status legend: ✅ Done · 🚧 In progress · ⏳ Planned · ⚠️ Blocked
 
@@ -110,11 +110,13 @@ Status legend: ✅ Done · 🚧 In progress · ⏳ Planned · ⚠️ Blocked
 - **2025-12-08** — CI workflow runs `scripts/run-load-harness.cs -- --nbomber send-burst --duration 00:00:30` after enforcing console load guardrails, publishing the NBomber run summary and artifacts alongside existing metrics.
 - **2025-12-08** — Added `scripts/summarize-nbomber-run.cs` to surface throughput/latency metrics from `nbomber-summary.json` in GitHub summaries; CI now invokes it immediately after the NBomber profile.
 - **2025-12-08** — Baseline NBomber guardrails committed via `ci/nbomber-thresholds.json`; the summarizer script now fails CI when send-burst throughput drops below 6.75M ops/sec or latency exceeds 0.85 ms.
+- **2025-12-08** — Published `docs/en/guides/REQUIREMENTS.md`, cataloguing requirements, guardrails, and the change-management workflow.
+- **2025-12-08** — Refreshed `docs/en/guides/REQUIREMENTS_MAPPING.md` and added a README quality checklist, closing out the documentation workstream.
 
 ## Upcoming Actions
 
 1. **NBomber Monitoring**: watch threshold results over the next few runs, adjust `ci/nbomber-thresholds.json` if variance demands it, and plan when to onboard the mixed-traffic profile.
-2. **Phase 3 Prep**: map roadmap items to requirement IDs, extend `docs/en/guides/REQUIREMENTS.md`, and add the quality checklist section to the README once testing goals land.
+2. **Requirements Drift Watch**: schedule periodic reviews of `docs/en/guides/REQUIREMENTS.md` and `REQUIREMENTS_MAPPING.md` to ensure new features stay covered; consider lightweight lint tooling to flag missing IDs in PRs.
 3. **CI Variance Review**: watch the next hosted-runner runs to ensure the tightened 1.56 µs / 1.14 µs benchmark caps and new load limits hold; adjust `ci/load-thresholds.json` once variance windows settle.
 
 ## Execution Plan
@@ -131,11 +133,11 @@ Status legend: ✅ Done · 🚧 In progress · ⏳ Planned · ⚠️ Blocked
 - Expand the NBomber harness with mixed-traffic and cancellation churn scenarios; keep the scripts and guides aligned with automation expectations.
 - Publish the benchmark guidance under `docs/en/guides/PERFORMANCE.md`, including interpretation of counters and expected trend reporting.
 
-### Phase 3 – Requirements & Documentation Closure
+### Phase 3 – Requirements & Documentation Closure _(Complete)_
 
-- Map each roadmap line item to a concrete requirement identifier and reference those IDs within the testing guides and CI summaries.
-- Flesh out `docs/en/guides/REQUIREMENTS.md` with traceability tables tying scenarios to unit/property/contract/integration suites.
-- Add a “quality checklist” snippet to the README that highlights coverage, mutation, performance, and load entry points so the project advertises full testing maturity.
+- Roadmap items, guides, and CI summaries now reference concrete requirement identifiers; continue updating the mapping as new workstreams appear.
+- `docs/en/guides/REQUIREMENTS.md` captures the requirement catalogue, guardrails, and change-management workflow; maintain the document alongside the mapping guide.
+- The README quality checklist surfaces coverage, mutation, performance, and load entry points; keep it aligned with future guardrails.
 
 ---
 
