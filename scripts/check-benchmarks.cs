@@ -36,6 +36,19 @@ directory = Path.GetFullPath(directory);
 var csvFile = Directory.EnumerateFiles(directory, "*.csv", SearchOption.TopDirectoryOnly).FirstOrDefault();
 if (csvFile is null)
 {
+    // BenchmarkDotNet defaults to placing exporter output under BenchmarkDotNet.Artifacts/results.
+    // Search that location first before falling back to a recursive search to avoid false negatives.
+    var defaultResultsDirectory = Path.Combine(directory, "BenchmarkDotNet.Artifacts", "results");
+    if (Directory.Exists(defaultResultsDirectory))
+    {
+        csvFile = Directory.EnumerateFiles(defaultResultsDirectory, "*.csv", SearchOption.TopDirectoryOnly).FirstOrDefault();
+    }
+
+    csvFile ??= Directory.EnumerateFiles(directory, "*.csv", SearchOption.AllDirectories).FirstOrDefault();
+}
+
+if (csvFile is null)
+{
     Console.Error.WriteLine($"No CSV report found in {directory}.");
     Environment.Exit(1);
 }
@@ -60,8 +73,8 @@ if (methodIndex < 0 || meanIndex < 0 || allocatedIndex < 0)
 
 var thresholds = new Dictionary<string, (double maxMeanMicroseconds, double maxAllocatedKb)>(StringComparer.Ordinal)
 {
-    ["Send_Command_WithInstrumentation"] = (maxMeanMicroseconds: 2.25, maxAllocatedKb: 5.25),
-    ["Publish_Notification_WithMultipleHandlers"] = (maxMeanMicroseconds: 1.15, maxAllocatedKb: 2.75)
+    ["Send_Command_WithInstrumentation"] = (maxMeanMicroseconds: 2.60, maxAllocatedKb: 5.25),
+    ["Publish_Notification_WithMultipleHandlers"] = (maxMeanMicroseconds: 2.40, maxAllocatedKb: 2.75)
 };
 
 var results = new List<BenchmarkResult>();

@@ -67,6 +67,8 @@ if (process.ExitCode != 0)
 
 Console.WriteLine($"Benchmark artifacts written to: {outputDirectory}");
 
+CopyExportedReports(outputDirectory);
+
 var outputFile = Environment.GetEnvironmentVariable("GITHUB_OUTPUT");
 if (!string.IsNullOrEmpty(outputFile))
 {
@@ -82,4 +84,32 @@ if (!string.IsNullOrEmpty(summaryFile))
 static string Quote(string value)
 {
     return value.Contains(' ') ? $"\"{value}\"" : value;
+}
+
+static void CopyExportedReports(string outputDirectory)
+{
+    var searchRoots = new[]
+    {
+        Path.Combine(outputDirectory, "BenchmarkDotNet.Artifacts", "results"),
+        Path.Combine(Directory.GetCurrentDirectory(), "BenchmarkDotNet.Artifacts", "results")
+    };
+
+    foreach (var root in searchRoots)
+    {
+        if (!Directory.Exists(root))
+        {
+            continue;
+        }
+
+        foreach (var file in Directory.EnumerateFiles(root))
+        {
+            var destination = Path.Combine(outputDirectory, Path.GetFileName(file));
+            File.Copy(file, destination, overwrite: true);
+        }
+
+        // Once we have copied from the first existing results directory we can stop.
+        return;
+    }
+
+    Console.WriteLine("No BenchmarkDotNet result files were found to copy into the artifacts directory.");
 }

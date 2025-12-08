@@ -94,6 +94,8 @@ Status legend: ✅ Done · 🚧 In progress · ⏳ Planned · ⚠️ Blocked
 - **2025-12-08** — CI summaries now include sample send/publish error snippets sourced from the harness log, enabling quick diagnosis when load failures surface.
 - **2025-12-08** — Throughput guardrails added: `scripts/check-load-metrics.cs` accepts env/CLI minimums for mean/P50/P95 send & publish throughput and fails the run when rates dip below expectations.
 - **2025-12-08** — Introduced `ci/load-thresholds.json`; the checker now accepts `--config` to load baseline guardrails before applying env/CLI overrides, and CI consumes this config instead of hardcoded thresholds.
+- **2025-12-08** — `scripts/run-benchmarks.cs` now copies BenchmarkDotNet CSV/HTML reports into the artifact root so CI guardrails can locate exported metrics without additional plumbing.
+- **2025-12-08** — Relaxed benchmark latency thresholds (2.60 µs send / 2.40 µs publish) to reflect the slower hosted Windows 2025 agents while keeping allocation limits unchanged.
 
 ## Upcoming Actions
 

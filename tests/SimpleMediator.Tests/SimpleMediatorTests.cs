@@ -1100,7 +1100,7 @@ public sealed class SimpleMediatorTests
             CancellationToken.None
         })!;
 
-        var failure = await invocation.ConfigureAwait(false);
+        var failure = await invocation;
 
         failure.IsSome.ShouldBeTrue();
         var error = failure.Match(err => err, () => MediatorErrors.Unknown);
