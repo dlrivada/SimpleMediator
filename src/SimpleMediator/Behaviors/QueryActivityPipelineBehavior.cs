@@ -50,8 +50,9 @@ public sealed class QueryActivityPipelineBehavior<TQuery, TResponse> : IQueryPip
             return Left<Error, TResponse>(MediatorErrors.Create("mediator.behavior.null_next", message));
         }
 
-        var activityName = $"Mediator.Query.{typeof(TQuery).Name}";
-        using var activity = MediatorDiagnostics.ActivitySource.StartActivity(activityName, ActivityKind.Internal);
+        using var activity = MediatorDiagnostics.ActivitySource.HasListeners()
+            ? MediatorDiagnostics.ActivitySource.StartActivity(string.Concat("Mediator.Query.", typeof(TQuery).Name), ActivityKind.Internal)
+            : null;
 
         if (activity is not null)
         {

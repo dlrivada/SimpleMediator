@@ -55,8 +55,9 @@ public sealed class CommandActivityPipelineBehavior<TCommand, TResponse> : IComm
             return Left<Error, TResponse>(MediatorErrors.Create("mediator.behavior.null_next", message));
         }
 
-        var activityName = $"Mediator.Command.{typeof(TCommand).Name}";
-        using var activity = MediatorDiagnostics.ActivitySource.StartActivity(activityName, ActivityKind.Internal);
+        using var activity = MediatorDiagnostics.ActivitySource.HasListeners()
+            ? MediatorDiagnostics.ActivitySource.StartActivity(string.Concat("Mediator.Command.", typeof(TCommand).Name), ActivityKind.Internal)
+            : null;
 
         if (activity is not null)
         {

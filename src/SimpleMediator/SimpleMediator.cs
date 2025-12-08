@@ -24,6 +24,7 @@ namespace SimpleMediator;
 public sealed class SimpleMediator : IMediator
 {
     private static readonly ConcurrentDictionary<(Type Request, Type Response), RequestHandlerBase> RequestHandlerCache = new();
+    private static readonly ConcurrentDictionary<Type, MethodInfo?> NotificationHandleMethodCache = new();
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<SimpleMediator> _logger;
@@ -113,7 +114,9 @@ public sealed class SimpleMediator : IMediator
         var serviceProvider = scope.ServiceProvider;
 
         var notificationType = notification.GetType();
-        using var activity = MediatorDiagnostics.ActivitySource.StartActivity("SimpleMediator.Publish", ActivityKind.Internal);
+        using var activity = MediatorDiagnostics.ActivitySource.HasListeners()
+            ? MediatorDiagnostics.ActivitySource.StartActivity("SimpleMediator.Publish", ActivityKind.Internal)
+            : null;
         activity?.SetTag("mediator.notification_type", notificationType.FullName);
 
         var handlerType = typeof(INotificationHandler<>).MakeGenericType(notificationType);
@@ -130,38 +133,48 @@ public sealed class SimpleMediator : IMediator
         {
             _logger.LogDebug("Sending notification {NotificationType} to {HandlerType}.", notificationType.Name, handler.GetType().Name);
             var result = await InvokeNotificationHandler(handler, notification, cancellationToken).ConfigureAwait(false);
-            if (result.IsLeft)
+            if (TryHandleNotificationFailure(result, handler))
             {
-                var error = result.Match(
-                    Left: err => err,
-                    Right: _ => MediatorErrors.Unknown);
-
-                activity?.SetStatus(ActivityStatusCode.Error, error.Message);
-
-                var errorCode = error.GetMediatorCode();
-                var exception = error.Exception.Match(
-                    Some: ex => (Exception?)ex,
-                    None: () => null);
-
-                if (IsCancellationCode(errorCode))
-                {
-                    _logger.LogWarning(exception, "Publishing {NotificationType} was cancelled.", notificationType.Name);
-                }
-                else if (exception is not null)
-                {
-                    _logger.LogError(exception, "Error while publishing notification {NotificationType} with {HandlerType}.", notificationType.Name, handler.GetType().Name);
-                }
-                else
-                {
-                    _logger.LogError("Error while publishing notification {NotificationType} with {HandlerType}: {Message}", notificationType.Name, handler.GetType().Name, error.Message);
-                }
-
                 return result;
             }
         }
 
         activity?.SetStatus(ActivityStatusCode.Ok);
         return Right<Error, Unit>(Unit.Default);
+
+        bool TryHandleNotificationFailure(Either<Error, Unit> result, object handlerInstance)
+        {
+            if (result.IsRight)
+            {
+                return false;
+            }
+
+            var error = result.Match(
+                Left: err => err,
+                Right: _ => MediatorErrors.Unknown);
+
+            activity?.SetStatus(ActivityStatusCode.Error, error.Message);
+
+            var errorCode = error.GetMediatorCode();
+            var exception = error.Exception.Match(
+                Some: ex => (Exception?)ex,
+                None: () => null);
+
+            if (IsCancellationCode(errorCode))
+            {
+                _logger.LogWarning(exception, "Publishing {NotificationType} was cancelled.", notificationType.Name);
+            }
+            else if (exception is not null)
+            {
+                _logger.LogError(exception, "Error while publishing notification {NotificationType} with {HandlerType}.", notificationType.Name, handlerInstance.GetType().Name);
+            }
+            else
+            {
+                _logger.LogError("Error while publishing notification {NotificationType} with {HandlerType}: {Message}", notificationType.Name, handlerInstance.GetType().Name, error.Message);
+            }
+
+            return true;
+        }
     }
 
     private void LogSendOutcome<TResponse>(Type requestType, Type handlerType, Either<Error, TResponse> outcome)
@@ -400,6 +413,7 @@ public sealed class SimpleMediator : IMediator
     }
 
     private static async Task<Either<Error, Unit>> InvokeNotificationHandler<TNotification>(object handler, TNotification notification, CancellationToken cancellationToken)
+        where TNotification : INotification
     {
         var handlerType = handler.GetType();
         var method = GetHandleMethod(handlerType);
@@ -458,8 +472,7 @@ public sealed class SimpleMediator : IMediator
     }
 
     private static MethodInfo? GetHandleMethod(Type handlerType)
-    {
-        var method = handlerType.GetMethod("Handle", BindingFlags.Instance | BindingFlags.Public);
-        return method;
-    }
+        => NotificationHandleMethodCache.GetOrAdd(
+            handlerType,
+            static type => type.GetMethod("Handle", BindingFlags.Instance | BindingFlags.Public));
 }
