@@ -9,6 +9,7 @@
   </Folder>
   <Folder Name="/load/">
     <Project Path="load/SimpleMediator.LoadTests/SimpleMediator.LoadTests.csproj" />
+    <Project Path="load/SimpleMediator.NBomber/SimpleMediator.NBomber.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/SimpleMediator.ContractTests/SimpleMediator.ContractTests.csproj" />

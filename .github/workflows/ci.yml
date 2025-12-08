@@ -80,6 +80,12 @@ jobs:
       - name: Check load harness metrics
         run: dotnet run --file scripts/check-load-metrics.cs -- --config ci/load-thresholds.json
 
+      - name: Run NBomber harness
+        run: dotnet run --file scripts/run-load-harness.cs -- --nbomber send-burst --duration 00:00:30
+
+      - name: Summarize NBomber run
+        run: dotnet run --file scripts/summarize-nbomber-run.cs -- --thresholds ci/nbomber-thresholds.json
+
       - name: Upload load metrics artifacts
         uses: actions/upload-artifact@v4
         with:

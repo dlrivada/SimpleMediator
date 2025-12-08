@@ -509,6 +509,33 @@ public sealed class SimpleMediatorTests
     }
 
     [Fact]
+    public async Task Publish_StopsProcessingHandlersAfterFailure()
+    {
+        var tracker = new NotificationTracker();
+        var loggerCollector = new LoggerCollector();
+        using var activityCollector = new ActivityCollector();
+        var services = BuildServiceCollection(notificationTracker: tracker, loggerCollector: loggerCollector);
+        services.RemoveAll(typeof(INotificationHandler<SampleNotification>));
+        services.AddScoped<INotificationHandler<SampleNotification>, FaultyNotificationHandler>();
+        services.AddScoped<INotificationHandler<SampleNotification>, AsyncSampleNotificationHandler>();
+
+        await using var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        var result = await mediator.Publish(new SampleNotification(21), CancellationToken.None);
+
+        var error = ExpectFailure(result, "mediator.notification.exception");
+        tracker.Handled.ShouldBeEmpty();
+        loggerCollector.Entries.Count(entry =>
+            entry.LogLevel == LogLevel.Error
+            && entry.Message.Contains("Error al publicar la notificación")
+            && entry.Message.Contains(nameof(SampleNotification))).ShouldBe(1);
+        var activity = activityCollector.Activities.Last(a => a.DisplayName == "SimpleMediator.Publish");
+        activity.Status.ShouldBe(ActivityStatusCode.Error);
+        activity.StatusDescription.ShouldBe(error.Message);
+    }
+
+    [Fact]
     public async Task Publish_AllowsHandlersReturningNullTasks()
     {
         var services = BuildServiceCollection();
@@ -929,6 +956,46 @@ public sealed class SimpleMediatorTests
             entry.LogLevel == LogLevel.Error
             && entry.Message.Contains("mediator.handler.exception")
             && entry.Message.Contains(nameof(NullTaskRequestHandler)));
+    }
+
+    [Fact]
+    public async Task Send_CachesRequestHandlerWrappersForSubsequentCalls()
+    {
+        var services = new ServiceCollection();
+        services.AddSimpleMediator();
+        services.AddScoped<IRequestHandler<CacheProbeRequest, string>, CacheProbeRequestHandler>();
+
+        await using var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        var cacheField = typeof(global::SimpleMediator.SimpleMediator)
+            .GetField("RequestHandlerCache", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var cache = cacheField.GetValue(null)!;
+        var cacheType = cache.GetType();
+        var key = (typeof(CacheProbeRequest), typeof(string));
+        var keyType = key.GetType();
+        var valueType = cacheType.GetGenericArguments()[1];
+
+        var tryRemove = cacheType.GetMethod("TryRemove", new[] { keyType, valueType.MakeByRefType() })!;
+        var removeArgs = new object?[] { key, null };
+        tryRemove.Invoke(cache, removeArgs);
+
+        var containsKey = cacheType.GetMethod("ContainsKey", new[] { keyType })!;
+        ((bool)containsKey.Invoke(cache, new object[] { key })!).ShouldBeFalse();
+
+        var first = await mediator.Send(new CacheProbeRequest("first"), CancellationToken.None);
+        ExpectSuccess(first).ShouldBe("first:cached");
+
+        ((bool)containsKey.Invoke(cache, new object[] { key })!).ShouldBeTrue();
+
+        var countProperty = cacheType.GetProperty("Count")!;
+        var countAfterFirst = (int)countProperty.GetValue(cache)!;
+
+        var second = await mediator.Send(new CacheProbeRequest("second"), CancellationToken.None);
+        ExpectSuccess(second).ShouldBe("second:cached");
+
+        var countAfterSecond = (int)countProperty.GetValue(cache)!;
+        countAfterSecond.ShouldBe(countAfterFirst);
     }
 
     [Fact]
@@ -1361,6 +1428,14 @@ public sealed class SimpleMediatorTests
     {
         public Task<string> Handle(NullTaskRequest request, CancellationToken cancellationToken)
             => null!;
+    }
+
+    private sealed record CacheProbeRequest(string Value) : IRequest<string>;
+
+    private sealed class CacheProbeRequestHandler : IRequestHandler<CacheProbeRequest, string>
+    {
+        public Task<string> Handle(CacheProbeRequest request, CancellationToken cancellationToken)
+            => Task.FromResult(request.Value + ":cached");
     }
 
     private sealed record AccidentalCancellationRequest() : IRequest<string>;

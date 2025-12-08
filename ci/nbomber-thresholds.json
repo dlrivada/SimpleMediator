@@ -1,0 +1,5 @@
+{
+  "scenario": "send-burst",
+  "minThroughputOpsPerSecond": 6750000.0,
+  "maxLatencyMs": 0.85
+}

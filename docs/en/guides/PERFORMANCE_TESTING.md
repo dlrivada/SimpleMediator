@@ -18,14 +18,14 @@
 
 ## Baseline Snapshot (2025-12-08)
 
-The first Release run captured the following medians on the local dev rig (Core i9-13900KS, .NET 10.0.100):
+The latest Release run (Core i9-13900KS, .NET 10.0.100) produced the following metrics:
 
 | Scenario | Mean | Allocated |
 |----------|------|-----------|
-| `Send_Command_WithInstrumentation` | ~2.02 μs | ~4.82 KB |
-| `Publish_Notification_WithMultipleHandlers` | ~1.01 μs | ~2.38 KB |
+| `Send_Command_WithInstrumentation` | 1.352 μs | 4.50 KB |
+| `Publish_Notification_WithMultipleHandlers` | 0.987 μs | 2.38 KB |
 
-CSV/HTML summaries live at `artifacts/performance/2025-12-08.000205/` and should be updated whenever the mediator pipeline changes materially.
+Artifacts reside at `artifacts/performance/2025-12-08.134404/`. Update this table whenever the mediator pipeline or hardware baseline changes materially.
 
 ### Trend History
 
@@ -35,10 +35,10 @@ CSV/HTML summaries live at `artifacts/performance/2025-12-08.000205/` and should
 
 ## Regression Thresholds & Enforcement
 
-Thresholds leverage the initial baseline and are currently enforced inside CI via `scripts/check-benchmarks.cs`. Any run exceeding the limits fails the pipeline and writes a Markdown summary to the job log for quick triage:
+Thresholds now track the 2025-12-08 baseline with a 15% latency window and 25% allocation window enforced inside CI via `scripts/check-benchmarks.cs`. Any run exceeding the limits fails the pipeline and writes a Markdown summary to the job log for quick triage:
 
-- `Send_Command_WithInstrumentation`: mean must stay < 2.80 μs and allocations < 5.25 KB.
-- `Publish_Notification_WithMultipleHandlers`: mean must stay < 2.40 μs and allocations < 2.75 KB.
+- `Send_Command_WithInstrumentation`: mean must stay < 1.56 μs and allocations < 5.63 KB (1.352 μs / 4.50 KB × 1.15 / 1.25).
+- `Publish_Notification_WithMultipleHandlers`: mean must stay < 1.14 μs and allocations < 2.98 KB (0.987 μs / 2.38 KB × 1.15 / 1.25).
 
 Both limits apply to the `Mean` and `Allocated` columns exported by BenchmarkDotNet’s CSV reporter. The check script accepts `--directory <path>` when validating a historical run.
 

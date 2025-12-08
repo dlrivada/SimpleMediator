@@ -264,8 +264,8 @@ internal readonly record struct BenchmarkRow(DateTimeOffset Timestamp, string Sc
             return double.NaN;
         }
 
-        var numeric = double.Parse(segments[0], CultureInfo.InvariantCulture);
-        var unit = segments.Length > 1 ? segments[1] : "";
+        var numeric = ParseFlexibleDouble(segments[0]);
+        var unit = segments.Length > 1 ? segments[1].Trim().Trim('"', '\'') : "";
 
         return unit switch
         {
@@ -285,8 +285,8 @@ internal readonly record struct BenchmarkRow(DateTimeOffset Timestamp, string Sc
             return double.NaN;
         }
 
-        var numeric = double.Parse(segments[0], CultureInfo.InvariantCulture);
-        var unit = segments.Length > 1 ? segments[1] : "";
+        var numeric = ParseFlexibleDouble(segments[0]);
+        var unit = segments.Length > 1 ? segments[1].Trim().Trim('"', '\'') : "";
 
         return unit switch
         {
@@ -299,6 +299,36 @@ internal readonly record struct BenchmarkRow(DateTimeOffset Timestamp, string Sc
     }
 
     public static BenchmarkRow Empty => new(DateTimeOffset.MinValue, string.Empty, double.NaN, double.NaN);
+
+    private static double ParseFlexibleDouble(string raw)
+    {
+        var cleaned = raw.Trim().Trim('"', '\'');
+        cleaned = cleaned.Replace("\u00A0", string.Empty).Replace(" ", string.Empty);
+
+        if (double.TryParse(cleaned, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var invariant))
+        {
+            return invariant;
+        }
+
+        if (double.TryParse(cleaned, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.CurrentCulture, out var current))
+        {
+            return current;
+        }
+
+        var normalized = cleaned.Replace(',', '.');
+        if (double.TryParse(normalized, NumberStyles.Float, CultureInfo.InvariantCulture, out var normalizedValue))
+        {
+            return normalizedValue;
+        }
+
+        normalized = cleaned.Replace(".", string.Empty).Replace(',', '.');
+        if (double.TryParse(normalized, NumberStyles.Float, CultureInfo.InvariantCulture, out var fallback))
+        {
+            return fallback;
+        }
+
+        return double.NaN;
+    }
 }
 
 internal readonly record struct LoadRow(
@@ -371,6 +401,36 @@ internal static class MarkdownFormatter
         }
 
         return lines;
+    }
+
+    private static double ParseFlexibleDouble(string raw)
+    {
+        var cleaned = raw.Trim().Trim('"', '\'');
+        cleaned = cleaned.Replace("\u00A0", string.Empty).Replace(" ", string.Empty);
+
+        if (double.TryParse(cleaned, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var invariant))
+        {
+            return invariant;
+        }
+
+        if (double.TryParse(cleaned, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.CurrentCulture, out var current))
+        {
+            return current;
+        }
+
+        var normalized = cleaned.Replace(',', '.');
+        if (double.TryParse(normalized, NumberStyles.Float, CultureInfo.InvariantCulture, out var normalizedValue))
+        {
+            return normalizedValue;
+        }
+
+        normalized = cleaned.Replace(".", string.Empty).Replace(',', '.');
+        if (double.TryParse(normalized, NumberStyles.Float, CultureInfo.InvariantCulture, out var fallback))
+        {
+            return fallback;
+        }
+
+        return double.NaN;
     }
 }
 

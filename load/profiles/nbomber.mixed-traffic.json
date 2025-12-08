@@ -1,0 +1,8 @@
+{
+  "scenario": "mixed-traffic",
+  "duration": "00:01:00",
+  "warmUp": "00:00:10",
+  "sendRate": 180000,
+  "publishRate": 90000,
+  "reportingInterval": "00:00:10"
+}

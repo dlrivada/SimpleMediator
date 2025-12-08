@@ -1,0 +1,8 @@
+{
+  "scenario": "send-burst",
+  "duration": "00:01:00",
+  "warmUp": "00:00:10",
+  "sendRate": 240000,
+  "publishRate": 0,
+  "reportingInterval": "00:00:10"
+}

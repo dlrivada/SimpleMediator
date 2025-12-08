@@ -8,6 +8,7 @@
 ## Tooling
 
 - Project: `load/SimpleMediator.LoadTests` (console harness targeting .NET 10.0).
+- NBomber project: `load/SimpleMediator.NBomber` for profile-driven scenarios.
 - Script launcher: `dotnet run --file scripts/run-load-harness.cs [-- <options>]`.
 
 ## Usage
@@ -60,19 +61,65 @@ Publish throughput: 2 649 522.40 ops/sec
 ## Baseline Resource Envelope (2025-12-08)
 
 - **8×4 baseline**: `collect-load-metrics.cs -- --duration 00:01:00 --send-workers 8 --publish-workers 4` continues to idle the runner (mean CPU <`0.20%`) and typically holds the working set near `70 MB` (see `docs/data/load-history.md`, run `2025-12-08 00:58:31 UTC`).
-- **32×16 stress (hosted Windows 2025)**: December 08 hosted-agent runs show mean CPU ≈`0.44%`, peak working set ≈`143 MB`, and send throughput ≈`2.7 M` ops/sec (P50 ≈`2.68 M`, P95 ≈`2.81 M`). Publish loops occasionally idle on these machines, so CI currently enforces send-only throughput while we stabilize notification execution under load.
+- **32×16 stress (local 2025-12-08)**: `collect-load-metrics.cs -- --duration 00:01:00` yielded send throughput `7.70 M` ops/sec (P50 `7.47 M`, P95 `9.12 M`) and publish throughput `3.11 M` ops/sec (P50 `3.37 M`, P95 `3.71 M`) with peak working set `59.5 MB`. CPU sampling remained below the 1% cap, confirming headroom even after tightening the throughput guardrails around this baseline.
 - **Reference**: the aggregated history in `docs/data/load-history.md` now surfaces CPU, memory, and send/publish throughput for every run, including early smoke checks and the stabilized high-concurrency profile.
 - **CPU/memory thresholds**: adjust guardrails by setting `SIMPLEMEDIATOR_LOAD_MAX_MEAN_CPU` and/or `SIMPLEMEDIATOR_LOAD_MAX_PEAK_MB` before invoking `check-load-metrics.cs` (CLI arguments still take precedence for ad-hoc runs).
-- **Throughput guardrails**: enforce minimum send/publish throughput via env vars (`SIMPLEMEDIATOR_LOAD_MIN_SEND_MEAN_OPS`, `SIMPLEMEDIATOR_LOAD_MIN_SEND_P50_OPS`, `SIMPLEMEDIATOR_LOAD_MIN_SEND_P95_OPS`, and the analogous `SIMPLEMEDIATOR_LOAD_MIN_PUBLISH_*` keys) or CLI flags (`--min-send-mean-ops`, `--min-send-p50-ops`, etc.). Hosted Windows agents currently omit publish metrics under the console harness, so the repo baseline only asserts send throughput until we reinstate reliable publish sampling.
-- **Config file**: check the repo’s baseline thresholds at `ci/load-thresholds.json` and pass them with `--config ci/load-thresholds.json`. CLI flags override env vars, which in turn override the config file defaults.
+- **Throughput guardrails**: enforce minimum send/publish throughput via env vars (`SIMPLEMEDIATOR_LOAD_MIN_SEND_MEAN_OPS`, `SIMPLEMEDIATOR_LOAD_MIN_SEND_P50_OPS`, `SIMPLEMEDIATOR_LOAD_MIN_SEND_P95_OPS`, and the analogous `SIMPLEMEDIATOR_LOAD_MIN_PUBLISH_*` keys) or CLI flags (`--min-send-mean-ops`, `--min-send-p50-ops`, etc.). Baseline guardrails now assert both send and publish throughput, allowing up to a 15% dip from the latest 32×16 snapshot before CI fails the run.
+- **Config file**: check the repo’s baseline thresholds at `ci/load-thresholds.json` (currently 6.55 M / 6.35 M / 7.76 M for send mean/P50/P95 and 2.65 M / 2.86 M / 3.16 M for publish mean/P50/P95) and pass them with `--config ci/load-thresholds.json`. CLI flags override env vars, which in turn override the config file defaults.
 - **Percentiles**: the load harness samples per-second throughput; `aggregate-performance-history.cs` records send/publish P50 and P95 so regressions in stability (not only averages) are visible in `docs/data/load-history.md` and CI summaries.
 - **CI summary**: `check-load-metrics.cs` scans the matching harness log and prints send/publish mean throughput plus P50/P95 breakdowns, making the GitHub summary actionable without chasing artifacts.
 - **Error snippets**: when the harness captures sample send/publish failures they are echoed directly in the CI summary, so triage starts with the precise pipeline error(s) that surfaced under load.
 - **Headroom guidance**: treat `1%` CPU and `160 MB` working set as alert thresholds on hosted Windows 2025 agents; exceeding either warrants investigation into new handlers or pipeline changes (override via env/CLI switches for different environments).
 - **Fix note**: prior `AccessViolationException` crashes at 32×16 were traced to reflection dispatch; `SimpleMediator` now uses cached request handler wrappers, eliminating the issue.
 
+## NBomber Harness
+
+Launch the profile-based scenarios through the same helper script:
+
+```pwsh
+dotnet run --file scripts/run-load-harness.cs -- --nbomber send-burst
+```
+
+- `--nbomber <alias>` maps to a JSON profile stored under `load/profiles/`. Use `send-burst` for the command-only sweep or `mixed-traffic` to run publish/send scenarios side-by-side. Pass `--profile <path>` to reference a custom JSON manifest directly.
+- Override defaults with the same switches exposed by the harness itself (`--scenario`, `--duration`, `--send-rate`, `--publish-rate`, `--reporting-interval`, `--output`). CLI flags take precedence over profile data.
+- Reports land in `artifacts/load-metrics/nbomber-<timestamp>/` by default. Reuse the path via `--output <directory>` when wiring CI steps that need deterministic artifact locations.
+- Each run emits:
+  - `nbomber-report.csv/html/md/txt` — raw scenario stats straight from NBomber.
+  - `nbomber-summary.json` — condensed throughput/latency snapshot for automation.
+  - `harness-<timestamp>.log` — formatted lines (`Send throughput`, `Send throughput P50`, etc.) consumed by `scripts/check-load-metrics.cs` and the history aggregator.
+  - `metrics-<timestamp>.csv` — placeholder CPU/memory sample to keep the CSV schema consistent with the console harness (values remain empty until process counters plug in).
+- NBomber prints a per-scenario summary (latency buckets, RPS, failure counts) to stdout and persists HTML/CSV artifacts; the helper script forwards the final 50 lines into the GitHub summary when run inside CI.
+
+GitHub Actions now executes `scripts/run-load-harness.cs -- --nbomber send-burst --duration 00:00:30` after the console guardrail check, so CI uploads both harness outputs under `artifacts/load-metrics/` and the workflow summary includes the NBomber tail logs.
+
+Use `dotnet run --file scripts/summarize-nbomber-run.cs [-- --directory <path>]` to parse the generated `nbomber-summary.json` and emit a concise throughput/latency report (the script automatically targets the most recent `nbomber-*` directory and appends to `$GITHUB_STEP_SUMMARY` when available). Pass `--thresholds <json>` to fail the run when metrics fall outside expected envelopes; CI points this to `ci/nbomber-thresholds.json`, which currently enforces ≥6.75 M ops/sec throughput and ≤0.85 ms latency for the send-burst profile.
+
+### Profile Layout
+
+Profiles capture duration, warm-up, throughput targets, and reporting cadence:
+
+```json
+{
+  "scenario": "mixed-traffic",
+  "duration": "00:01:00",
+  "warmUp": "00:00:10",
+  "sendRate": 180000,
+  "publishRate": 90000,
+  "reportingInterval": "00:00:10"
+}
+```
+
+- Add new profiles under `load/profiles/nbomber.<name>.json` to keep CI-friendly baselines alongside bespoke experiment runs.
+- The harness normalises edge cases (non-positive durations/rates) and will log the substituted defaults to prevent silent misconfiguration.
+
+### Aggregation & Thresholds
+
+- `scripts/aggregate-performance-history.cs` now picks up the NBomber directories automatically thanks to the generated `metrics-*` CSV and `harness-*` logs.
+- Throughput percentiles currently reuse the mean RPS values because NBomber does not expose per-second percentile snapshots yet; the JSON summary retains latency percentiles so we can derive richer metrics once upstream support lands.
+
 ## Next Steps
 
-- Harden the harness against `AccessViolationException` when using higher worker counts (e.g., 32/16) so stress levels can scale safely.
-- Evaluate integration into CI (potential nightly run with relaxed limits) once hardware variance guidelines are established.
+- Harden the console harness against `AccessViolationException` when using higher worker counts (e.g., 32/16) so stress levels can scale safely.
+- Capture NBomber baseline artefacts (send-burst and mixed-traffic) and feed their throughput/latency summaries into the history aggregator.
+- Monitor the enforced send-burst thresholds (`ci/nbomber-thresholds.json`) and tighten or extend them (e.g., mixed-traffic, percentile limits) as variance data accumulates; consider mirroring the checks in `check-load-metrics.cs` if additional reports need to fail early.
 - Consider introducing configurable request/notification handlers that simulate I/O delays for broader coverage.

@@ -4,7 +4,7 @@
 ![Status](https://img.shields.io/badge/status-internal-blue.svg)
 ![License](https://img.shields.io/badge/license-private-important.svg)
 ![Coverage](https://img.shields.io/badge/coverage-90%25-4C934C.svg)
-![Mutation](https://img.shields.io/badge/mutation-92.37%25-4C934C.svg)
+![Mutation](https://img.shields.io/badge/mutation-93.74%25-4C934C.svg)
 
 SimpleMediator is a lightweight mediator abstraction for .NET applications that lean on functional programming principles. It keeps request and response contracts explicit, integrates naturally with [LanguageExt](https://github.com/louthy/language-ext), and embraces pipeline behaviors so cross-cutting concerns stay composable.
 
@@ -336,6 +336,19 @@ The suite exercises:
 - Command/query telemetry behaviors (activities, metrics, cancellation, functional failures).
 - Service registration helpers and configuration guards.
 - Default implementations such as `MediatorMetrics` and the null functional failure detector.
+
+### Load Harnesses
+
+Two load harnesses validate sustained throughput and resource envelopes:
+
+```bash
+dotnet run --file scripts/run-load-harness.cs -- --duration 00:01:00 --send-workers 8 --publish-workers 4
+dotnet run --file scripts/run-load-harness.cs -- --nbomber send-burst --duration 00:00:30
+```
+
+- The console harness targets `load/SimpleMediator.LoadTests` and pairs with `scripts/collect-load-metrics.cs` to capture CPU/memory samples (`harness-<timestamp>.log`, `metrics-<timestamp>.csv`).
+- NBomber scenarios live in `load/SimpleMediator.NBomber` with JSON profiles under `load/profiles/`. The summarizer `scripts/summarize-nbomber-run.cs -- --thresholds ci/nbomber-thresholds.json` prints throughput/latency stats and fails when send-burst throughput dips below 6.75M ops/sec or latency rises above 0.85 ms.
+- CI enforces guardrails via `scripts/check-load-metrics.cs -- --config ci/load-thresholds.json` for the console harness and the summarizer for NBomber; both pipelines publish artifacts in `artifacts/load-metrics/` and feed `scripts/aggregate-performance-history.cs` to refresh `docs/data/load-history.md`.
 
 ## FAQ
 

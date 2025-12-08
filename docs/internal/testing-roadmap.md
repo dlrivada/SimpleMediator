@@ -21,9 +21,9 @@ This roadmap tracks the effort to bring SimpleMediator to the same multi-layered
 | Unit Expansion | Increase coverage for mediator core, behaviors, metrics | Copilot | `REQ-REQ-LIFECYCLE`, `REQ-INF-METRICS` | ✅ Done | `SimpleMediator` send/publish edge cases and metrics failure tagging covered by unit suite |
 | Property Tests | Create `SimpleMediator.PropertyTests` with FsCheck generators | Copilot | `REQ-REQ-CONCURRENCY`, `REQ-NOT-ORDER` | ✅ Done | Configuration, pipeline determinism, notification publish ordering, and concurrent publish guarantees covered |
 | Contract Tests | Ensure handlers/behaviors honor interfaces across implementations | Copilot | `REQ-NOT-MULTI`, `REQ-CONF-LIFETIME`, `REQ-CONF-EDGE` | ✅ Done | DI registrations cover pipelines, handlers, processors, functional failure detector defaults, and multi-assembly edge cases |
-| Mutation Testing | Configure Stryker.NET thresholds and CI integration | Copilot | `REQ-QUAL-MUTATION` | ✅ Done | CI pipeline runs `scripts/run-stryker.cs`, invokes `scripts/update-mutation-summary.cs`, publishes HTML/JSON artifacts, and enforces the 92.37% baseline (448 killed / 0 survived). |
+| Mutation Testing | Configure Stryker.NET thresholds and CI integration | Copilot | `REQ-QUAL-MUTATION` | ✅ Done | CI pipeline runs `scripts/run-stryker.cs`, invokes `scripts/update-mutation-summary.cs`, publishes HTML/JSON artifacts, and enforces the 93.74% baseline (449 killed / 2 survived). |
 | Performance Benchmarks | Add BenchmarkDotNet project & publish results doc | Copilot | `REQ-PERF-BASELINE` | ✅ Done | Baseline run captured 2025-12-08 with reports under `artifacts/performance/2025-12-08.000205`; CI now executes benchmarks and enforces regression thresholds. |
-| Load Harness | Prototype NBomber (or console) throughput tests | Copilot | `REQ-LOAD-THROUGHPUT` | 🚧 In progress | Console harness with metrics collection committed; CI runs a high-concurrency pass with guardrails; load history + CI summary now track throughput P50/P95 alongside CPU/memory and respect configurable min throughput thresholds |
+| Load Harness | Prototype NBomber (or console) throughput tests | Copilot | `REQ-LOAD-THROUGHPUT` | ✅ Done | Console harness with metrics collection committed; NBomber project + profiles (`send-burst`, `mixed-traffic`) now run via `scripts/run-load-harness.cs -- --nbomber <alias>`. CI executes the send-burst profile, enforces baseline thresholds from `ci/nbomber-thresholds.json` via `scripts/summarize-nbomber-run.cs`, and uploads artifacts under `artifacts/load-metrics/`. |
 | Documentation | Publish guides (`docs/en/guides`) & requirements mapping | Copilot | — | 🚧 In progress | Testing, requirements, mutation, and performance guide skeletons committed; automation scripts must be single-file C# apps executed via `dotnet run --file script.cs` |
 
 Status legend: ✅ Done · 🚧 In progress · ⏳ Planned · ⚠️ Blocked
@@ -98,25 +98,37 @@ Status legend: ✅ Done · 🚧 In progress · ⏳ Planned · ⚠️ Blocked
 - **2025-12-08** — Relaxed benchmark latency thresholds (2.60 µs send / 2.40 µs publish) to reflect the slower hosted Windows 2025 agents while keeping allocation limits unchanged.
 - **2025-12-08** — Raised the hosted-runner send benchmark guardrail to 2.80 µs after observing additional variance on the Windows 2025 image; publish and allocation limits remain unchanged.
 - **2025-12-08** — Mutation summary tool now persists `mutation-report.txt` alongside the JSON/HTML outputs so CI can surface text results without relying on Stryker’s cleartext reporter.
+- **2025-12-08** — Added unit coverage for handler wrapper caching and publish fail-fast semantics, keeping send/publish edge cases under test while documenting the badge refresh workflow for contributors.
+- **2025-12-08** — Ran Stryker + badge refresh to lock the mutation baseline at 93.74% and regenerate `mutation-report.txt` through `scripts/update-mutation-summary.cs`.
+- **2025-12-08** — Captured benchmark run `artifacts/performance/2025-12-08.134404`, confirming send mean 1.352 µs / 4.50 KB and publish mean 0.987 µs / 2.38 KB remain well under the relaxed guardrails.
+- **2025-12-08** — Recorded load harness metrics (`metrics-2025-12-08.134718.csv`): send throughput 7.70M ops/sec (P50 7.47M, P95 9.12M) and publish throughput 3.11M ops/sec (P50 3.37M, P95 3.71M) within current CPU/memory envelopes.
+- **2025-12-08** — Hardened `scripts/aggregate-performance-history.cs` to parse localized BenchmarkDotNet CSV output and refreshed `docs/data/*.md` with the latest benchmark/load snapshots.
+- **2025-12-08** — Tightened CI guardrails: benchmarks now allow at most +15% latency / +25% allocations, and load throughput thresholds enforce ≥6.55M/6.35M/7.76M (send) plus ≥2.65M/2.86M/3.16M (publish) ops/sec via `ci/load-thresholds.json`.
+- **2025-12-08** — Documented the NBomber transition plan in `docs/en/guides/LOAD_TESTING.md`, covering scenarios, profiles, and CI integration expectations.
+- **2025-12-08** — Scaffolded `load/SimpleMediator.NBomber` with send-burst and mixed-traffic scenarios, default JSON profiles, and a `--nbomber` switch on `scripts/run-load-harness.cs` for seamless execution.
+- **2025-12-08** — NBomber harness now emits `harness-*` logs, `metrics-*` CSVs, and `nbomber-summary.json`; history aggregation + `check-load-metrics.cs` can consume the data without manual transforms.
+- **2025-12-08** — CI workflow runs `scripts/run-load-harness.cs -- --nbomber send-burst --duration 00:00:30` after enforcing console load guardrails, publishing the NBomber run summary and artifacts alongside existing metrics.
+- **2025-12-08** — Added `scripts/summarize-nbomber-run.cs` to surface throughput/latency metrics from `nbomber-summary.json` in GitHub summaries; CI now invokes it immediately after the NBomber profile.
+- **2025-12-08** — Baseline NBomber guardrails committed via `ci/nbomber-thresholds.json`; the summarizer script now fails CI when send-burst throughput drops below 6.75M ops/sec or latency exceeds 0.85 ms.
 
 ## Upcoming Actions
 
-1. Hold line coverage at ≥90% by deepening `SimpleMediator.SimpleMediator` send/publish edge cases and pairing new unit tests with property-based explorations.
-2. Evaluate guardrail defaults after a few CI runs to confirm the percentile data stays within acceptable variance.
-3. Promote vetted throughput thresholds into CI defaults (or baseline files) once variance windows are established.
+1. **NBomber Monitoring**: watch threshold results over the next few runs, adjust `ci/nbomber-thresholds.json` if variance demands it, and plan when to onboard the mixed-traffic profile.
+2. **Phase 3 Prep**: map roadmap items to requirement IDs, extend `docs/en/guides/REQUIREMENTS.md`, and add the quality checklist section to the README once testing goals land.
+3. **CI Variance Review**: watch the next hosted-runner runs to ensure the tightened 1.56 µs / 1.14 µs benchmark caps and new load limits hold; adjust `ci/load-thresholds.json` once variance windows settle.
 
 ## Execution Plan
 
 ### Phase 1 – Mutation & Coverage Hardening
 
-- Pair new mediator edge-case unit tests with mutation-driven survivors to keep the 92.37% score resilient to future refactors.
+- Pair new mediator edge-case unit tests with mutation-driven survivors to keep the 93.74% score resilient to future refactors.
 - Add property-based scenarios that stress cancellation, concurrent notifications, and pipeline reorderings; ensure generators live in `SimpleMediator.PropertyTests` and share factories with unit suites.
 - Document the expected workflow for running `scripts/update-mutation-summary.cs` locally so contributors refresh the badge prior to merging.
 
 ### Phase 2 – Benchmark & Load Gates
 
 - Capture a comparative benchmark run on CI using the baseline settings, then implement threshold checks that fail when latency regresses by >15% or allocations exceed baseline by 25%.
-- Stand up a lightweight NBomber harness focused on command throughput and cancellation churn; commit scripts plus README instructions for local execution.
+- Expand the NBomber harness with mixed-traffic and cancellation churn scenarios; keep the scripts and guides aligned with automation expectations.
 - Publish the benchmark guidance under `docs/en/guides/PERFORMANCE.md`, including interpretation of counters and expected trend reporting.
 
 ### Phase 3 – Requirements & Documentation Closure
