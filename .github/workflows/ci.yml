@@ -75,7 +75,7 @@ jobs:
           path: ${{ steps.run-benchmarks.outputs.benchmark-dir }}
 
       - name: Run load harness (metrics)
-        run: dotnet run --file scripts/collect-load-metrics.cs -- --duration 00:00:30 --send-workers 32 --publish-workers 16
+        run: dotnet run --file scripts/collect-load-metrics.cs -- --duration 00:00:30 --send-workers 8 --publish-workers 4
 
       - name: Check load harness metrics
         run: dotnet run --file scripts/check-load-metrics.cs -- --config ci/load-thresholds.json

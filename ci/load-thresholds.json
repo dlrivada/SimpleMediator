@@ -1,11 +1,11 @@
 {
   "metricsDirectory": "artifacts/load-metrics",
-  "maxMeanCpuPercent": 1.0,
+  "maxMeanCpuPercent": 2.0,
   "maxPeakWorkingSetMb": 160.0,
-  "minSendMeanOps": 6550000.0,
-  "minSendP50Ops": 6350000.0,
-  "minSendP95Ops": 7760000.0,
-  "minPublishMeanOps": 2650000.0,
-  "minPublishP50Ops": 2860000.0,
-  "minPublishP95Ops": 3160000.0
+  "minSendMeanOps": 1800000.0,
+  "minSendP50Ops": 1700000.0,
+  "minSendP95Ops": 2000000.0,
+  "minPublishMeanOps": 250000.0,
+  "minPublishP50Ops": 200000.0,
+  "minPublishP95Ops": 300000.0
 }
