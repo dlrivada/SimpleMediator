@@ -1,12 +1,6 @@
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using LanguageExt;
-using static LanguageExt.Prelude;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using SimpleMediator;
 using SimpleMediator.Tests.Fixtures;
 
 namespace SimpleMediator.Tests;
@@ -153,8 +147,8 @@ public sealed class ServiceCollectionExtensionsTests
     private sealed class ConfiguredPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        public Task<Either<Error, TResponse>> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
-            => next();
+        public Task<Either<Error, TResponse>> Handle(TRequest request, RequestHandlerDelegate<TResponse> nextStep, CancellationToken cancellationToken)
+            => nextStep();
     }
 
     private sealed class ConfiguredPreProcessor<TRequest> : IRequestPreProcessor<TRequest>

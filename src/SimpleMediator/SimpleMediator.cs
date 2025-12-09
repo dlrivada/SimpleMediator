@@ -1,17 +1,12 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using LanguageExt;
-using static LanguageExt.Prelude;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using static LanguageExt.Prelude;
 
 namespace SimpleMediator;
 
@@ -22,24 +17,18 @@ namespace SimpleMediator;
 /// Creates a scope per request, resolves handlers, behaviors, pre/post processors and publishes
 /// notifications. Includes instrumentation via <see cref="MediatorDiagnostics"/>.
 /// </remarks>
-public sealed class SimpleMediator : IMediator
+/// <remarks>
+/// Creates a mediator instance using the provided scope factory.
+/// </remarks>
+/// <param name="scopeFactory">Factory used to create scopes per operation.</param>
+/// <param name="logger">Optional logger for tracing and diagnostics.</param>
+public sealed partial class SimpleMediator(IServiceScopeFactory scopeFactory, ILogger<SimpleMediator>? logger = null) : IMediator
 {
     private static readonly ConcurrentDictionary<(Type Request, Type Response), RequestHandlerBase> RequestHandlerCache = new();
     private static readonly ConcurrentDictionary<(Type Handler, Type Notification), Func<object, object?, CancellationToken, Task>> NotificationHandlerInvokerCache = new();
 
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<SimpleMediator> _logger;
-
-    /// <summary>
-    /// Creates a mediator instance using the provided scope factory.
-    /// </summary>
-    /// <param name="scopeFactory">Factory used to create scopes per operation.</param>
-    /// <param name="logger">Optional logger for tracing and diagnostics.</param>
-    public SimpleMediator(IServiceScopeFactory scopeFactory, ILogger<SimpleMediator>? logger = null)
-    {
-        _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
-        _logger = logger ?? NullLogger<SimpleMediator>.Instance;
-    }
+    private readonly IServiceScopeFactory _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
+    private readonly ILogger<SimpleMediator> _logger = logger ?? NullLogger<SimpleMediator>.Instance;
 
     /// <inheritdoc />
     public async Task<Either<Error, TResponse>> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
@@ -47,7 +36,7 @@ public sealed class SimpleMediator : IMediator
         if (request is null)
         {
             const string message = "The request cannot be null.";
-            _logger.LogError(message);
+            Log.NullRequest(_logger);
             return Left<Error, TResponse>(MediatorErrors.Create("mediator.request.null", message));
         }
 
@@ -64,13 +53,13 @@ public sealed class SimpleMediator : IMediator
         if (handler is null)
         {
             var message = $"No registered IRequestHandler was found for {requestType.Name} -> {typeof(TResponse).Name}.";
-            _logger.LogError(message);
+            Log.HandlerMissing(_logger, requestType.Name, typeof(TResponse).Name);
             return Left<Error, TResponse>(MediatorErrors.Create("mediator.handler.missing", message));
         }
 
         try
         {
-            _logger.LogDebug("Processing {RequestType} with {HandlerType}.", requestType.Name, handler.GetType().Name);
+            Log.ProcessingRequest(_logger, requestType.Name, handler.GetType().Name);
             var boxedOutcome = await dispatcher
                 .Handle(this, request, handler, serviceProvider, cancellationToken)
                 .ConfigureAwait(false);
@@ -78,7 +67,7 @@ public sealed class SimpleMediator : IMediator
             if (boxedOutcome is not Either<Error, TResponse> outcome)
             {
                 var message = $"Handler {handler.GetType().Name} returned an unexpected type while processing {requestType.Name}.";
-                _logger.LogError(message);
+                Log.HandlerReturnedUnexpectedType(_logger, handler.GetType().Name, requestType.Name);
                 return Left<Error, TResponse>(MediatorErrors.Create("mediator.handler.invalid_result", message));
             }
 
@@ -89,13 +78,13 @@ public sealed class SimpleMediator : IMediator
         catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
         {
             var message = $"The {requestType.Name} request was cancelled.";
-            _logger.LogWarning(message);
+            Log.RequestCancelledDuringSend(_logger, requestType.Name);
             return Left<Error, TResponse>(MediatorErrors.Create("mediator.request.cancelled", message, ex));
         }
         catch (Exception ex)
         {
             var error = MediatorErrors.FromException("mediator.pipeline.exception", ex, $"Unexpected error while processing {requestType.Name}.");
-            _logger.LogError(ex, error.Message);
+            Log.RequestProcessingError(_logger, requestType.Name, ex);
             return Left<Error, TResponse>(error);
         }
     }
@@ -107,7 +96,7 @@ public sealed class SimpleMediator : IMediator
         if (notification is null)
         {
             const string message = "The notification cannot be null.";
-            _logger.LogError(message);
+            Log.NotificationNull(_logger);
             return Left<Error, Unit>(MediatorErrors.Create("mediator.notification.null", message));
         }
 
@@ -125,14 +114,14 @@ public sealed class SimpleMediator : IMediator
 
         if (handlers.Count == 0)
         {
-            _logger.LogDebug("No handlers were found for the {NotificationType} notification.", notificationType.Name);
+            Log.NoNotificationHandlers(_logger, notificationType.Name);
             activity?.SetStatus(ActivityStatusCode.Ok);
             return Right<Error, Unit>(Unit.Default);
         }
 
         foreach (var handler in handlers)
         {
-            _logger.LogDebug("Sending notification {NotificationType} to {HandlerType}.", notificationType.Name, handler.GetType().Name);
+            Log.SendingNotification(_logger, notificationType.Name, handler.GetType().Name);
             var result = await InvokeNotificationHandler(handler, notification, cancellationToken).ConfigureAwait(false);
             if (TryHandleNotificationFailure(result, handler))
             {
@@ -160,18 +149,19 @@ public sealed class SimpleMediator : IMediator
             var exception = error.Exception.Match(
                 Some: ex => (Exception?)ex,
                 None: () => null);
+            var handlerTypeName = handlerInstance.GetType().Name;
 
             if (IsCancellationCode(errorCode))
             {
-                _logger.LogWarning(exception, "Publishing {NotificationType} was cancelled.", notificationType.Name);
+                Log.NotificationCancelled(_logger, notificationType.Name, handlerTypeName, exception);
             }
             else if (exception is not null)
             {
-                _logger.LogError(exception, "Error while publishing notification {NotificationType} with {HandlerType}.", notificationType.Name, handlerInstance.GetType().Name);
+                Log.NotificationHandlerException(_logger, notificationType.Name, handlerTypeName, exception);
             }
             else
             {
-                _logger.LogError("Error while publishing notification {NotificationType} with {HandlerType}: {Message}", notificationType.Name, handlerInstance.GetType().Name, error.Message);
+                Log.NotificationHandlerFailure(_logger, notificationType.Name, handlerTypeName, error.Message);
             }
 
             return true;
@@ -188,7 +178,7 @@ public sealed class SimpleMediator : IMediator
     {
         if (isSuccess)
         {
-            _logger.LogDebug("Request {RequestType} completed by {HandlerType}.", requestType.Name, handlerType.Name);
+            Log.RequestCompleted(_logger, requestType.Name, handlerType.Name);
             return;
         }
 
@@ -201,11 +191,11 @@ public sealed class SimpleMediator : IMediator
 
         if (IsCancellationCode(errorCode))
         {
-            _logger.LogWarning(exception, "The {RequestType} request was cancelled ({Reason}).", requestType.Name, errorCode);
+            Log.RequestCancelled(_logger, requestType.Name, errorCode, exception);
             return;
         }
 
-        _logger.LogError(exception, "The {RequestType} request failed ({Reason}): {Message}", requestType.Name, errorCode, effectiveError.Message);
+        Log.RequestFailed(_logger, requestType.Name, errorCode, effectiveError.Message, exception);
     }
 
     private static (bool IsSuccess, Error? Error) ExtractOutcome<TResponse>(Either<Error, TResponse> outcome)
@@ -240,12 +230,12 @@ public sealed class SimpleMediator : IMediator
         {
             var typedRequest = (TRequest)request;
             var typedHandler = (IRequestHandler<TRequest, TResponse>)handler;
-            var outcome = await mediator.SendCore(typedRequest, typedHandler, provider, cancellationToken).ConfigureAwait(false);
+            var outcome = await SendCore(typedRequest, typedHandler, provider, cancellationToken).ConfigureAwait(false);
             return outcome;
         }
     }
 
-    private Task<Either<Error, TResponse>> SendCore<TRequest, TResponse>(
+    private static Task<Either<Error, TResponse>> SendCore<TRequest, TResponse>(
         TRequest request,
         IRequestHandler<TRequest, TResponse> handler,
         IServiceProvider serviceProvider,
@@ -255,13 +245,13 @@ public sealed class SimpleMediator : IMediator
         RequestHandlerDelegate<TResponse> current = () => ExecuteHandlerAsync(handler, request, cancellationToken);
 
         var behaviors = serviceProvider.GetServices<IPipelineBehavior<TRequest, TResponse>>()?.ToArray();
-        if (behaviors?.Any() == true)
+        if (behaviors is { Length: > 0 })
         {
             for (var index = behaviors.Length - 1; index >= 0; index--)
             {
                 var behavior = behaviors[index];
-                var next = current;
-                current = () => ExecuteBehaviorAsync(behavior, request, cancellationToken, next);
+                var nextStep = current;
+                current = () => ExecuteBehaviorAsync(behavior, request, nextStep, cancellationToken);
             }
         }
 
@@ -340,13 +330,13 @@ public sealed class SimpleMediator : IMediator
     private static async Task<Either<Error, TResponse>> ExecuteBehaviorAsync<TRequest, TResponse>(
         IPipelineBehavior<TRequest, TResponse> behavior,
         TRequest request,
-        CancellationToken cancellationToken,
-        RequestHandlerDelegate<TResponse> next)
+        RequestHandlerDelegate<TResponse> nextStep,
+        CancellationToken cancellationToken)
         where TRequest : IRequest<TResponse>
     {
         try
         {
-            return await behavior.Handle(request, cancellationToken, next).ConfigureAwait(false);
+            return await behavior.Handle(request, nextStep, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
         {
@@ -508,7 +498,7 @@ public sealed class SimpleMediator : IMediator
             return false;
         }
 
-        return errorCode.IndexOf("cancelled", StringComparison.OrdinalIgnoreCase) >= 0;
+        return errorCode.Contains("cancelled", StringComparison.OrdinalIgnoreCase);
     }
 
     private static Func<object, object?, CancellationToken, Task> CreateNotificationInvoker(MethodInfo method, Type handlerType, Type notificationType)
@@ -603,5 +593,53 @@ public sealed class SimpleMediator : IMediator
         return parameterType == candidateType
             || parameterType.IsAssignableFrom(candidateType)
             || candidateType.IsAssignableFrom(parameterType);
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(EventId = 1, Level = LogLevel.Error, Message = "The request cannot be null.")]
+        public static partial void NullRequest(ILogger logger);
+
+        [LoggerMessage(EventId = 2, Level = LogLevel.Error, Message = "No registered IRequestHandler was found for {RequestType} -> {ResponseType}.")]
+        public static partial void HandlerMissing(ILogger logger, string requestType, string responseType);
+
+        [LoggerMessage(EventId = 3, Level = LogLevel.Debug, Message = "Processing {RequestType} with {HandlerType}.")]
+        public static partial void ProcessingRequest(ILogger logger, string requestType, string handlerType);
+
+        [LoggerMessage(EventId = 4, Level = LogLevel.Error, Message = "Handler {HandlerType} returned an unexpected type while processing {RequestType}.")]
+        public static partial void HandlerReturnedUnexpectedType(ILogger logger, string handlerType, string requestType);
+
+        [LoggerMessage(EventId = 5, Level = LogLevel.Warning, Message = "The {RequestType} request was cancelled.")]
+        public static partial void RequestCancelledDuringSend(ILogger logger, string requestType);
+
+        [LoggerMessage(EventId = 6, Level = LogLevel.Error, Message = "Unexpected error while processing {RequestType}.")]
+        public static partial void RequestProcessingError(ILogger logger, string requestType, Exception exception);
+
+        [LoggerMessage(EventId = 7, Level = LogLevel.Error, Message = "The notification cannot be null.")]
+        public static partial void NotificationNull(ILogger logger);
+
+        [LoggerMessage(EventId = 8, Level = LogLevel.Debug, Message = "No handlers were found for the {NotificationType} notification.")]
+        public static partial void NoNotificationHandlers(ILogger logger, string notificationType);
+
+        [LoggerMessage(EventId = 9, Level = LogLevel.Debug, Message = "Sending notification {NotificationType} to {HandlerType}.")]
+        public static partial void SendingNotification(ILogger logger, string notificationType, string handlerType);
+
+        [LoggerMessage(EventId = 10, Level = LogLevel.Warning, Message = "Publishing {NotificationType} with {HandlerType} was cancelled.")]
+        public static partial void NotificationCancelled(ILogger logger, string notificationType, string handlerType, Exception? exception);
+
+        [LoggerMessage(EventId = 11, Level = LogLevel.Error, Message = "Error while publishing notification {NotificationType} with {HandlerType}.")]
+        public static partial void NotificationHandlerException(ILogger logger, string notificationType, string handlerType, Exception exception);
+
+        [LoggerMessage(EventId = 12, Level = LogLevel.Error, Message = "Error while publishing notification {NotificationType} with {HandlerType}: {Message}")]
+        public static partial void NotificationHandlerFailure(ILogger logger, string notificationType, string handlerType, string message);
+
+        [LoggerMessage(EventId = 13, Level = LogLevel.Debug, Message = "Request {RequestType} completed by {HandlerType}.")]
+        public static partial void RequestCompleted(ILogger logger, string requestType, string handlerType);
+
+        [LoggerMessage(EventId = 14, Level = LogLevel.Warning, Message = "The {RequestType} request was cancelled ({Reason}).")]
+        public static partial void RequestCancelled(ILogger logger, string requestType, string reason, Exception? exception);
+
+        [LoggerMessage(EventId = 15, Level = LogLevel.Error, Message = "The {RequestType} request failed ({Reason}): {Message}")]
+        public static partial void RequestFailed(ILogger logger, string requestType, string reason, string message, Exception? exception);
     }
 }

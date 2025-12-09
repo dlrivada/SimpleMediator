@@ -1,5 +1,3 @@
-using System;
-
 namespace SimpleMediator;
 
 /// <summary>
@@ -16,14 +14,14 @@ internal sealed class NullFunctionalFailureDetector : IFunctionalFailureDetector
     {
     }
 
-    public bool TryExtractFailure(object? response, out string reason, out object? error)
+    public bool TryExtractFailure(object? response, out string reason, out object? capturedFailure)
     {
         reason = string.Empty;
-        error = null;
+        capturedFailure = null;
         return false;
     }
 
-    public string? TryGetErrorCode(object? error) => null;
+    public string? TryGetErrorCode(object? capturedFailure) => null;
 
-    public string? TryGetErrorMessage(object? error) => null;
+    public string? TryGetErrorMessage(object? capturedFailure) => null;
 }

@@ -1,5 +1,3 @@
-using System;
-
 namespace SimpleMediator;
 
 /// <summary>
@@ -14,25 +12,25 @@ namespace SimpleMediator;
 /// <code>
 /// public sealed class PaymentOutcomeFailureDetector : IFunctionalFailureDetector
 /// {
-///     public bool TryExtractFailure(object? response, out string reason, out object? error)
+///     public bool TryExtractFailure(object? response, out string reason, out object? capturedFailure)
 ///     {
 ///         if (response is PaymentOutcome outcome && outcome.TryGetError(out var paymentError))
 ///         {
 ///             reason = paymentError.Code ?? "payment.failure";
-///             error = paymentError;
+///             capturedFailure = paymentError;
 ///             return true;
 ///         }
 ///
 ///         reason = string.Empty;
-///         error = null;
+///         capturedFailure = null;
 ///         return false;
 ///     }
 ///
-///     public string? TryGetErrorCode(object? error)
-///         => (error as PaymentError)?.Code;
+///     public string? TryGetErrorCode(object? capturedFailure)
+///         => (capturedFailure as PaymentError)?.Code;
 ///
-///     public string? TryGetErrorMessage(object? error)
-///         => (error as PaymentError)?.Message;
+///     public string? TryGetErrorMessage(object? capturedFailure)
+///         => (capturedFailure as PaymentError)?.Message;
 /// }
 /// </code>
 /// </example>
@@ -43,21 +41,21 @@ public interface IFunctionalFailureDetector
     /// </summary>
     /// <param name="response">Object returned by the handler.</param>
     /// <param name="reason">Code or description of the failure when detected.</param>
-    /// <param name="error">Captured error instance for further inspection.</param>
+    /// <param name="capturedFailure">Captured error instance for further inspection.</param>
     /// <returns><c>true</c> when a functional failure was identified; otherwise <c>false</c>.</returns>
-    bool TryExtractFailure(object? response, out string reason, out object? error);
+    bool TryExtractFailure(object? response, out string reason, out object? capturedFailure);
 
     /// <summary>
     /// Gets a standardized error code from the captured object.
     /// </summary>
-    /// <param name="error">Instance previously returned by <see cref="TryExtractFailure"/>.</param>
+    /// <param name="capturedFailure">Instance previously returned by <see cref="TryExtractFailure"/>.</param>
     /// <returns>The interpreted code or <c>null</c> when not applicable.</returns>
-    string? TryGetErrorCode(object? error);
+    string? TryGetErrorCode(object? capturedFailure);
 
     /// <summary>
     /// Gets a human-friendly message or detail from the captured error.
     /// </summary>
-    /// <param name="error">Instance returned by <see cref="TryExtractFailure"/>.</param>
+    /// <param name="capturedFailure">Instance returned by <see cref="TryExtractFailure"/>.</param>
     /// <returns>Message to display or <c>null</c> when unavailable.</returns>
-    string? TryGetErrorMessage(object? error);
+    string? TryGetErrorMessage(object? capturedFailure);
 }

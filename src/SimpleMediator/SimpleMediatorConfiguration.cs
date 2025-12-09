@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -249,10 +246,7 @@ internal static class TypeExtensions
     /// </summary>
     public static bool IsAssignableFromGeneric(this Type genericInterface, Type candidate)
     {
-        if (genericInterface is null)
-        {
-            throw new ArgumentNullException(nameof(genericInterface));
-        }
+        ArgumentNullException.ThrowIfNull(genericInterface);
 
         if (candidate is null)
         {

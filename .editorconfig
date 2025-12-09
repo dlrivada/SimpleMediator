@@ -1,0 +1,24 @@
+root = true
+
+[*.cs]
+dotnet_sort_system_directives_first = true
+
+# Enable analyzers but surface them as suggestions initially so we can adopt rules incrementally.
+dotnet_analyzer_diagnostic.category-Design.severity = suggestion
+dotnet_analyzer_diagnostic.category-Documentation.severity = suggestion
+dotnet_analyzer_diagnostic.category-Globalization.severity = suggestion
+dotnet_analyzer_diagnostic.category-Interoperability.severity = suggestion
+dotnet_analyzer_diagnostic.category-Maintainability.severity = suggestion
+dotnet_analyzer_diagnostic.category-Naming.severity = suggestion
+dotnet_analyzer_diagnostic.category-Performance.severity = suggestion
+dotnet_analyzer_diagnostic.category-Reliability.severity = suggestion
+dotnet_analyzer_diagnostic.category-Security.severity = suggestion
+dotnet_analyzer_diagnostic.category-SingleFile.severity = suggestion
+dotnet_analyzer_diagnostic.category-Style.severity = suggestion
+dotnet_analyzer_diagnostic.category-Usage.severity = suggestion
+
+[tests/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none
+
+[benchmarks/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none

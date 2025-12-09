@@ -1,7 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 using LanguageExt;
 using static LanguageExt.Prelude;
 
@@ -22,21 +19,16 @@ namespace SimpleMediator;
 /// services.AddSimpleMediator(cfg => cfg.AddPipelineBehavior(typeof(QueryActivityPipelineBehavior&lt;,&gt;)), assemblies);
 /// </code>
 /// </example>
-public sealed class QueryActivityPipelineBehavior<TQuery, TResponse> : IQueryPipelineBehavior<TQuery, TResponse>
+/// <remarks>
+/// Initializes the behavior with the functional failure detector.
+/// </remarks>
+public sealed class QueryActivityPipelineBehavior<TQuery, TResponse>(IFunctionalFailureDetector failureDetector) : IQueryPipelineBehavior<TQuery, TResponse>
     where TQuery : IQuery<TResponse>
 {
-    private readonly IFunctionalFailureDetector _failureDetector;
-
-    /// <summary>
-    /// Initializes the behavior with the functional failure detector.
-    /// </summary>
-    public QueryActivityPipelineBehavior(IFunctionalFailureDetector failureDetector)
-    {
-        _failureDetector = failureDetector ?? NullFunctionalFailureDetector.Instance;
-    }
+    private readonly IFunctionalFailureDetector _failureDetector = failureDetector ?? NullFunctionalFailureDetector.Instance;
 
     /// <inheritdoc />
-    public async Task<Either<Error, TResponse>> Handle(TQuery request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
+    public async Task<Either<Error, TResponse>> Handle(TQuery request, RequestHandlerDelegate<TResponse> nextStep, CancellationToken cancellationToken)
     {
         if (request is null)
         {
@@ -44,7 +36,7 @@ public sealed class QueryActivityPipelineBehavior<TQuery, TResponse> : IQueryPip
             return Left<Error, TResponse>(MediatorErrors.Create("mediator.behavior.null_request", message));
         }
 
-        if (next is null)
+        if (nextStep is null)
         {
             var message = $"{GetType().Name} received a null delegate.";
             return Left<Error, TResponse>(MediatorErrors.Create("mediator.behavior.null_next", message));
@@ -66,7 +58,7 @@ public sealed class QueryActivityPipelineBehavior<TQuery, TResponse> : IQueryPip
 
         try
         {
-            outcome = await next().ConfigureAwait(false);
+            outcome = await nextStep().ConfigureAwait(false);
         }
         catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
         {
@@ -82,10 +74,10 @@ public sealed class QueryActivityPipelineBehavior<TQuery, TResponse> : IQueryPip
             var error = MediatorErrors.FromException("mediator.behavior.exception", ex, $"Error running {GetType().Name} for {typeof(TQuery).Name}.");
             return Left<Error, TResponse>(error);
         }
-        outcome.Match(
+        _ = outcome.Match(
             Right: response =>
             {
-                if (_failureDetector.TryExtractFailure(response, out var failureReason, out var functionalError))
+                if (_failureDetector.TryExtractFailure(response, out var failureReason, out var capturedFailure))
                 {
                     activity?.SetStatus(ActivityStatusCode.Error, failureReason);
                     activity?.SetTag("mediator.functional_failure", true);
@@ -94,13 +86,13 @@ public sealed class QueryActivityPipelineBehavior<TQuery, TResponse> : IQueryPip
                         activity?.SetTag("mediator.failure_reason", failureReason);
                     }
 
-                    var errorCode = _failureDetector.TryGetErrorCode(functionalError);
+                    var errorCode = _failureDetector.TryGetErrorCode(capturedFailure);
                     if (!string.IsNullOrWhiteSpace(errorCode))
                     {
                         activity?.SetTag("mediator.failure_code", errorCode);
                     }
 
-                    var errorMessage = _failureDetector.TryGetErrorMessage(functionalError);
+                    var errorMessage = _failureDetector.TryGetErrorMessage(capturedFailure);
                     if (!string.IsNullOrWhiteSpace(errorMessage))
                     {
                         activity?.SetTag("mediator.failure_message", errorMessage);

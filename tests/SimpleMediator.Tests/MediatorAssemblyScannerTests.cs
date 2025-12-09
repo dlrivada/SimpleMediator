@@ -1,11 +1,6 @@
-using System;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using LanguageExt;
-using static LanguageExt.Prelude;
 using Shouldly;
-using SimpleMediator;
 
 namespace SimpleMediator.Tests;
 
@@ -101,18 +96,18 @@ public sealed class MediatorAssemblyScannerTests
 
     private sealed class ClosedPipelineBehavior : IPipelineBehavior<PingRequest, string>
     {
-        public Task<Either<Error, string>> Handle(PingRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<string> next) => next();
+        public Task<Either<Error, string>> Handle(PingRequest request, RequestHandlerDelegate<string> nextStep, CancellationToken cancellationToken) => nextStep();
     }
 
     private sealed class OpenGenericPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        public Task<Either<Error, TResponse>> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next) => next();
+        public Task<Either<Error, TResponse>> Handle(TRequest request, RequestHandlerDelegate<TResponse> nextStep, CancellationToken cancellationToken) => nextStep();
     }
 
     private abstract class AbstractPipelineBehavior : IPipelineBehavior<PingRequest, string>
     {
-        public abstract Task<Either<Error, string>> Handle(PingRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<string> next);
+        public abstract Task<Either<Error, string>> Handle(PingRequest request, RequestHandlerDelegate<string> nextStep, CancellationToken cancellationToken);
     }
 
     private sealed class ClosedPreProcessor : IRequestPreProcessor<PingRequest>

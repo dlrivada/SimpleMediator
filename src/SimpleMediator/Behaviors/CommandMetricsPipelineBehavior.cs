@@ -1,7 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 using LanguageExt;
 using static LanguageExt.Prelude;
 
@@ -22,23 +19,17 @@ namespace SimpleMediator;
 /// services.AddSimpleMediator(cfg => cfg.AddPipelineBehavior(typeof(CommandMetricsPipelineBehavior&lt;,&gt;)), assemblies);
 /// </code>
 /// </example>
-public sealed class CommandMetricsPipelineBehavior<TCommand, TResponse> : ICommandPipelineBehavior<TCommand, TResponse>
+/// <remarks>
+/// Builds the behavior using the metrics service and failure detector.
+/// </remarks>
+public sealed class CommandMetricsPipelineBehavior<TCommand, TResponse>(IMediatorMetrics metrics, IFunctionalFailureDetector failureDetector) : ICommandPipelineBehavior<TCommand, TResponse>
     where TCommand : ICommand<TResponse>
 {
-    private readonly IMediatorMetrics _metrics;
-    private readonly IFunctionalFailureDetector _failureDetector;
-
-    /// <summary>
-    /// Builds the behavior using the metrics service and failure detector.
-    /// </summary>
-    public CommandMetricsPipelineBehavior(IMediatorMetrics metrics, IFunctionalFailureDetector failureDetector)
-    {
-        _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
-        _failureDetector = failureDetector ?? NullFunctionalFailureDetector.Instance;
-    }
+    private readonly IMediatorMetrics _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
+    private readonly IFunctionalFailureDetector _failureDetector = failureDetector ?? NullFunctionalFailureDetector.Instance;
 
     /// <inheritdoc />
-    public async Task<Either<Error, TResponse>> Handle(TCommand request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
+    public async Task<Either<Error, TResponse>> Handle(TCommand request, RequestHandlerDelegate<TResponse> nextStep, CancellationToken cancellationToken)
     {
         var requestName = typeof(TCommand).Name;
         const string requestKind = "command";
@@ -50,7 +41,7 @@ public sealed class CommandMetricsPipelineBehavior<TCommand, TResponse> : IComma
             return Left<Error, TResponse>(MediatorErrors.Create("mediator.behavior.null_request", message));
         }
 
-        if (next is null)
+        if (nextStep is null)
         {
             _metrics.TrackFailure(requestKind, requestName, TimeSpan.Zero, "null_next");
             var message = $"{GetType().Name} received a null delegate.";
@@ -62,7 +53,7 @@ public sealed class CommandMetricsPipelineBehavior<TCommand, TResponse> : IComma
 
         try
         {
-            outcome = await next().ConfigureAwait(false);
+            outcome = await nextStep().ConfigureAwait(false);
         }
         catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
         {
@@ -81,7 +72,7 @@ public sealed class CommandMetricsPipelineBehavior<TCommand, TResponse> : IComma
 
         var totalElapsed = Stopwatch.GetElapsedTime(startedAt);
 
-        outcome.Match(
+        _ = outcome.Match(
             Right: response =>
             {
                 if (_failureDetector.TryExtractFailure(response, out var failureReason, out _))

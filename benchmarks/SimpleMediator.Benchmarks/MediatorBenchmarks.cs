@@ -1,10 +1,7 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
-using Microsoft.Extensions.DependencyInjection;
 using LanguageExt;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SimpleMediator.Benchmarks;
 
@@ -74,11 +71,9 @@ public class MediatorBenchmarks
 
     private sealed record SampleNotification(Guid NotificationId) : INotification;
 
-    private sealed class NotificationHandlerOne : INotificationHandler<SampleNotification>
+    private sealed class NotificationHandlerOne(MediatorBenchmarks.CallRecorder recorder) : INotificationHandler<SampleNotification>
     {
-        private readonly CallRecorder _recorder;
-
-        public NotificationHandlerOne(CallRecorder recorder) => _recorder = recorder;
+        private readonly CallRecorder _recorder = recorder;
 
         public Task Handle(SampleNotification notification, CancellationToken cancellationToken)
         {
@@ -87,11 +82,9 @@ public class MediatorBenchmarks
         }
     }
 
-    private sealed class NotificationHandlerTwo : INotificationHandler<SampleNotification>
+    private sealed class NotificationHandlerTwo(MediatorBenchmarks.CallRecorder recorder) : INotificationHandler<SampleNotification>
     {
-        private readonly CallRecorder _recorder;
-
-        public NotificationHandlerTwo(CallRecorder recorder) => _recorder = recorder;
+        private readonly CallRecorder _recorder = recorder;
 
         public Task Handle(SampleNotification notification, CancellationToken cancellationToken)
         {
@@ -100,19 +93,17 @@ public class MediatorBenchmarks
         }
     }
 
-    private sealed class TracingPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    private sealed class TracingPipelineBehavior<TRequest, TResponse>(MediatorBenchmarks.CallRecorder recorder) : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        private readonly CallRecorder _recorder;
+        private readonly CallRecorder _recorder = recorder;
 
-        public TracingPipelineBehavior(CallRecorder recorder) => _recorder = recorder;
-
-        public async Task<Either<Error, TResponse>> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
+        public async Task<Either<Error, TResponse>> Handle(TRequest request, RequestHandlerDelegate<TResponse> nextStep, CancellationToken cancellationToken)
         {
             _recorder.Register("pipeline:enter");
             try
             {
-                return await next().ConfigureAwait(false);
+                return await nextStep().ConfigureAwait(false);
             }
             finally
             {
@@ -121,11 +112,9 @@ public class MediatorBenchmarks
         }
     }
 
-    private sealed class TracingPreProcessor<TRequest> : IRequestPreProcessor<TRequest>
+    private sealed class TracingPreProcessor<TRequest>(MediatorBenchmarks.CallRecorder recorder) : IRequestPreProcessor<TRequest>
     {
-        private readonly CallRecorder _recorder;
-
-        public TracingPreProcessor(CallRecorder recorder) => _recorder = recorder;
+        private readonly CallRecorder _recorder = recorder;
 
         public Task Process(TRequest request, CancellationToken cancellationToken)
         {
@@ -134,11 +123,9 @@ public class MediatorBenchmarks
         }
     }
 
-    private sealed class TracingPostProcessor<TRequest, TResponse> : IRequestPostProcessor<TRequest, TResponse>
+    private sealed class TracingPostProcessor<TRequest, TResponse>(MediatorBenchmarks.CallRecorder recorder) : IRequestPostProcessor<TRequest, TResponse>
     {
-        private readonly CallRecorder _recorder;
-
-        public TracingPostProcessor(CallRecorder recorder) => _recorder = recorder;
+        private readonly CallRecorder _recorder = recorder;
 
         public Task Process(TRequest request, Either<Error, TResponse> response, CancellationToken cancellationToken)
         {

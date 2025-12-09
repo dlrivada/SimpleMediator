@@ -1,14 +1,8 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using LanguageExt;
-using static LanguageExt.Prelude;
 using Shouldly;
-using SimpleMediator;
 using SimpleMediator.Tests.Fixtures;
+using static LanguageExt.Prelude;
 
 namespace SimpleMediator.Tests;
 
@@ -22,7 +16,7 @@ public sealed class PipelineBehaviorsTests
         var request = new PingCommand("ping");
 
         using var listener = ActivityTestListener.Start(out var activities);
-        var outcome = await behavior.Handle(request, CancellationToken.None, () => Success("pong"));
+        var outcome = await behavior.Handle(request, () => Success("pong"), CancellationToken.None);
 
         var response = ExpectSuccess(outcome);
         response.ShouldBe("pong");
@@ -41,7 +35,7 @@ public sealed class PipelineBehaviorsTests
         var detector = new FunctionalFailureDetectorStub();
         var behavior = new CommandActivityPipelineBehavior<PingCommand, string>(detector);
 
-        var result = await behavior.Handle(request: null!, CancellationToken.None, () => Success("ok"));
+        var result = await behavior.Handle(request: null!, () => Success("ok"), CancellationToken.None);
 
         var error = ExpectFailure(result, "mediator.behavior.null_request");
         error.Message.ShouldContain("received a null request");
@@ -54,7 +48,7 @@ public sealed class PipelineBehaviorsTests
         var behavior = new CommandActivityPipelineBehavior<PingCommand, string>(detector);
         var request = new PingCommand("ping");
 
-        var result = await behavior.Handle(request, CancellationToken.None, next: null!);
+        var result = await behavior.Handle(request, nextStep: null!, CancellationToken.None);
 
         var error = ExpectFailure(result, "mediator.behavior.null_next");
         error.Message.ShouldContain("received a null delegate");
@@ -69,7 +63,7 @@ public sealed class PipelineBehaviorsTests
         var request = new PingCommand("ping");
 
         using var listener = ActivityTestListener.Start(out var activities);
-        var outcome = await behavior.Handle(request, CancellationToken.None, () => Success("fail"));
+        var outcome = await behavior.Handle(request, () => Success("fail"), CancellationToken.None);
 
         var response = ExpectSuccess(outcome);
         response.ShouldBe("fail");
@@ -91,7 +85,7 @@ public sealed class PipelineBehaviorsTests
         var request = new PingCommand("ping");
 
         using var listener = ActivityTestListener.Start(out var activities);
-        var outcome = await behavior.Handle(request, CancellationToken.None, () => Success("fail"));
+        var outcome = await behavior.Handle(request, () => Success("fail"), CancellationToken.None);
 
         var response = ExpectSuccess(outcome);
         response.ShouldBe("fail");
@@ -113,7 +107,7 @@ public sealed class PipelineBehaviorsTests
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        var result = await behavior.Handle(request, cts.Token, () => Task.FromCanceled<Either<Error, string>>(cts.Token));
+        var result = await behavior.Handle(request, () => Task.FromCanceled<Either<Error, string>>(cts.Token), cts.Token);
         var error = ExpectFailure(result, "mediator.behavior.cancelled");
         ExtractException(error).ShouldBeAssignableTo<OperationCanceledException>();
         error.Message.ShouldContain(behavior.GetType().Name);
@@ -139,7 +133,7 @@ public sealed class PipelineBehaviorsTests
             using var listener = ActivityTestListener.Start(out _);
 #pragma warning disable xUnit1030
             var outcome = await behavior
-                .Handle(request, CancellationToken.None, () => Task.Run(() => Right<Error, string>("done")))
+                .Handle(request, () => Task.Run(() => Right<Error, string>("done")), CancellationToken.None)
                 .ConfigureAwait(false);
 #pragma warning restore xUnit1030
 
@@ -161,7 +155,7 @@ public sealed class PipelineBehaviorsTests
         var request = new PingCommand("ping");
         using var listener = ActivityTestListener.Start(out var activities);
 
-        var result = await behavior.Handle(request, CancellationToken.None, () => Task.FromException<Either<Error, string>>(new InvalidOperationException("boom")));
+        var result = await behavior.Handle(request, () => Task.FromException<Either<Error, string>>(new InvalidOperationException("boom")), CancellationToken.None);
 
         var error = ExpectFailure(result, "mediator.behavior.exception");
         var exception = ExtractException(error);
@@ -182,7 +176,7 @@ public sealed class PipelineBehaviorsTests
         var request = new PongQuery(17);
 
         using var listener = ActivityTestListener.Start(out var activities);
-        var outcome = await behavior.Handle(request, CancellationToken.None, () => Success("pong"));
+        var outcome = await behavior.Handle(request, () => Success("pong"), CancellationToken.None);
 
         var response = ExpectSuccess(outcome);
         response.ShouldBe("pong");
@@ -204,7 +198,7 @@ public sealed class PipelineBehaviorsTests
         var request = new PongQuery(17);
 
         using var listener = ActivityTestListener.Start(out var activities);
-        var outcome = await behavior.Handle(request, CancellationToken.None, () => Success("fallback"));
+        var outcome = await behavior.Handle(request, () => Success("fallback"), CancellationToken.None);
 
         var response = ExpectSuccess(outcome);
         response.ShouldBe("fallback");
@@ -228,7 +222,7 @@ public sealed class PipelineBehaviorsTests
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        var result = await behavior.Handle(request, cts.Token, () => Task.FromCanceled<Either<Error, string>>(cts.Token));
+        var result = await behavior.Handle(request, () => Task.FromCanceled<Either<Error, string>>(cts.Token), cts.Token);
         var error = ExpectFailure(result, "mediator.behavior.cancelled");
         ExtractException(error).ShouldBeAssignableTo<OperationCanceledException>();
         error.Message.ShouldContain(behavior.GetType().Name);
@@ -245,7 +239,7 @@ public sealed class PipelineBehaviorsTests
         var detector = new FunctionalFailureDetectorStub();
         var behavior = new QueryActivityPipelineBehavior<PongQuery, string>(detector);
 
-        var result = await behavior.Handle(request: null!, CancellationToken.None, () => Success("ok"));
+        var result = await behavior.Handle(request: null!, () => Success("ok"), CancellationToken.None);
 
         var error = ExpectFailure(result, "mediator.behavior.null_request");
         error.Message.ShouldContain("received a null request");
@@ -258,7 +252,7 @@ public sealed class PipelineBehaviorsTests
         var behavior = new QueryActivityPipelineBehavior<PongQuery, string>(detector);
         var request = new PongQuery(42);
 
-        var result = await behavior.Handle(request, CancellationToken.None, next: null!);
+        var result = await behavior.Handle(request, nextStep: null!, CancellationToken.None);
 
         var error = ExpectFailure(result, "mediator.behavior.null_next");
         error.Message.ShouldContain("received a null delegate");
@@ -272,7 +266,7 @@ public sealed class PipelineBehaviorsTests
         var request = new PongQuery(21);
         using var listener = ActivityTestListener.Start(out var activities);
 
-        var result = await behavior.Handle(request, CancellationToken.None, () => Task.FromException<Either<Error, string>>(new InvalidOperationException("fault")));
+        var result = await behavior.Handle(request, () => Task.FromException<Either<Error, string>>(new InvalidOperationException("fault")), CancellationToken.None);
 
         var error = ExpectFailure(result, "mediator.behavior.exception");
         ExtractException(error).ShouldBeOfType<InvalidOperationException>();
@@ -299,7 +293,7 @@ public sealed class PipelineBehaviorsTests
             using var listener = ActivityTestListener.Start(out _);
 #pragma warning disable xUnit1030
             var outcome = await behavior
-                .Handle(request, CancellationToken.None, () => Task.Run(() => Right<Error, string>("ok")))
+                .Handle(request, () => Task.Run(() => Right<Error, string>("ok")), CancellationToken.None)
                 .ConfigureAwait(false);
 #pragma warning restore xUnit1030
 
@@ -321,7 +315,7 @@ public sealed class PipelineBehaviorsTests
         var behavior = new CommandMetricsPipelineBehavior<PingCommand, string>(metrics, detector);
         var request = new PingCommand("ok");
 
-        var outcome = await behavior.Handle(request, CancellationToken.None, () => Success("ok"));
+        var outcome = await behavior.Handle(request, () => Success("ok"), CancellationToken.None);
 
         var response = ExpectSuccess(outcome);
         response.ShouldBe("ok");
@@ -341,7 +335,7 @@ public sealed class PipelineBehaviorsTests
         var behavior = new CommandMetricsPipelineBehavior<PingCommand, string>(metrics, detector);
         var request = new PingCommand("bad");
 
-        var outcome = await behavior.Handle(request, CancellationToken.None, () => Success("bad"));
+        var outcome = await behavior.Handle(request, () => Success("bad"), CancellationToken.None);
 
         var response = ExpectSuccess(outcome);
         response.ShouldBe("bad");
@@ -364,7 +358,7 @@ public sealed class PipelineBehaviorsTests
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        var result = await behavior.Handle(request, cts.Token, () => Task.FromCanceled<Either<Error, string>>(cts.Token));
+        var result = await behavior.Handle(request, () => Task.FromCanceled<Either<Error, string>>(cts.Token), cts.Token);
         var error = ExpectFailure(result, "mediator.behavior.cancelled");
         ExtractException(error).ShouldBeAssignableTo<OperationCanceledException>();
         error.Message.ShouldContain(behavior.GetType().Name);
@@ -380,7 +374,7 @@ public sealed class PipelineBehaviorsTests
         var behavior = new CommandMetricsPipelineBehavior<PingCommand, string>(metrics, detector);
         var request = new PingCommand("boom");
 
-        var result = await behavior.Handle(request, CancellationToken.None, () => Task.FromException<Either<Error, string>>(new InvalidOperationException("boom")));
+        var result = await behavior.Handle(request, () => Task.FromException<Either<Error, string>>(new InvalidOperationException("boom")), CancellationToken.None);
 
         var error = ExpectFailure(result, "mediator.behavior.exception");
         ExtractException(error).ShouldBeOfType<InvalidOperationException>();
@@ -395,7 +389,7 @@ public sealed class PipelineBehaviorsTests
         var detector = new FunctionalFailureDetectorStub();
         var behavior = new CommandMetricsPipelineBehavior<PingCommand, string>(metrics, detector);
 
-        var result = await behavior.Handle(request: null!, CancellationToken.None, () => Success("ok"));
+        var result = await behavior.Handle(request: null!, () => Success("ok"), CancellationToken.None);
 
         var error = ExpectFailure(result, "mediator.behavior.null_request");
         error.Message.ShouldContain("received a null request");
@@ -412,7 +406,7 @@ public sealed class PipelineBehaviorsTests
         var behavior = new CommandMetricsPipelineBehavior<PingCommand, string>(metrics, detector);
         var request = new PingCommand("ok");
 
-        var result = await behavior.Handle(request, CancellationToken.None, next: null!);
+        var result = await behavior.Handle(request, nextStep: null!, CancellationToken.None);
 
         var error = ExpectFailure(result, "mediator.behavior.null_next");
         error.Message.ShouldContain("received a null delegate");
@@ -436,7 +430,7 @@ public sealed class PipelineBehaviorsTests
         {
 #pragma warning disable xUnit1030
             var outcome = await behavior
-                .Handle(request, CancellationToken.None, () => Task.Run(() => Right<Error, string>("ok")))
+                .Handle(request, () => Task.Run(() => Right<Error, string>("ok")), CancellationToken.None)
                 .ConfigureAwait(false);
 #pragma warning restore xUnit1030
 
@@ -458,7 +452,7 @@ public sealed class PipelineBehaviorsTests
         var behavior = new QueryMetricsPipelineBehavior<PongQuery, string>(metrics, detector);
         var request = new PongQuery(1);
 
-        var outcome = await behavior.Handle(request, CancellationToken.None, () => Success("ok"));
+        var outcome = await behavior.Handle(request, () => Success("ok"), CancellationToken.None);
 
         var response = ExpectSuccess(outcome);
         response.ShouldBe("ok");
@@ -481,7 +475,7 @@ public sealed class PipelineBehaviorsTests
         {
 #pragma warning disable xUnit1030
             var outcome = await behavior
-                .Handle(request, CancellationToken.None, () => Task.Run(() => Right<Error, string>("ok")))
+                .Handle(request, () => Task.Run(() => Right<Error, string>("ok")), CancellationToken.None)
                 .ConfigureAwait(false);
 #pragma warning restore xUnit1030
 
@@ -502,7 +496,7 @@ public sealed class PipelineBehaviorsTests
         var detector = new FunctionalFailureDetectorStub();
         var behavior = new QueryMetricsPipelineBehavior<PongQuery, string>(metrics, detector);
 
-        var result = await behavior.Handle(request: null!, CancellationToken.None, () => Success("ok"));
+        var result = await behavior.Handle(request: null!, () => Success("ok"), CancellationToken.None);
 
         var error = ExpectFailure(result, "mediator.behavior.null_request");
         error.Message.ShouldContain("received a null request");
@@ -519,7 +513,7 @@ public sealed class PipelineBehaviorsTests
         var behavior = new QueryMetricsPipelineBehavior<PongQuery, string>(metrics, detector);
         var request = new PongQuery(1);
 
-        var result = await behavior.Handle(request, CancellationToken.None, next: null!);
+        var result = await behavior.Handle(request, nextStep: null!, CancellationToken.None);
 
         var error = ExpectFailure(result, "mediator.behavior.null_next");
         error.Message.ShouldContain("received a null delegate");
@@ -537,7 +531,7 @@ public sealed class PipelineBehaviorsTests
         var behavior = new QueryMetricsPipelineBehavior<PongQuery, string>(metrics, detector);
         var request = new PongQuery(3);
 
-        var outcome = await behavior.Handle(request, CancellationToken.None, () => Success("fail"));
+        var outcome = await behavior.Handle(request, () => Success("fail"), CancellationToken.None);
 
         var response = ExpectSuccess(outcome);
         response.ShouldBe("fail");
@@ -560,7 +554,7 @@ public sealed class PipelineBehaviorsTests
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        var result = await behavior.Handle(request, cts.Token, () => Task.FromCanceled<Either<Error, string>>(cts.Token));
+        var result = await behavior.Handle(request, () => Task.FromCanceled<Either<Error, string>>(cts.Token), cts.Token);
         var error = ExpectFailure(result, "mediator.behavior.cancelled");
         ExtractException(error).ShouldBeAssignableTo<OperationCanceledException>();
         error.Message.ShouldContain(behavior.GetType().Name);
@@ -579,7 +573,7 @@ public sealed class PipelineBehaviorsTests
         var behavior = new QueryMetricsPipelineBehavior<PongQuery, string>(metrics, detector);
         var request = new PongQuery(2);
 
-        var result = await behavior.Handle(request, CancellationToken.None, () => Task.FromException<Either<Error, string>>(new InvalidOperationException("fail")));
+        var result = await behavior.Handle(request, () => Task.FromException<Either<Error, string>>(new InvalidOperationException("fail")), CancellationToken.None);
 
         var error = ExpectFailure(result, "mediator.behavior.exception");
         ExtractException(error).ShouldBeOfType<InvalidOperationException>();
@@ -633,27 +627,27 @@ public sealed class PipelineBehaviorsTests
             _message = message;
         }
 
-        public bool TryExtractFailure(object? response, out string reason, out object? error)
+        public bool TryExtractFailure(object? response, out string reason, out object? capturedFailure)
         {
             _callCount++;
             LastResponse = response;
             if (_shouldFail)
             {
                 reason = _reason;
-                error = response;
-                LastErrorPayload = error;
+                capturedFailure = response;
+                LastErrorPayload = capturedFailure;
                 return true;
             }
 
             reason = string.Empty;
-            error = null;
+            capturedFailure = null;
             LastErrorPayload = null;
             return false;
         }
 
-        public string? TryGetErrorCode(object? error) => _code;
+        public string? TryGetErrorCode(object? capturedFailure) => _code;
 
-        public string? TryGetErrorMessage(object? error) => _message;
+        public string? TryGetErrorMessage(object? capturedFailure) => _message;
     }
 
     private sealed class RecordingMetrics : IMediatorMetrics

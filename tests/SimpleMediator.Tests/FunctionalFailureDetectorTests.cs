@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using SimpleMediator;
 using SimpleMediator.Tests.Fixtures;
 
 namespace SimpleMediator.Tests;

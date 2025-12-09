@@ -1,9 +1,5 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using LanguageExt;
 using Shouldly;
-using SimpleMediator;
 
 namespace SimpleMediator.Tests;
 
@@ -30,8 +26,8 @@ public sealed class TypeExtensionsTests
     private sealed class InstrumentationPipeline<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        public Task<Either<Error, TResponse>> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
-            => next();
+        public Task<Either<Error, TResponse>> Handle(TRequest request, RequestHandlerDelegate<TResponse> nextStep, CancellationToken cancellationToken)
+            => nextStep();
     }
 
     private sealed class SampleDisposable : IDisposable

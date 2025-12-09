@@ -1,7 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 using LanguageExt;
 using static LanguageExt.Prelude;
 
@@ -26,22 +23,17 @@ namespace SimpleMediator;
 /// }, typeof(CreateReservation).Assembly);
 /// </code>
 /// </example>
-public sealed class CommandActivityPipelineBehavior<TCommand, TResponse> : ICommandPipelineBehavior<TCommand, TResponse>
+/// <remarks>
+/// Initializes the behavior with the functional failure detector to use.
+/// </remarks>
+/// <param name="failureDetector">Detector that interprets handler responses.</param>
+public sealed class CommandActivityPipelineBehavior<TCommand, TResponse>(IFunctionalFailureDetector failureDetector) : ICommandPipelineBehavior<TCommand, TResponse>
     where TCommand : ICommand<TResponse>
 {
-    private readonly IFunctionalFailureDetector _failureDetector;
-
-    /// <summary>
-    /// Initializes the behavior with the functional failure detector to use.
-    /// </summary>
-    /// <param name="failureDetector">Detector that interprets handler responses.</param>
-    public CommandActivityPipelineBehavior(IFunctionalFailureDetector failureDetector)
-    {
-        _failureDetector = failureDetector ?? NullFunctionalFailureDetector.Instance;
-    }
+    private readonly IFunctionalFailureDetector _failureDetector = failureDetector ?? NullFunctionalFailureDetector.Instance;
 
     /// <inheritdoc />
-    public async Task<Either<Error, TResponse>> Handle(TCommand request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
+    public async Task<Either<Error, TResponse>> Handle(TCommand request, RequestHandlerDelegate<TResponse> nextStep, CancellationToken cancellationToken)
     {
         if (request is null)
         {
@@ -49,7 +41,7 @@ public sealed class CommandActivityPipelineBehavior<TCommand, TResponse> : IComm
             return Left<Error, TResponse>(MediatorErrors.Create("mediator.behavior.null_request", message));
         }
 
-        if (next is null)
+        if (nextStep is null)
         {
             var message = $"{GetType().Name} received a null delegate.";
             return Left<Error, TResponse>(MediatorErrors.Create("mediator.behavior.null_next", message));
@@ -71,7 +63,7 @@ public sealed class CommandActivityPipelineBehavior<TCommand, TResponse> : IComm
 
         try
         {
-            outcome = await next().ConfigureAwait(false);
+            outcome = await nextStep().ConfigureAwait(false);
         }
         catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
         {
@@ -87,10 +79,10 @@ public sealed class CommandActivityPipelineBehavior<TCommand, TResponse> : IComm
             var error = MediatorErrors.FromException("mediator.behavior.exception", ex, $"Error running {GetType().Name} for {typeof(TCommand).Name}.");
             return Left<Error, TResponse>(error);
         }
-        outcome.Match(
+        _ = outcome.Match(
             Right: response =>
             {
-                if (_failureDetector.TryExtractFailure(response, out var failureReason, out var functionalError))
+                if (_failureDetector.TryExtractFailure(response, out var failureReason, out var capturedFailure))
                 {
                     activity?.SetStatus(ActivityStatusCode.Error, failureReason);
                     activity?.SetTag("mediator.functional_failure", true);
@@ -99,13 +91,13 @@ public sealed class CommandActivityPipelineBehavior<TCommand, TResponse> : IComm
                         activity?.SetTag("mediator.failure_reason", failureReason);
                     }
 
-                    var errorCode = _failureDetector.TryGetErrorCode(functionalError);
+                    var errorCode = _failureDetector.TryGetErrorCode(capturedFailure);
                     if (!string.IsNullOrWhiteSpace(errorCode))
                     {
                         activity?.SetTag("mediator.failure_code", errorCode);
                     }
 
-                    var errorMessage = _failureDetector.TryGetErrorMessage(functionalError);
+                    var errorMessage = _failureDetector.TryGetErrorMessage(capturedFailure);
                     if (!string.IsNullOrWhiteSpace(errorMessage))
                     {
                         activity?.SetTag("mediator.failure_message", errorMessage);

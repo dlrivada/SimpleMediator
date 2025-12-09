@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -49,7 +46,7 @@ public static class ServiceCollectionExtensions
 
         configure?.Invoke(configuration);
 
-        if (!configuration.Assemblies.Any())
+        if (configuration.Assemblies.Count == 0)
         {
             configuration.RegisterServicesFromAssembly(typeof(ServiceCollectionExtensions).Assembly);
         }

@@ -1,6 +1,4 @@
-using System;
 using Shouldly;
-using SimpleMediator;
 
 namespace SimpleMediator.Tests;
 

@@ -1,10 +1,5 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using SimpleMediator;
 
@@ -373,19 +368,14 @@ internal static class TimeSpanExtensions
         => value.Ticks * (1_000_000.0 / TimeSpan.TicksPerSecond);
 }
 
-internal sealed class ThroughputSampler
+internal sealed class ThroughputSampler(LoadMetrics metrics)
 {
     private static readonly TimeSpan SamplingInterval = TimeSpan.FromSeconds(1);
 
-    private readonly LoadMetrics _metrics;
+    private readonly LoadMetrics _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
     private readonly List<double> _sendSamples = new();
     private readonly List<double> _publishSamples = new();
     private readonly object _sync = new();
-
-    public ThroughputSampler(LoadMetrics metrics)
-    {
-        _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
-    }
 
     public Task RunAsync(CancellationToken cancellationToken)
     {

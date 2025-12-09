@@ -1,4 +1,4 @@
-using System;
+using System.Diagnostics.CodeAnalysis;
 using LanguageExt;
 using static LanguageExt.Prelude;
 
@@ -7,6 +7,7 @@ namespace SimpleMediator;
 /// <summary>
 /// Minimal immutable error representation with optional exception metadata.
 /// </summary>
+[SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "Error is part of the library's public surface and aligns with prior versions.")]
 public readonly record struct Error
 {
     private static readonly string DefaultMessage = "An error occurred";

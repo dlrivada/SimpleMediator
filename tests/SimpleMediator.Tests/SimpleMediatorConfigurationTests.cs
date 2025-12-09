@@ -1,14 +1,8 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using LanguageExt;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using SimpleMediator;
 using SimpleMediator.Tests.Fixtures;
 using static LanguageExt.Prelude;
 
@@ -451,8 +445,8 @@ public sealed class SimpleMediatorConfigurationTests
 
     private abstract class AbstractBehavior : IPipelineBehavior<PingCommand, string>
     {
-        public Task<Either<Error, string>> Handle(PingCommand request, CancellationToken cancellationToken, RequestHandlerDelegate<string> next)
-            => next();
+        public Task<Either<Error, string>> Handle(PingCommand request, RequestHandlerDelegate<string> nextStep, CancellationToken cancellationToken)
+            => nextStep();
     }
 
     private sealed class NotAPreProcessor
@@ -490,8 +484,8 @@ public sealed class SimpleMediatorConfigurationTests
     private sealed class OpenGenericPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        public Task<Either<Error, TResponse>> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
-            => next();
+        public Task<Either<Error, TResponse>> Handle(TRequest request, RequestHandlerDelegate<TResponse> nextStep, CancellationToken cancellationToken)
+            => nextStep();
     }
 
     private sealed class OpenGenericPreProcessor<TRequest> : IRequestPreProcessor<TRequest>
@@ -508,8 +502,8 @@ public sealed class SimpleMediatorConfigurationTests
 
     private sealed class DisposablePipelineBehavior : IPipelineBehavior<PingCommand, string>, IDisposable
     {
-        public Task<Either<Error, string>> Handle(PingCommand request, CancellationToken cancellationToken, RequestHandlerDelegate<string> next)
-            => next();
+        public Task<Either<Error, string>> Handle(PingCommand request, RequestHandlerDelegate<string> nextStep, CancellationToken cancellationToken)
+            => nextStep();
 
         public void Dispose()
         {

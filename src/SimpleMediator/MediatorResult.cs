@@ -1,6 +1,3 @@
-using System;
-using LanguageExt;
-
 namespace SimpleMediator;
 
 /// <summary>
@@ -29,18 +26,11 @@ internal static class MediatorErrors
 /// <summary>
 /// Internal exception used to capture mediator failure metadata without leaking it.
 /// </summary>
-internal sealed class MediatorException : Exception
+internal sealed class MediatorException(string code, string message, Exception? innerException, object? details) : Exception(message, innerException)
 {
-    public MediatorException(string code, string message, Exception? innerException, object? details)
-        : base(message, innerException)
-    {
-        Code = code;
-        Details = details;
-    }
+    public string Code { get; } = code;
 
-    public string Code { get; }
-
-    public object? Details { get; }
+    public object? Details { get; } = details;
 }
 
 /// <summary>

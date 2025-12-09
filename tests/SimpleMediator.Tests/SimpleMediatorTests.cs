@@ -1,17 +1,12 @@
-using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Linq;
 using LanguageExt;
-using static LanguageExt.Prelude;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Shouldly;
-using SimpleMediator;
+using static LanguageExt.Prelude;
 
 namespace SimpleMediator.Tests;
 
@@ -1388,14 +1383,9 @@ public sealed class SimpleMediatorTests
 
     private sealed record EchoRequest(string Value) : IRequest<string>;
 
-    private sealed class EchoRequestHandler : IRequestHandler<EchoRequest, string>
+    private sealed class EchoRequestHandler(SimpleMediatorTests.PipelineTracker tracker) : IRequestHandler<EchoRequest, string>
     {
-        private readonly PipelineTracker _tracker;
-
-        public EchoRequestHandler(PipelineTracker tracker)
-        {
-            _tracker = tracker;
-        }
+        private readonly PipelineTracker _tracker = tracker;
 
         public Task<string> Handle(EchoRequest request, CancellationToken cancellationToken)
         {
@@ -1457,20 +1447,15 @@ public sealed class SimpleMediatorTests
 
     private sealed class CancelledOutcomeBehavior : IPipelineBehavior<CancelledOutcomeRequest, string>
     {
-        public Task<Either<Error, string>> Handle(CancelledOutcomeRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<string> next)
+        public Task<Either<Error, string>> Handle(CancelledOutcomeRequest request, RequestHandlerDelegate<string> nextStep, CancellationToken cancellationToken)
             => Task.FromResult(Left<Error, string>(MediatorErrors.Create("cancelled", "Explicit cancellation.")));
     }
 
     private sealed record LifecycleRequest(string Value) : IRequest<string>;
 
-    private sealed class LifecycleRequestHandler : IRequestHandler<LifecycleRequest, string>
+    private sealed class LifecycleRequestHandler(SimpleMediatorTests.LifecycleTracker tracker) : IRequestHandler<LifecycleRequest, string>
     {
-        private readonly LifecycleTracker _tracker;
-
-        public LifecycleRequestHandler(LifecycleTracker tracker)
-        {
-            _tracker = tracker;
-        }
+        private readonly LifecycleTracker _tracker = tracker;
 
         public Task<string> Handle(LifecycleRequest request, CancellationToken cancellationToken)
         {
@@ -1487,14 +1472,9 @@ public sealed class SimpleMediatorTests
 
     private sealed record ExplicitNotification() : INotification;
 
-    private sealed class FirstSampleNotificationHandler : INotificationHandler<SampleNotification>
+    private sealed class FirstSampleNotificationHandler(SimpleMediatorTests.NotificationTracker tracker) : INotificationHandler<SampleNotification>
     {
-        private readonly NotificationTracker _tracker;
-
-        public FirstSampleNotificationHandler(NotificationTracker tracker)
-        {
-            _tracker = tracker;
-        }
+        private readonly NotificationTracker _tracker = tracker;
 
         public Task Handle(SampleNotification notification, CancellationToken cancellationToken)
         {
@@ -1503,14 +1483,9 @@ public sealed class SimpleMediatorTests
         }
     }
 
-    private sealed class SecondSampleNotificationHandler : INotificationHandler<SampleNotification>
+    private sealed class SecondSampleNotificationHandler(SimpleMediatorTests.NotificationTracker tracker) : INotificationHandler<SampleNotification>
     {
-        private readonly NotificationTracker _tracker;
-
-        public SecondSampleNotificationHandler(NotificationTracker tracker)
-        {
-            _tracker = tracker;
-        }
+        private readonly NotificationTracker _tracker = tracker;
 
         public Task Handle(SampleNotification notification, CancellationToken cancellationToken)
         {
@@ -1581,14 +1556,9 @@ public sealed class SimpleMediatorTests
 
     private sealed record PostProcessorRequest(string Value) : IRequest<string>;
 
-    private sealed class PostProcessorRequestHandler : IRequestHandler<PostProcessorRequest, string>
+    private sealed class PostProcessorRequestHandler(SimpleMediatorTests.PostProcessorTracker tracker) : IRequestHandler<PostProcessorRequest, string>
     {
-        private readonly PostProcessorTracker _tracker;
-
-        public PostProcessorRequestHandler(PostProcessorTracker tracker)
-        {
-            _tracker = tracker;
-        }
+        private readonly PostProcessorTracker _tracker = tracker;
 
         public Task<string> Handle(PostProcessorRequest request, CancellationToken cancellationToken)
         {
@@ -1597,14 +1567,9 @@ public sealed class SimpleMediatorTests
         }
     }
 
-    private sealed class RecordingPostProcessor : IRequestPostProcessor<PostProcessorRequest, string>
+    private sealed class RecordingPostProcessor(SimpleMediatorTests.PostProcessorTracker tracker) : IRequestPostProcessor<PostProcessorRequest, string>
     {
-        private readonly PostProcessorTracker _tracker;
-
-        public RecordingPostProcessor(PostProcessorTracker tracker)
-        {
-            _tracker = tracker;
-        }
+        private readonly PostProcessorTracker _tracker = tracker;
 
         public Task Process(PostProcessorRequest request, Either<Error, string> response, CancellationToken cancellationToken)
         {
@@ -1637,14 +1602,9 @@ public sealed class SimpleMediatorTests
             => Task.CompletedTask;
     }
 
-    private sealed class AsyncSampleNotificationHandler : INotificationHandler<SampleNotification>
+    private sealed class AsyncSampleNotificationHandler(SimpleMediatorTests.NotificationTracker tracker) : INotificationHandler<SampleNotification>
     {
-        private readonly NotificationTracker _tracker;
-
-        public AsyncSampleNotificationHandler(NotificationTracker tracker)
-        {
-            _tracker = tracker;
-        }
+        private readonly NotificationTracker _tracker = tracker;
 
         public async Task Handle(SampleNotification notification, CancellationToken cancellationToken)
         {
@@ -1668,52 +1628,37 @@ public sealed class SimpleMediatorTests
         }
     }
 
-    private sealed class TrackingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    private sealed class TrackingBehavior<TRequest, TResponse>(SimpleMediatorTests.PipelineTracker tracker) : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        private readonly PipelineTracker _tracker;
+        private readonly PipelineTracker _tracker = tracker;
 
-        public TrackingBehavior(PipelineTracker tracker)
-        {
-            _tracker = tracker;
-        }
-
-        public async Task<Either<Error, TResponse>> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
+        public async Task<Either<Error, TResponse>> Handle(TRequest request, RequestHandlerDelegate<TResponse> nextStep, CancellationToken cancellationToken)
         {
             _tracker.Events.Add("tracking:before");
-            var response = await next().ConfigureAwait(false);
+            var response = await nextStep().ConfigureAwait(false);
             _tracker.Events.Add("tracking:after");
             return response;
         }
     }
 
-    private sealed class SecondTrackingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    private sealed class SecondTrackingBehavior<TRequest, TResponse>(SimpleMediatorTests.PipelineTracker tracker) : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        private readonly PipelineTracker _tracker;
+        private readonly PipelineTracker _tracker = tracker;
 
-        public SecondTrackingBehavior(PipelineTracker tracker)
-        {
-            _tracker = tracker;
-        }
-
-        public async Task<Either<Error, TResponse>> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
+        public async Task<Either<Error, TResponse>> Handle(TRequest request, RequestHandlerDelegate<TResponse> nextStep, CancellationToken cancellationToken)
         {
             _tracker.Events.Add("second:before");
-            var response = await next().ConfigureAwait(false);
+            var response = await nextStep().ConfigureAwait(false);
             _tracker.Events.Add("second:after");
             return response;
         }
     }
 
-    private sealed class LifecyclePreProcessor : IRequestPreProcessor<LifecycleRequest>
+    private sealed class LifecyclePreProcessor(SimpleMediatorTests.LifecycleTracker tracker) : IRequestPreProcessor<LifecycleRequest>
     {
-        private readonly LifecycleTracker _tracker;
-
-        public LifecyclePreProcessor(LifecycleTracker tracker)
-        {
-            _tracker = tracker;
-        }
+        private readonly LifecycleTracker _tracker = tracker;
 
         public Task Process(LifecycleRequest request, CancellationToken cancellationToken)
         {
@@ -1722,14 +1667,9 @@ public sealed class SimpleMediatorTests
         }
     }
 
-    private sealed class LifecyclePostProcessor : IRequestPostProcessor<LifecycleRequest, string>
+    private sealed class LifecyclePostProcessor(SimpleMediatorTests.LifecycleTracker tracker) : IRequestPostProcessor<LifecycleRequest, string>
     {
-        private readonly LifecycleTracker _tracker;
-
-        public LifecyclePostProcessor(LifecycleTracker tracker)
-        {
-            _tracker = tracker;
-        }
+        private readonly LifecycleTracker _tracker = tracker;
 
         public Task Process(LifecycleRequest request, Either<Error, string> response, CancellationToken cancellationToken)
         {
@@ -1769,14 +1709,14 @@ public sealed class SimpleMediatorTests
     private sealed class CancellingPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        public Task<Either<Error, TResponse>> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
+        public Task<Either<Error, TResponse>> Handle(TRequest request, RequestHandlerDelegate<TResponse> nextStep, CancellationToken cancellationToken)
             => Task.FromCanceled<Either<Error, TResponse>>(cancellationToken);
     }
 
     private sealed class ThrowingPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        public Task<Either<Error, TResponse>> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
+        public Task<Either<Error, TResponse>> Handle(TRequest request, RequestHandlerDelegate<TResponse> nextStep, CancellationToken cancellationToken)
             => throw new InvalidOperationException($"behavior failure for {typeof(TRequest).Name}");
     }
 
@@ -1852,14 +1792,9 @@ public sealed class SimpleMediatorTests
 
     private sealed record LogEntry(LogLevel LogLevel, string Message, Exception? Exception);
 
-    private sealed class ListLogger<T> : ILogger<T>
+    private sealed class ListLogger<T>(SimpleMediatorTests.LoggerCollector collector) : ILogger<T>
     {
-        private readonly LoggerCollector _collector;
-
-        public ListLogger(LoggerCollector collector)
-        {
-            _collector = collector;
-        }
+        private readonly LoggerCollector _collector = collector;
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
@@ -1911,14 +1846,9 @@ public sealed class SimpleMediatorTests
 
     private sealed record AsyncPipelineRequest(string Value) : IRequest<string>;
 
-    private sealed class AsyncPreProcessor : IRequestPreProcessor<AsyncPipelineRequest>
+    private sealed class AsyncPreProcessor(SimpleMediatorTests.AsyncPipelineTracker tracker) : IRequestPreProcessor<AsyncPipelineRequest>
     {
-        private readonly AsyncPipelineTracker _tracker;
-
-        public AsyncPreProcessor(AsyncPipelineTracker tracker)
-        {
-            _tracker = tracker;
-        }
+        private readonly AsyncPipelineTracker _tracker = tracker;
 
         public async Task Process(AsyncPipelineRequest request, CancellationToken cancellationToken)
         {
@@ -1927,14 +1857,9 @@ public sealed class SimpleMediatorTests
         }
     }
 
-    private sealed class AsyncPipelineRequestHandler : IRequestHandler<AsyncPipelineRequest, string>
+    private sealed class AsyncPipelineRequestHandler(SimpleMediatorTests.AsyncPipelineTracker tracker) : IRequestHandler<AsyncPipelineRequest, string>
     {
-        private readonly AsyncPipelineTracker _tracker;
-
-        public AsyncPipelineRequestHandler(AsyncPipelineTracker tracker)
-        {
-            _tracker = tracker;
-        }
+        private readonly AsyncPipelineTracker _tracker = tracker;
 
         public async Task<string> Handle(AsyncPipelineRequest request, CancellationToken cancellationToken)
         {
@@ -1944,14 +1869,9 @@ public sealed class SimpleMediatorTests
         }
     }
 
-    private sealed class AsyncPostProcessor : IRequestPostProcessor<AsyncPipelineRequest, string>
+    private sealed class AsyncPostProcessor(SimpleMediatorTests.AsyncPipelineTracker tracker) : IRequestPostProcessor<AsyncPipelineRequest, string>
     {
-        private readonly AsyncPipelineTracker _tracker;
-
-        public AsyncPostProcessor(AsyncPipelineTracker tracker)
-        {
-            _tracker = tracker;
-        }
+        private readonly AsyncPipelineTracker _tracker = tracker;
 
         public async Task Process(AsyncPipelineRequest request, Either<Error, string> response, CancellationToken cancellationToken)
         {

@@ -1,14 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using FsCheck;
 using FsCheck.Xunit;
 using LanguageExt;
 using Microsoft.Extensions.DependencyInjection;
-using SimpleMediator;
 
 namespace SimpleMediator.PropertyTests;
 
@@ -422,11 +416,9 @@ public sealed class ConfigurationProperties
 
     private sealed record TrackedRequest(int Value, HandlerExecution Execution) : IRequest<int>;
 
-    private sealed class RecordingRequestHandler : IRequestHandler<TrackedRequest, int>
+    private sealed class RecordingRequestHandler(ConfigurationProperties.CallRecorder recorder) : IRequestHandler<TrackedRequest, int>
     {
-        private readonly CallRecorder _recorder;
-
-        public RecordingRequestHandler(CallRecorder recorder) => _recorder = recorder;
+        private readonly CallRecorder _recorder = recorder;
 
         public Task<int> Handle(TrackedRequest request, CancellationToken cancellationToken)
         {
@@ -480,21 +472,19 @@ public sealed class ConfigurationProperties
         }
     }
 
-    private abstract class RecordingPipelineBehaviorBase<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    private abstract class RecordingPipelineBehaviorBase<TRequest, TResponse>(ConfigurationProperties.CallRecorder recorder) : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        private readonly CallRecorder _recorder;
-
-        protected RecordingPipelineBehaviorBase(CallRecorder recorder) => _recorder = recorder;
+        private readonly CallRecorder _recorder = recorder;
 
         protected abstract string Label { get; }
 
-        public async Task<Either<Error, TResponse>> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
+        public async Task<Either<Error, TResponse>> Handle(TRequest request, RequestHandlerDelegate<TResponse> nextStep, CancellationToken cancellationToken)
         {
             _recorder.Add($"behavior:{Label}:enter");
             try
             {
-                return await next().ConfigureAwait(false);
+                return await nextStep().ConfigureAwait(false);
             }
             finally
             {
@@ -503,51 +493,33 @@ public sealed class ConfigurationProperties
         }
     }
 
-    private sealed class TrackingOuterPipelineBehavior<TRequest, TResponse> : RecordingPipelineBehaviorBase<TRequest, TResponse>
+    private sealed class TrackingOuterPipelineBehavior<TRequest, TResponse>(ConfigurationProperties.CallRecorder recorder) : RecordingPipelineBehaviorBase<TRequest, TResponse>(recorder)
         where TRequest : IRequest<TResponse>
     {
-        public TrackingOuterPipelineBehavior(CallRecorder recorder) : base(recorder)
-        {
-        }
-
         protected override string Label => "pipeline-outer";
     }
 
-    private sealed class TrackingInnerPipelineBehavior<TRequest, TResponse> : RecordingPipelineBehaviorBase<TRequest, TResponse>
+    private sealed class TrackingInnerPipelineBehavior<TRequest, TResponse>(ConfigurationProperties.CallRecorder recorder) : RecordingPipelineBehaviorBase<TRequest, TResponse>(recorder)
         where TRequest : IRequest<TResponse>
     {
-        public TrackingInnerPipelineBehavior(CallRecorder recorder) : base(recorder)
-        {
-        }
-
         protected override string Label => "pipeline-inner";
     }
 
-    private sealed class TrackingMetricsPipelineBehavior<TRequest, TResponse> : RecordingPipelineBehaviorBase<TRequest, TResponse>
+    private sealed class TrackingMetricsPipelineBehavior<TRequest, TResponse>(ConfigurationProperties.CallRecorder recorder) : RecordingPipelineBehaviorBase<TRequest, TResponse>(recorder)
         where TRequest : IRequest<TResponse>
     {
-        public TrackingMetricsPipelineBehavior(CallRecorder recorder) : base(recorder)
-        {
-        }
-
         protected override string Label => "pipeline-metrics";
     }
 
-    private sealed class TrackingAuditPipelineBehavior<TRequest, TResponse> : RecordingPipelineBehaviorBase<TRequest, TResponse>
+    private sealed class TrackingAuditPipelineBehavior<TRequest, TResponse>(ConfigurationProperties.CallRecorder recorder) : RecordingPipelineBehaviorBase<TRequest, TResponse>(recorder)
         where TRequest : IRequest<TResponse>
     {
-        public TrackingAuditPipelineBehavior(CallRecorder recorder) : base(recorder)
-        {
-        }
-
         protected override string Label => "pipeline-audit";
     }
 
-    private abstract class RecordingPreProcessorBase<TRequest> : IRequestPreProcessor<TRequest>
+    private abstract class RecordingPreProcessorBase<TRequest>(ConfigurationProperties.CallRecorder recorder) : IRequestPreProcessor<TRequest>
     {
-        private readonly CallRecorder _recorder;
-
-        protected RecordingPreProcessorBase(CallRecorder recorder) => _recorder = recorder;
+        private readonly CallRecorder _recorder = recorder;
 
         protected abstract string Label { get; }
 
@@ -558,38 +530,24 @@ public sealed class ConfigurationProperties
         }
     }
 
-    private sealed class RecordingPreProcessorOne : RecordingPreProcessorBase<TrackedRequest>
+    private sealed class RecordingPreProcessorOne(ConfigurationProperties.CallRecorder recorder) : RecordingPreProcessorBase<TrackedRequest>(recorder)
     {
-        public RecordingPreProcessorOne(CallRecorder recorder) : base(recorder)
-        {
-        }
-
         protected override string Label => "pre-one";
     }
 
-    private sealed class RecordingPreProcessorTwo : RecordingPreProcessorBase<TrackedRequest>
+    private sealed class RecordingPreProcessorTwo(ConfigurationProperties.CallRecorder recorder) : RecordingPreProcessorBase<TrackedRequest>(recorder)
     {
-        public RecordingPreProcessorTwo(CallRecorder recorder) : base(recorder)
-        {
-        }
-
         protected override string Label => "pre-two";
     }
 
-    private sealed class GenericRecordingPreProcessor<TRequest> : RecordingPreProcessorBase<TRequest>
+    private sealed class GenericRecordingPreProcessor<TRequest>(ConfigurationProperties.CallRecorder recorder) : RecordingPreProcessorBase<TRequest>(recorder)
     {
-        public GenericRecordingPreProcessor(CallRecorder recorder) : base(recorder)
-        {
-        }
-
         protected override string Label => "pre-generic";
     }
 
-    private abstract class RecordingPostProcessorBase<TRequest, TResponse> : IRequestPostProcessor<TRequest, TResponse>
+    private abstract class RecordingPostProcessorBase<TRequest, TResponse>(ConfigurationProperties.CallRecorder recorder) : IRequestPostProcessor<TRequest, TResponse>
     {
-        private readonly CallRecorder _recorder;
-
-        protected RecordingPostProcessorBase(CallRecorder recorder) => _recorder = recorder;
+        private readonly CallRecorder _recorder = recorder;
 
         protected abstract string Label { get; }
 
@@ -603,30 +561,18 @@ public sealed class ConfigurationProperties
         }
     }
 
-    private sealed class RecordingPostProcessorOne : RecordingPostProcessorBase<TrackedRequest, int>
+    private sealed class RecordingPostProcessorOne(ConfigurationProperties.CallRecorder recorder) : RecordingPostProcessorBase<TrackedRequest, int>(recorder)
     {
-        public RecordingPostProcessorOne(CallRecorder recorder) : base(recorder)
-        {
-        }
-
         protected override string Label => "post-one";
     }
 
-    private sealed class RecordingPostProcessorTwo : RecordingPostProcessorBase<TrackedRequest, int>
+    private sealed class RecordingPostProcessorTwo(ConfigurationProperties.CallRecorder recorder) : RecordingPostProcessorBase<TrackedRequest, int>(recorder)
     {
-        public RecordingPostProcessorTwo(CallRecorder recorder) : base(recorder)
-        {
-        }
-
         protected override string Label => "post-two";
     }
 
-    private sealed class GenericRecordingPostProcessor<TRequest, TResponse> : RecordingPostProcessorBase<TRequest, TResponse>
+    private sealed class GenericRecordingPostProcessor<TRequest, TResponse>(ConfigurationProperties.CallRecorder recorder) : RecordingPostProcessorBase<TRequest, TResponse>(recorder)
     {
-        public GenericRecordingPostProcessor(CallRecorder recorder) : base(recorder)
-        {
-        }
-
         protected override string Label => "post-generic";
     }
 }

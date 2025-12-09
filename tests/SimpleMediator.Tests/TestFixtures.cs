@@ -1,8 +1,4 @@
-using System.Threading;
-using System.Threading.Tasks;
 using LanguageExt;
-using static LanguageExt.Prelude;
-using SimpleMediator;
 
 namespace SimpleMediator.Tests.Fixtures;
 
@@ -39,20 +35,20 @@ internal sealed class DomainNotificationBetaHandler : INotificationHandler<Domai
 internal sealed class PassThroughPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
-    public Task<Either<Error, TResponse>> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
-        => next();
+    public Task<Either<Error, TResponse>> Handle(TRequest request, RequestHandlerDelegate<TResponse> nextStep, CancellationToken cancellationToken)
+        => nextStep();
 }
 
 internal sealed class ConcreteCommandBehavior : ICommandPipelineBehavior<PingCommand, string>
 {
-    public Task<Either<Error, string>> Handle(PingCommand request, CancellationToken cancellationToken, RequestHandlerDelegate<string> next)
-        => next();
+    public Task<Either<Error, string>> Handle(PingCommand request, RequestHandlerDelegate<string> nextStep, CancellationToken cancellationToken)
+        => nextStep();
 }
 
 internal sealed class ConcreteQueryBehavior : IQueryPipelineBehavior<PongQuery, string>
 {
-    public Task<Either<Error, string>> Handle(PongQuery request, CancellationToken cancellationToken, RequestHandlerDelegate<string> next)
-        => next();
+    public Task<Either<Error, string>> Handle(PongQuery request, RequestHandlerDelegate<string> nextStep, CancellationToken cancellationToken)
+        => nextStep();
 }
 
 internal sealed class SamplePreProcessor : IRequestPreProcessor<PingCommand>

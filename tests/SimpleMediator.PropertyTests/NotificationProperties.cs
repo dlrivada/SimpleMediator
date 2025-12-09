@@ -1,14 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using FsCheck;
 using FsCheck.Xunit;
 using LanguageExt;
 using Microsoft.Extensions.DependencyInjection;
-using SimpleMediator;
 
 namespace SimpleMediator.PropertyTests;
 
@@ -186,18 +180,11 @@ public sealed class NotificationProperties
 
     private sealed record TrackedNotification(string Value) : INotification;
 
-    private sealed class RecordingNotificationHandler : INotificationHandler<TrackedNotification>
+    private sealed class RecordingNotificationHandler(NotificationProperties.CallRecorder recorder, int label, NotificationProperties.HandlerOutcome outcome) : INotificationHandler<TrackedNotification>
     {
-        private readonly CallRecorder _recorder;
-        private readonly int _label;
-        private readonly HandlerOutcome _outcome;
-
-        public RecordingNotificationHandler(CallRecorder recorder, int label, HandlerOutcome outcome)
-        {
-            _recorder = recorder;
-            _label = label;
-            _outcome = outcome;
-        }
+        private readonly CallRecorder _recorder = recorder;
+        private readonly int _label = label;
+        private readonly HandlerOutcome _outcome = outcome;
 
         public Task Handle(TrackedNotification notification, CancellationToken cancellationToken)
         {

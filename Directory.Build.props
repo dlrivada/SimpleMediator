@@ -4,6 +4,12 @@
     <Nullable Condition="'$(Nullable)' == ''">enable</Nullable>
     <ImplicitUsings Condition="'$(ImplicitUsings)' == ''">enable</ImplicitUsings>
     <LangVersion Condition="'$(LangVersion)' == ''">14.0</LangVersion>
+    <EnableNETAnalyzers Condition="'$(EnableNETAnalyzers)' == ''">true</EnableNETAnalyzers>
+    <AnalysisMode Condition="'$(AnalysisMode)' == ''">Recommended</AnalysisMode>
+    <AnalysisLevel Condition="'$(AnalysisLevel)' == ''">latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild Condition="'$(EnforceCodeStyleInBuild)' == ''">true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors>$(WarningsAsErrors);CS*;IL*;NU*;IDE*;SYSLIB*</WarningsAsErrors>
   </PropertyGroup>
 
   <PropertyGroup>
