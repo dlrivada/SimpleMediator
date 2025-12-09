@@ -24,6 +24,7 @@ SimpleMediator is a lightweight mediator abstraction for .NET applications that 
 ## Table of Contents
 
 - [Why SimpleMediator](#why-simplemediator)
+- [Capabilities](#capabilities)
 - [Quick Start](#quick-start)
 - [Request Lifecycle](#request-lifecycle)
 - [Handlers and Contracts](#handlers-and-contracts)
