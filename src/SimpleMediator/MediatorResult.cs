@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace SimpleMediator;
 
 /// <summary>
@@ -31,6 +33,23 @@ internal sealed class MediatorException(string code, string message, Exception? 
     public string Code { get; } = code;
 
     public object? Details { get; } = details;
+
+    public IReadOnlyDictionary<string, object?> Metadata { get; } = NormalizeMetadata(details);
+
+    private static IReadOnlyDictionary<string, object?> NormalizeMetadata(object? details)
+    {
+        if (details is null)
+        {
+            return ImmutableDictionary<string, object?>.Empty;
+        }
+
+        if (details is IReadOnlyDictionary<string, object?> dict)
+        {
+            return dict ?? ImmutableDictionary<string, object?>.Empty;
+        }
+
+        return ImmutableDictionary<string, object?>.Empty.Add("detail", details);
+    }
 }
 
 /// <summary>
@@ -58,5 +77,18 @@ internal static class MediatorErrorExtensions
                 _ => null
             },
             () => null);
+    }
+
+    public static IReadOnlyDictionary<string, object?> GetMediatorMetadata(this MediatorError error)
+    {
+        var metadata = error.MetadataException.MatchUnsafe(
+            ex => ex switch
+            {
+                MediatorException mediatorException => mediatorException.Metadata,
+                _ => (IReadOnlyDictionary<string, object?>)ImmutableDictionary<string, object?>.Empty
+            },
+            () => ImmutableDictionary<string, object?>.Empty);
+
+        return metadata ?? ImmutableDictionary<string, object?>.Empty;
     }
 }

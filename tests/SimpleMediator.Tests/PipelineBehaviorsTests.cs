@@ -3,9 +3,11 @@ using LanguageExt;
 using Shouldly;
 using SimpleMediator.Tests.Fixtures;
 using static LanguageExt.Prelude;
+using Xunit;
 
 namespace SimpleMediator.Tests;
 
+[Collection("PipelineBehaviors")]
 public sealed class PipelineBehaviorsTests
 {
     [Fact]
@@ -710,7 +712,7 @@ public sealed class PipelineBehaviorsTests
                 {
                     // Ignore activities that started before this listener subscribed so concurrent
                     // tests wrapping up earlier telemetry do not leak into these assertions.
-                    if (activity.StartTimeUtc >= _startedAtUtc)
+                    if (activity.StartTimeUtc >= _startedAtUtc && activity.DisplayName.StartsWith("Mediator.", StringComparison.Ordinal))
                     {
                         _activities.Add(activity);
                     }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
@@ -10,6 +11,7 @@ using static LanguageExt.Prelude;
 
 namespace SimpleMediator.Tests;
 
+[Collection("NonParallel")]
 public sealed class SimpleMediatorTests
 {
     private static readonly string[] expected = new[] { "tracking:before", "second:before", "handler", "second:after", "tracking:after" };
@@ -36,6 +38,55 @@ public sealed class SimpleMediatorTests
         var response = ExpectSuccess(result);
         response.ShouldBe("hello");
         tracker.Events.ShouldBe(expected);
+    }
+
+    [Fact]
+    public async Task Send_EmitsActivityWithMetadata()
+    {
+        using var activityCollector = new ActivityCollector();
+        var services = BuildServiceCollection();
+        await using var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        var result = await mediator.Send(new EchoRequest("hi"), CancellationToken.None);
+
+        var response = ExpectSuccess(result);
+        response.ShouldBe("hi");
+        var activity = activityCollector.Activities.Last(
+            a => a.DisplayName == "SimpleMediator.Send"
+                 && Equals(a.GetTagItem("mediator.request_type"), typeof(EchoRequest).FullName));
+        activity.Status.ShouldBe(ActivityStatusCode.Ok);
+        activity.GetTagItem("mediator.request_type").ShouldBe(typeof(EchoRequest).FullName);
+        activity.GetTagItem("mediator.request_name").ShouldBe(nameof(EchoRequest));
+        activity.GetTagItem("mediator.response_type").ShouldBe(typeof(string).FullName);
+        activity.GetTagItem("mediator.request_kind").ShouldBe("request");
+        activity.GetTagItem("mediator.handler").ShouldNotBeNull();
+        activity.GetTagItem("mediator.handler_count").ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task Send_EmitsActivityWithFailureMetadata_WhenHandlerMissing()
+    {
+        using var activityCollector = new ActivityCollector();
+        var services = new ServiceCollection();
+        services.AddApplicationMessaging(typeof(EchoRequest).Assembly);
+
+        await using var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        var result = await mediator.Send(new MissingHandlerRequest(), CancellationToken.None);
+
+        var error = ExpectFailure(result, MediatorErrorCodes.HandlerMissing);
+        var activity = activityCollector.Activities.Last(
+            a => a.DisplayName == "SimpleMediator.Send"
+                 && Equals(a.GetTagItem("mediator.request_type"), typeof(MissingHandlerRequest).FullName));
+
+        activity.Status.ShouldBe(ActivityStatusCode.Error);
+        activity.StatusDescription.ShouldBe(error.Message);
+        activity.GetTagItem("mediator.request_type").ShouldBe(typeof(MissingHandlerRequest).FullName);
+        activity.GetTagItem("mediator.request_name").ShouldBe(nameof(MissingHandlerRequest));
+        activity.GetTagItem("mediator.request_kind").ShouldBe("request");
+        activity.GetTagItem("mediator.failure_reason").ShouldBe(error.GetMediatorCode());
     }
 
     [Fact]
@@ -133,6 +184,90 @@ public sealed class SimpleMediatorTests
             entry.LogLevel == LogLevel.Warning
             && entry.Message.Contains("was cancelled")
             && entry.Message.Contains(nameof(AccidentalCancellationRequest))).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Send_RecordsSuccessMetrics()
+    {
+        var metrics = new MediatorMetricsSpy();
+        var services = BuildServiceCollection(mediatorMetrics: metrics);
+
+        await using var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        var result = await mediator.Send(new EchoRequest("hello"), CancellationToken.None);
+
+        var response = ExpectSuccess(result);
+        response.ShouldBe("hello");
+
+        var success = metrics.Successes.ShouldHaveSingleItem();
+        success.Kind.ShouldBe("request");
+        success.Name.ShouldBe(nameof(EchoRequest));
+        success.Duration.ShouldBeGreaterThanOrEqualTo(TimeSpan.Zero);
+        metrics.Failures.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Send_RecordsFailureMetrics_WhenHandlerMissing()
+    {
+        var metrics = new MediatorMetricsSpy();
+        var services = BuildServiceCollection(mediatorMetrics: metrics);
+
+        await using var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        var result = await mediator.Send(new MissingHandlerRequest(), CancellationToken.None);
+
+        var error = ExpectFailure(result, MediatorErrorCodes.HandlerMissing);
+        var failure = metrics.Failures.ShouldHaveSingleItem();
+        failure.Kind.ShouldBe("request");
+        failure.Name.ShouldBe(nameof(MissingHandlerRequest));
+        failure.Reason.ShouldBe(error.GetMediatorCode());
+        failure.Duration.ShouldBeGreaterThanOrEqualTo(TimeSpan.Zero);
+        metrics.Successes.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Send_RecordsFailureMetrics_WhenHandlerThrows()
+    {
+        var metrics = new MediatorMetricsSpy();
+        var services = BuildServiceCollection(mediatorMetrics: metrics);
+
+        await using var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        var result = await mediator.Send(new FaultyRequest(), CancellationToken.None);
+
+        var error = ExpectFailure(result, MediatorErrorCodes.HandlerException);
+        var failure = metrics.Failures.ShouldHaveSingleItem();
+        failure.Kind.ShouldBe("request");
+        failure.Name.ShouldBe(nameof(FaultyRequest));
+        failure.Reason.ShouldBe(error.GetMediatorCode());
+        failure.Duration.ShouldBeGreaterThanOrEqualTo(TimeSpan.Zero);
+        metrics.Successes.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Send_RecordsFailureMetrics_WhenCancelled()
+    {
+        var metrics = new MediatorMetricsSpy();
+        var services = BuildServiceCollection(mediatorMetrics: metrics);
+
+        await using var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var result = await mediator.Send(new CancellableRequest(), cts.Token);
+
+        var error = ExpectFailure(result, MediatorErrorCodes.HandlerCancelled);
+        var failure = metrics.Failures.ShouldHaveSingleItem();
+        failure.Kind.ShouldBe("request");
+        failure.Name.ShouldBe(nameof(CancellableRequest));
+        failure.Reason.ShouldBe(error.GetMediatorCode());
+        failure.Duration.ShouldBeGreaterThanOrEqualTo(TimeSpan.Zero);
+        metrics.Successes.ShouldBeEmpty();
     }
 
     [Fact]
@@ -323,6 +458,28 @@ public sealed class SimpleMediatorTests
         activity.DisplayName.ShouldBe("SimpleMediator.Publish");
         activity.Status.ShouldBe(ActivityStatusCode.Ok);
         activity.GetTagItem("mediator.notification_type").ShouldBe(typeof(SampleNotification).FullName);
+        activity.GetTagItem("mediator.notification_name").ShouldBe(nameof(SampleNotification));
+        activity.GetTagItem("mediator.notification_kind").ShouldBe("notification");
+        activity.GetTagItem("mediator.handler_count").ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task Publish_EmitsMetadataForNotificationActivity()
+    {
+        using var activityCollector = new ActivityCollector();
+        var services = BuildServiceCollection();
+        await using var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        var result = await mediator.Publish(new SampleNotification(7), CancellationToken.None);
+
+        ExpectSuccess(result);
+        var activity = activityCollector.Activities.Last(a => a.DisplayName == "SimpleMediator.Publish");
+        activity.Status.ShouldBe(ActivityStatusCode.Ok);
+        activity.GetTagItem("mediator.notification_type").ShouldBe(typeof(SampleNotification).FullName);
+        activity.GetTagItem("mediator.notification_name").ShouldBe(nameof(SampleNotification));
+        activity.GetTagItem("mediator.notification_kind").ShouldBe("notification");
+        activity.GetTagItem("mediator.handler_count").ShouldBe(2);
     }
 
     [Fact]
@@ -347,6 +504,7 @@ public sealed class SimpleMediatorTests
             && entry.Message.Contains(nameof(UnhandledNotification)));
         var activity = activityCollector.Activities.Last(a => a.DisplayName == "SimpleMediator.Publish");
         activity.Status.ShouldBe(ActivityStatusCode.Ok);
+        activity.GetTagItem("mediator.notification_kind").ShouldBe("notification");
     }
 
     [Fact]
@@ -505,6 +663,7 @@ public sealed class SimpleMediatorTests
         var activity = activityCollector.Activities.Last(a => a.DisplayName == "SimpleMediator.Publish");
         activity.Status.ShouldBe(ActivityStatusCode.Error);
         activity.StatusDescription.ShouldBe(error.Message);
+        activity.GetTagItem("mediator.failure_reason").ShouldBe(error.GetMediatorCode());
     }
 
     [Fact]
@@ -532,6 +691,7 @@ public sealed class SimpleMediatorTests
         var activity = activityCollector.Activities.Last(a => a.DisplayName == "SimpleMediator.Publish");
         activity.Status.ShouldBe(ActivityStatusCode.Error);
         activity.StatusDescription.ShouldBe(error.Message);
+        activity.GetTagItem("mediator.failure_reason").ShouldBe(error.GetMediatorCode());
     }
 
     [Fact]
@@ -577,12 +737,14 @@ public sealed class SimpleMediatorTests
         var activity = activityCollector.Activities.Last(a => a.DisplayName == "SimpleMediator.Publish");
         activity.Status.ShouldBe(ActivityStatusCode.Error);
         activity.StatusDescription.ShouldBe(error.Message);
+        activity.GetTagItem("mediator.failure_reason").ShouldBe(error.GetMediatorCode());
     }
 
     [Fact]
     public async Task Publish_LogsWarningWithoutError_WhenCancelledBeforeHandlersRun()
     {
         var loggerCollector = new LoggerCollector();
+        using var activityCollector = new ActivityCollector();
         var services = BuildServiceCollection(loggerCollector: loggerCollector);
         services.RemoveAll(typeof(INotificationHandler<SampleNotification>));
         services.AddScoped<INotificationHandler<SampleNotification>, CancellableNotificationHandler>();
@@ -605,12 +767,17 @@ public sealed class SimpleMediatorTests
             entry.LogLevel == LogLevel.Error
             && entry.Message.Contains("Error while publishing notification")
             && entry.Message.Contains(nameof(SampleNotification))).ShouldBeFalse();
+        var activity = activityCollector.Activities.Last(a => a.DisplayName == "SimpleMediator.Publish");
+        activity.Status.ShouldBe(ActivityStatusCode.Error);
+        activity.StatusDescription.ShouldBe(error.Message);
+        activity.GetTagItem("mediator.failure_reason").ShouldBe(error.GetMediatorCode());
     }
 
     [Fact]
     public async Task Publish_DoesNotLogCancellation_WhenHandlerCancelsWithoutToken()
     {
         var loggerCollector = new LoggerCollector();
+        using var activityCollector = new ActivityCollector();
         var services = BuildServiceCollection(loggerCollector: loggerCollector);
         services.RemoveAll(typeof(INotificationHandler<AccidentalCancellationNotification>));
         services.AddScoped<INotificationHandler<AccidentalCancellationNotification>, AccidentalCancellationNotificationHandler>();
@@ -630,6 +797,10 @@ public sealed class SimpleMediatorTests
             entry.LogLevel == LogLevel.Warning
             && entry.Message.Contains("was cancelled")
             && entry.Message.Contains(nameof(AccidentalCancellationNotification))).ShouldBeFalse();
+        var activity = activityCollector.Activities.Last(a => a.DisplayName == "SimpleMediator.Publish");
+        activity.Status.ShouldBe(ActivityStatusCode.Error);
+        activity.StatusDescription.ShouldBe(error.Message);
+        activity.GetTagItem("mediator.failure_reason").ShouldBe(error.GetMediatorCode());
     }
 
     [Fact]
@@ -648,6 +819,14 @@ public sealed class SimpleMediatorTests
         var error = ExpectFailure(result, "mediator.notification.missing_handle");
         error.Message.ShouldContain(nameof(ExplicitInterfaceNotificationHandler));
         error.Message.ShouldContain("does not expose a compatible Handle method");
+
+        var metadata = error.GetMediatorMetadata();
+        metadata.ShouldContainKey("handler");
+        metadata["handler"].ShouldBe(typeof(ExplicitInterfaceNotificationHandler).FullName);
+        metadata.ShouldContainKey("expectedNotification");
+        metadata["expectedNotification"].ShouldBe(typeof(ExplicitNotification).FullName);
+        metadata.ShouldContainKey("notification");
+        metadata["notification"].ShouldBe(nameof(ExplicitNotification));
     }
 
     [Fact]
@@ -681,6 +860,12 @@ public sealed class SimpleMediatorTests
         var error = ExpectFailure(result, "mediator.notification.invalid_return");
         error.Message.ShouldContain("returned an unexpected type");
         error.Message.ShouldContain(nameof(InvalidNotificationResultHandler));
+
+        var metadata = error.GetMediatorMetadata();
+        metadata.ShouldContainKey("returnType");
+        metadata["returnType"].ShouldBe(typeof(string).FullName);
+        metadata["handler"].ShouldBe(typeof(InvalidNotificationResultHandler).FullName);
+        metadata["notification"].ShouldBe(nameof(ExplicitNotification));
     }
 
     [Fact]
@@ -742,6 +927,46 @@ public sealed class SimpleMediatorTests
         error.Message.ShouldContain($"Publishing {nameof(ExplicitNotification)}");
         error.Message.ShouldNotContain("Publishing INotification");
         ExtractException(error).ShouldBeAssignableTo<OperationCanceledException>();
+    }
+
+    [Fact]
+    public async Task InvokeNotificationHandler_ExposesMetadata_WhenCancelledDuringInvoke()
+    {
+        var invoke = CreateInvokeNotificationDelegate<ExplicitNotification>();
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var handler = new CancellingExplicitNotificationHandler();
+        var result = await invoke(handler, new ExplicitNotification(), cts.Token);
+
+        var error = ExpectFailure(result, "mediator.notification.cancelled");
+        var metadata = error.GetMediatorMetadata();
+        metadata.ShouldContainKey("handler");
+        metadata!["handler"].ShouldBe(typeof(CancellingExplicitNotificationHandler).FullName);
+        metadata.ShouldContainKey("notification");
+        metadata["notification"].ShouldBe(nameof(ExplicitNotification));
+        metadata.ShouldContainKey("stage");
+        metadata["stage"].ShouldBe("invoke");
+    }
+
+    [Fact]
+    public async Task InvokeNotificationHandler_ExposesMetadata_WhenTaskCancelledDuringExecution()
+    {
+        var invoke = CreateInvokeNotificationDelegate<ExplicitNotification>();
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var handler = new TaskCancellingExplicitNotificationHandler();
+        var result = await invoke(handler, new ExplicitNotification(), cts.Token);
+
+        var error = ExpectFailure(result, "mediator.notification.cancelled");
+        var metadata = error.GetMediatorMetadata();
+        metadata.ShouldContainKey("handler");
+        metadata!["handler"].ShouldBe(typeof(TaskCancellingExplicitNotificationHandler).FullName);
+        metadata.ShouldContainKey("notification");
+        metadata["notification"].ShouldBe(nameof(ExplicitNotification));
+        metadata.ShouldContainKey("stage");
+        metadata["stage"].ShouldBe("execute");
     }
 
     [Fact]
@@ -1352,7 +1577,8 @@ public sealed class SimpleMediatorTests
         PipelineTracker? pipelineTracker = null,
         NotificationTracker? notificationTracker = null,
         LoggerCollector? loggerCollector = null,
-        Action<SimpleMediatorConfiguration>? configuration = null)
+        Action<SimpleMediatorConfiguration>? configuration = null,
+        IMediatorMetrics? mediatorMetrics = null)
     {
         var services = new ServiceCollection();
         services.AddSimpleMediator(cfg => configuration?.Invoke(cfg));
@@ -1384,6 +1610,12 @@ public sealed class SimpleMediatorTests
         {
             services.AddSingleton(loggerCollector);
             services.AddSingleton<ILogger<global::SimpleMediator.SimpleMediator>>(sp => new ListLogger<global::SimpleMediator.SimpleMediator>(sp.GetRequiredService<LoggerCollector>()));
+        }
+
+        if (mediatorMetrics is not null)
+        {
+            services.RemoveAll(typeof(IMediatorMetrics));
+            services.AddSingleton(_ => mediatorMetrics);
         }
 
         return services;
@@ -1716,6 +1948,18 @@ public sealed class SimpleMediatorTests
         public ConcurrentBag<LogEntry> Entries { get; } = new();
     }
 
+    private sealed class MediatorMetricsSpy : IMediatorMetrics
+    {
+        public List<(string Kind, string Name, TimeSpan Duration)> Successes { get; } = new();
+        public List<(string Kind, string Name, TimeSpan Duration, string Reason)> Failures { get; } = new();
+
+        public void TrackSuccess(string requestKind, string requestName, TimeSpan duration)
+            => Successes.Add((requestKind, requestName, duration));
+
+        public void TrackFailure(string requestKind, string requestName, TimeSpan duration, string reason)
+            => Failures.Add((requestKind, requestName, duration, reason));
+    }
+
     private sealed class CancellingPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
@@ -1838,7 +2082,7 @@ public sealed class SimpleMediatorTests
         {
             _listener = new ActivityListener
             {
-                ShouldListenTo = _ => true,
+                ShouldListenTo = source => string.Equals(source.Name, "SimpleMediator", StringComparison.Ordinal),
                 Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
                 SampleUsingParentId = (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
                 ActivityStopped = activity => Activities.Add(activity)

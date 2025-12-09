@@ -1,4 +1,5 @@
 using System.Reflection;
+using LanguageExt;
 using Shouldly;
 
 namespace SimpleMediator.ContractTests;
@@ -26,7 +27,7 @@ public sealed class PipelineBehaviorContracts
     [Fact]
     public void AssemblyScannerDiscoversAllPipelineBehaviors()
     {
-        var expected = new HashSet<Type>
+        var expected = new System.Collections.Generic.HashSet<Type>
         {
             typeof(global::SimpleMediator.CommandActivityPipelineBehavior<,>),
             typeof(global::SimpleMediator.CommandMetricsPipelineBehavior<,>),
@@ -43,13 +44,31 @@ public sealed class PipelineBehaviorContracts
         discovered.ShouldBe(expected, comparer: TypeEqualityComparer.Instance);
     }
 
-    private static IReadOnlyCollection<Type> GetPipelineBehaviorTypes()
+    private static Type[] GetPipelineBehaviorTypes()
     {
         return TargetAssembly
             .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract && t.IsGenericTypeDefinition)
             .Where(t => ImplementsGenericInterface(t, typeof(global::SimpleMediator.IPipelineBehavior<,>)))
             .ToArray();
+    }
+
+    [Fact]
+    public void PipelineBehaviorsReturnValueTaskEither()
+    {
+        var behaviors = GetPipelineBehaviorTypes();
+
+        foreach (var behavior in behaviors)
+        {
+            var handle = behavior.GetMethod("Handle");
+            handle.ShouldNotBeNull();
+
+            var genericArgs = behavior.GetGenericArguments();
+            genericArgs.Length.ShouldBe(2);
+
+            var expected = typeof(ValueTask<>).MakeGenericType(typeof(Either<,>).MakeGenericType(typeof(global::SimpleMediator.MediatorError), genericArgs[1]));
+            handle!.ReturnType.ShouldBe(expected, customMessage: "Behaviors must surface outcomes via ValueTask<Either<MediatorError,TResponse>> (rail funcional, sin throw operativo).");
+        }
     }
 
     private static bool ImplementsGenericInterface(Type candidate, Type genericInterface)

@@ -1,0 +1,126 @@
+#nullable enable
+SimpleMediator.CommandActivityPipelineBehavior<TCommand, TResponse> where TCommand : SimpleMediator.ICommand<TResponse>
+    SimpleMediator.CommandActivityPipelineBehavior<TCommand, TResponse>(SimpleMediator.IFunctionalFailureDetector failureDetector)
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>> SimpleMediator.CommandActivityPipelineBehavior<TCommand, TResponse>.Handle(TCommand request, SimpleMediator.RequestHandlerCallback<TResponse> nextStep, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.CommandMetricsPipelineBehavior<TCommand, TResponse> where TCommand : SimpleMediator.ICommand<TResponse>
+    SimpleMediator.CommandMetricsPipelineBehavior<TCommand, TResponse>(SimpleMediator.IMediatorMetrics metrics, SimpleMediator.IFunctionalFailureDetector failureDetector)
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>> SimpleMediator.CommandMetricsPipelineBehavior<TCommand, TResponse>.Handle(TCommand request, SimpleMediator.RequestHandlerCallback<TResponse> nextStep, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.ICommand
+SimpleMediator.ICommand<out TResponse>
+SimpleMediator.ICommandHandler<TCommand> where TCommand : SimpleMediator.ICommand<LanguageExt.Unit>
+    System.Threading.Tasks.Task<LanguageExt.Unit> Handle(TCommand request, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.ICommandHandler<TCommand, TResponse> where TCommand : SimpleMediator.ICommand<TResponse>
+    System.Threading.Tasks.Task<TResponse> Handle(TCommand request, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.ICommandPipelineBehavior<TCommand> where TCommand : SimpleMediator.ICommand<LanguageExt.Unit>
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, LanguageExt.Unit>> SimpleMediator.ICommandPipelineBehavior<TCommand>.Handle(TCommand request, SimpleMediator.RequestHandlerCallback<LanguageExt.Unit> nextStep, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.ICommandPipelineBehavior<TCommand, TResponse> where TCommand : SimpleMediator.ICommand<TResponse>
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>> SimpleMediator.ICommandPipelineBehavior<TCommand, TResponse>.Handle(TCommand request, SimpleMediator.RequestHandlerCallback<TResponse> nextStep, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.IFunctionalFailureDetector
+    bool TryExtractFailure(object? response, out string reason, out object? capturedFailure)
+    string? TryGetErrorCode(object? capturedFailure)
+    string? TryGetErrorMessage(object? capturedFailure)
+SimpleMediator.IMediator
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, LanguageExt.Unit>> Publish<TNotification>(TNotification notification, System.Threading.CancellationToken cancellationToken = default) where TNotification : SimpleMediator.INotification
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>> Send<TResponse>(SimpleMediator.IRequest<TResponse> request, System.Threading.CancellationToken cancellationToken = default)
+SimpleMediator.IMediatorMetrics
+    void TrackFailure(string requestKind, string requestName, System.TimeSpan duration, string reason)
+    void TrackSuccess(string requestKind, string requestName, System.TimeSpan duration)
+SimpleMediator.INotification
+SimpleMediator.INotificationHandler<in TNotification>
+    System.Threading.Tasks.Task Handle(TNotification notification, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.IPipelineBehavior<TRequest, TResponse> where TRequest : SimpleMediator.IRequest<TResponse>
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>> SimpleMediator.IPipelineBehavior<TRequest, TResponse>.Handle(TRequest request, SimpleMediator.RequestHandlerCallback<TResponse> nextStep, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.IQuery
+SimpleMediator.IQuery<out TResponse>
+SimpleMediator.IQueryHandler<TQuery> where TQuery : SimpleMediator.IQuery<LanguageExt.Unit>
+    System.Threading.Tasks.Task<LanguageExt.Unit> Handle(TQuery request, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.IQueryHandler<TQuery, TResponse> where TQuery : SimpleMediator.IQuery<TResponse>
+    System.Threading.Tasks.Task<TResponse> Handle(TQuery request, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.IQueryPipelineBehavior<TQuery> where TQuery : SimpleMediator.IQuery<LanguageExt.Unit>
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, LanguageExt.Unit>> SimpleMediator.IQueryPipelineBehavior<TQuery>.Handle(TQuery request, SimpleMediator.RequestHandlerCallback<LanguageExt.Unit> nextStep, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.IQueryPipelineBehavior<TQuery, TResponse> where TQuery : SimpleMediator.IQuery<TResponse>
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>> SimpleMediator.IQueryPipelineBehavior<TQuery, TResponse>.Handle(TQuery request, SimpleMediator.RequestHandlerCallback<TResponse> nextStep, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.IRequest<out TResponse>
+SimpleMediator.IRequestHandler<in TRequest, TResponse> where TRequest : SimpleMediator.IRequest<TResponse>
+    System.Threading.Tasks.Task<TResponse> Handle(TRequest request, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.IRequestPostProcessor<in TRequest, TResponse>
+    System.Threading.Tasks.Task Process(TRequest request, LanguageExt.Either<SimpleMediator.MediatorError, TResponse> response, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.IRequestPreProcessor<in TRequest>
+    System.Threading.Tasks.Task Process(TRequest request, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.MediatorError
+    MediatorError()
+    LanguageExt.Option<System.Exception> Exception { get; }
+    string Message { get; }
+    bool Equals(SimpleMediator.MediatorError other)
+    bool Equals(object? obj)
+    int GetHashCode()
+    string ToString()
+    void Deconstruct(out string Message, out LanguageExt.Option<System.Exception> Exception)
+    static SimpleMediator.MediatorError New(string message)
+    static SimpleMediator.MediatorError New(string message, System.Exception? exception)
+    static SimpleMediator.MediatorError New(System.Exception exception)
+    static SimpleMediator.MediatorError New(System.Exception exception, string message)
+    static bool operator !=(SimpleMediator.MediatorError left, SimpleMediator.MediatorError right)
+    static bool operator ==(SimpleMediator.MediatorError left, SimpleMediator.MediatorError right)
+    static implicit operator SimpleMediator.MediatorError(string message)
+    static implicit operator SimpleMediator.MediatorError(System.Exception exception)
+SimpleMediator.MediatorErrorCodes
+    const string BehaviorCancelled = "mediator.behavior.cancelled"
+    const string BehaviorException = "mediator.behavior.exception"
+    const string BehaviorNullNext = "mediator.behavior.null_next"
+    const string BehaviorNullRequest = "mediator.behavior.null_request"
+    const string HandlerCancelled = "mediator.handler.cancelled"
+    const string HandlerException = "mediator.handler.exception"
+    const string HandlerInvalidResult = "mediator.handler.invalid_result"
+    const string HandlerMissing = "mediator.handler.missing"
+    const string NotificationCancelled = "mediator.notification.cancelled"
+    const string NotificationException = "mediator.notification.exception"
+    const string NotificationInvalidReturn = "mediator.notification.invalid_return"
+    const string NotificationInvokeException = "mediator.notification.invoke_exception"
+    const string NotificationMissingHandle = "mediator.notification.missing_handle"
+    const string NotificationNull = "mediator.notification.null"
+    const string PipelineException = "mediator.pipeline.exception"
+    const string PostProcessorCancelled = "mediator.postprocessor.cancelled"
+    const string PostProcessorException = "mediator.postprocessor.exception"
+    const string PreProcessorCancelled = "mediator.preprocessor.cancelled"
+    const string PreProcessorException = "mediator.preprocessor.exception"
+    const string RequestCancelled = "mediator.request.cancelled"
+    const string RequestNull = "mediator.request.null"
+    const string Timeout = "mediator.timeout"
+SimpleMediator.MediatorMetrics
+    MediatorMetrics()
+    void SimpleMediator.MediatorMetrics.TrackFailure(string requestKind, string requestName, System.TimeSpan duration, string reason)
+    void SimpleMediator.MediatorMetrics.TrackSuccess(string requestKind, string requestName, System.TimeSpan duration)
+SimpleMediator.QueryActivityPipelineBehavior<TQuery, TResponse> where TQuery : SimpleMediator.IQuery<TResponse>
+    SimpleMediator.QueryActivityPipelineBehavior<TQuery, TResponse>(SimpleMediator.IFunctionalFailureDetector failureDetector)
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>> SimpleMediator.QueryActivityPipelineBehavior<TQuery, TResponse>.Handle(TQuery request, SimpleMediator.RequestHandlerCallback<TResponse> nextStep, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.QueryMetricsPipelineBehavior<TQuery, TResponse> where TQuery : SimpleMediator.IQuery<TResponse>
+    SimpleMediator.QueryMetricsPipelineBehavior<TQuery, TResponse>(SimpleMediator.IMediatorMetrics metrics, SimpleMediator.IFunctionalFailureDetector failureDetector)
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>> SimpleMediator.QueryMetricsPipelineBehavior<TQuery, TResponse>.Handle(TQuery request, SimpleMediator.RequestHandlerCallback<TResponse> nextStep, System.Threading.CancellationToken cancellationToken)
+SimpleMediator.RequestHandlerCallback<TResponse>
+    RequestHandlerCallback(object? @object, System.IntPtr method)
+    System.IAsyncResult BeginInvoke(System.AsyncCallback? callback, object? @object)
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>> EndInvoke(System.IAsyncResult result)
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>> Invoke()
+SimpleMediator.ServiceCollectionExtensions
+    Microsoft.Extensions.DependencyInjection.IServiceCollection AddApplicationMessaging(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, params System.Reflection.Assembly[] assemblies)
+    Microsoft.Extensions.DependencyInjection.IServiceCollection AddApplicationMessaging(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<SimpleMediator.SimpleMediatorConfiguration>? configure, params System.Reflection.Assembly[] assemblies)
+    Microsoft.Extensions.DependencyInjection.IServiceCollection AddSimpleMediator(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, params System.Reflection.Assembly[] assemblies)
+    Microsoft.Extensions.DependencyInjection.IServiceCollection AddSimpleMediator(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<SimpleMediator.SimpleMediatorConfiguration>? configure, params System.Reflection.Assembly[] assemblies)
+SimpleMediator.SimpleMediator
+    SimpleMediator.SimpleMediator(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory, Microsoft.Extensions.Logging.ILogger<SimpleMediator.SimpleMediator>? logger = null)
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, LanguageExt.Unit>> SimpleMediator.SimpleMediator.Publish<TNotification>(TNotification notification, System.Threading.CancellationToken cancellationToken = default) where TNotification : SimpleMediator.INotification
+    System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>> SimpleMediator.SimpleMediator.Send<TResponse>(SimpleMediator.IRequest<TResponse> request, System.Threading.CancellationToken cancellationToken = default)
+SimpleMediator.SimpleMediatorConfiguration
+    SimpleMediator.SimpleMediatorConfiguration()
+    Microsoft.Extensions.DependencyInjection.ServiceLifetime HandlerLifetime { get; private set; }
+    SimpleMediator.SimpleMediatorConfiguration AddPipelineBehavior(System.Type pipelineBehaviorType)
+    SimpleMediator.SimpleMediatorConfiguration AddPipelineBehavior<TBehavior>() where TBehavior : class
+    SimpleMediator.SimpleMediatorConfiguration AddRequestPostProcessor(System.Type processorType)
+    SimpleMediator.SimpleMediatorConfiguration AddRequestPostProcessor<TProcessor>() where TProcessor : class
+    SimpleMediator.SimpleMediatorConfiguration AddRequestPreProcessor(System.Type processorType)
+    SimpleMediator.SimpleMediatorConfiguration AddRequestPreProcessor<TProcessor>() where TProcessor : class
+    SimpleMediator.SimpleMediatorConfiguration RegisterServicesFromAssemblies(params System.Reflection.Assembly[] assemblies)
+    SimpleMediator.SimpleMediatorConfiguration RegisterServicesFromAssembly(System.Reflection.Assembly assembly)
+    SimpleMediator.SimpleMediatorConfiguration RegisterServicesFromAssemblyContaining<T>()
+    SimpleMediator.SimpleMediatorConfiguration WithHandlerLifetime(Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime)

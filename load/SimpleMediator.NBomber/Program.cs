@@ -148,7 +148,7 @@ internal static class ScenarioFactory
         .WithLoadSimulations(Simulation.Inject(rate: options.PublishRate, interval: TimeSpan.FromSeconds(1), during: options.Duration));
     }
 
-    private static string GetErrorMessage(Error error)
+    private static string GetErrorMessage(MediatorError error)
         => string.IsNullOrWhiteSpace(error.Message) ? "Mediator failure" : error.Message;
 }
 
@@ -171,6 +171,11 @@ internal static class NbomberScenarios
 
 internal sealed class NbomberOptions
 {
+    private static readonly JsonSerializerOptions ProfileSerializerOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     public string Scenario { get; set; } = NbomberScenarios.SendBurst;
 
     public TimeSpan Duration { get; set; } = TimeSpan.FromMinutes(1);
@@ -330,10 +335,7 @@ internal sealed class NbomberOptions
         try
         {
             var json = File.ReadAllText(fullPath);
-            var profile = JsonSerializer.Deserialize<NbomberProfile>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            var profile = JsonSerializer.Deserialize<NbomberProfile>(json, ProfileSerializerOptions);
 
             if (profile is null)
             {
@@ -435,11 +437,18 @@ internal sealed class PingCommandHandler : IRequestHandler<PingCommand, int>
 
 internal static class ArtifactWriter
 {
+    private static readonly JsonSerializerOptions SummarySerializerOptions = new()
+    {
+        WriteIndented = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
     public static void WriteArtifacts(string reportDirectory, NbomberOptions options)
     {
         try
         {
-            var timestampToken = Path.GetFileName(reportDirectory)?.Replace("nbomber-", string.Empty) ?? DateTime.UtcNow.ToString("yyyy-MM-dd.HHmmss");
+            var timestampToken = Path.GetFileName(reportDirectory)?.Replace("nbomber-", string.Empty)
+                ?? DateTime.UtcNow.ToString("yyyy-MM-dd.HHmmss", CultureInfo.InvariantCulture);
             var summary = ScenarioSummary.Parse(reportDirectory);
 
             WriteHarnessLog(reportDirectory, timestampToken, summary, options);
@@ -499,11 +508,7 @@ internal static class ArtifactWriter
     private static void WriteSummaryJson(string directory, ScenarioSummary summary)
     {
         var summaryPath = Path.Combine(directory, "nbomber-summary.json");
-        var json = JsonSerializer.Serialize(summary, new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        });
+        var json = JsonSerializer.Serialize(summary, SummarySerializerOptions);
         File.WriteAllText(summaryPath, json);
     }
 }

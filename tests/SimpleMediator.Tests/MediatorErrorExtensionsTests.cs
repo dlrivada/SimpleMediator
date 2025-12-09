@@ -52,4 +52,35 @@ public sealed class MediatorErrorExtensionsTests
 
         error.GetMediatorDetails().ShouldBeNull();
     }
+
+    [Fact]
+    public void GetMediatorMetadata_ReturnsMetadata_FromMediatorException()
+    {
+        var details = new Dictionary<string, object?>
+        {
+            ["handler"] = "TestHandler",
+            ["request"] = "TestRequest",
+            ["stage"] = "handler"
+        };
+
+        var error = MediatorErrors.Create("mediator.metadata", "boom", details: details);
+
+        var metadata = error.GetMediatorMetadata();
+
+        metadata.ShouldNotBeNull();
+        metadata.ShouldContainKey("handler");
+        metadata["handler"].ShouldBe("TestHandler");
+        metadata["stage"].ShouldBe("handler");
+    }
+
+    [Fact]
+    public void GetMediatorMetadata_ReturnsEmpty_ForNonMediatorMetadata()
+    {
+        var error = MediatorError.New("boom", new InvalidOperationException("oops"));
+
+        var metadata = error.GetMediatorMetadata();
+
+        metadata.ShouldNotBeNull();
+        metadata.ShouldBeEmpty();
+    }
 }

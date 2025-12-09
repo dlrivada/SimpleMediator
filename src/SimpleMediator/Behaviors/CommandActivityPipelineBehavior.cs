@@ -67,14 +67,14 @@ public sealed class CommandActivityPipelineBehavior<TCommand, TResponse>(IFuncti
         {
             activity?.SetStatus(ActivityStatusCode.Error, "cancelled");
             activity?.SetTag("mediator.cancelled", true);
-            return Left<MediatorError, TResponse>(MediatorErrors.Create("mediator.behavior.cancelled", $"Behavior {GetType().Name} cancelled the {typeof(TCommand).Name} request.", ex));
+            return Left<MediatorError, TResponse>(MediatorErrors.Create(MediatorErrorCodes.BehaviorCancelled, $"Behavior {GetType().Name} cancelled the {typeof(TCommand).Name} request.", ex));
         }
         catch (Exception ex)
         {
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             activity?.SetTag("exception.type", ex.GetType().FullName);
             activity?.SetTag("exception.message", ex.Message);
-            var error = MediatorErrors.FromException("mediator.behavior.exception", ex, $"Error running {GetType().Name} for {typeof(TCommand).Name}.");
+            var error = MediatorErrors.FromException(MediatorErrorCodes.BehaviorException, ex, $"Error running {GetType().Name} for {typeof(TCommand).Name}.");
             return Left<MediatorError, TResponse>(error);
         }
         _ = outcome.Match(

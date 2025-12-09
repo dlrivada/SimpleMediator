@@ -57,14 +57,14 @@ public sealed class QueryMetricsPipelineBehavior<TQuery, TResponse>(IMediatorMet
         {
             var elapsed = Stopwatch.GetElapsedTime(startedAt);
             _metrics.TrackFailure(requestKind, requestName, elapsed, "cancelled");
-            return Left<MediatorError, TResponse>(MediatorErrors.Create("mediator.behavior.cancelled", $"Behavior {GetType().Name} cancelled the {typeof(TQuery).Name} request.", ex));
+            return Left<MediatorError, TResponse>(MediatorErrors.Create(MediatorErrorCodes.BehaviorCancelled, $"Behavior {GetType().Name} cancelled the {typeof(TQuery).Name} request.", ex));
         }
         catch (Exception ex)
         {
             var elapsed = Stopwatch.GetElapsedTime(startedAt);
             var reason = ex.GetType().Name;
             _metrics.TrackFailure(requestKind, requestName, elapsed, reason);
-            var error = MediatorErrors.FromException("mediator.behavior.exception", ex, $"Error running {GetType().Name} for {typeof(TQuery).Name}.");
+            var error = MediatorErrors.FromException(MediatorErrorCodes.BehaviorException, ex, $"Error running {GetType().Name} for {typeof(TQuery).Name}.");
             return Left<MediatorError, TResponse>(error);
         }
 

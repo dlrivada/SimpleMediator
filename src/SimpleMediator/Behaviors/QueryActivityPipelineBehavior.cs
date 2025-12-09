@@ -62,14 +62,14 @@ public sealed class QueryActivityPipelineBehavior<TQuery, TResponse>(IFunctional
         {
             activity?.SetStatus(ActivityStatusCode.Error, "cancelled");
             activity?.SetTag("mediator.cancelled", true);
-            return Left<MediatorError, TResponse>(MediatorErrors.Create("mediator.behavior.cancelled", $"Behavior {GetType().Name} cancelled the {typeof(TQuery).Name} request.", ex));
+            return Left<MediatorError, TResponse>(MediatorErrors.Create(MediatorErrorCodes.BehaviorCancelled, $"Behavior {GetType().Name} cancelled the {typeof(TQuery).Name} request.", ex));
         }
         catch (Exception ex)
         {
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             activity?.SetTag("exception.type", ex.GetType().FullName);
             activity?.SetTag("exception.message", ex.Message);
-            var error = MediatorErrors.FromException("mediator.behavior.exception", ex, $"Error running {GetType().Name} for {typeof(TQuery).Name}.");
+            var error = MediatorErrors.FromException(MediatorErrorCodes.BehaviorException, ex, $"Error running {GetType().Name} for {typeof(TQuery).Name}.");
             return Left<MediatorError, TResponse>(error);
         }
         _ = outcome.Match(

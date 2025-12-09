@@ -14,7 +14,7 @@ namespace SimpleMediator;
 /// {
 ///     public bool TryExtractFailure(object? response, out string reason, out object? capturedFailure)
 ///     {
-///         if (response is PaymentOutcome outcome && outcome.TryGetError(out var paymentError))
+///         if (response is PaymentOutcome outcome &amp;&amp; outcome.TryGetError(out var paymentError))
 ///         {
 ///             reason = paymentError.Code ?? "payment.failure";
 ///             capturedFailure = paymentError;

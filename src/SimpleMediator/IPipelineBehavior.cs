@@ -9,8 +9,7 @@ namespace SimpleMediator;
 /// <typeparam name="TRequest">Request type traversing the pipeline.</typeparam>
 /// <typeparam name="TResponse">Response type returned by the final handler.</typeparam>
 /// <remarks>
-/// Behaviors are chained in reverse registration order. Each one decides whether to invoke
-/// <paramref name="nextStep"/> or short-circuit the flow with its own response.
+/// Behaviors are chained in reverse registration order. Each one decides whether to invoke the next step or short-circuit the flow with its own response.
 /// </remarks>
 /// <example>
 /// <code>

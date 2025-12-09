@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace SimpleMediator;
 
 internal static class MediatorBehaviorGuards
@@ -11,7 +13,13 @@ internal static class MediatorBehaviorGuards
         }
 
         var message = $"{behaviorType.Name} received a null request.";
-        failure = MediatorErrors.Create("mediator.behavior.null_request", message);
+        var metadata = new Dictionary<string, object?>
+        {
+            ["behavior"] = behaviorType.FullName,
+            ["stage"] = "behavior_guard",
+            ["issue"] = "null_request"
+        };
+        failure = MediatorErrors.Create(MediatorErrorCodes.BehaviorNullRequest, message, details: metadata);
         return false;
     }
 
@@ -24,7 +32,13 @@ internal static class MediatorBehaviorGuards
         }
 
         var message = $"{behaviorType.Name} received a null callback.";
-        failure = MediatorErrors.Create("mediator.behavior.null_next", message);
+        var metadata = new Dictionary<string, object?>
+        {
+            ["behavior"] = behaviorType.FullName,
+            ["stage"] = "behavior_guard",
+            ["issue"] = "null_next"
+        };
+        failure = MediatorErrors.Create(MediatorErrorCodes.BehaviorNullNext, message, details: metadata);
         return false;
     }
 }

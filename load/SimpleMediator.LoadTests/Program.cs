@@ -401,7 +401,7 @@ internal sealed class ThroughputSampler(LoadMetrics metrics)
 
                 CaptureSample(stopwatch.Elapsed, ref lastSampleTime, ref previousSend, ref previousPublish);
             }
-        });
+        }, cancellationToken);
     }
 
     public ThroughputSummary ToSummary()
@@ -450,7 +450,7 @@ internal sealed class ThroughputSampler(LoadMetrics metrics)
         lastSampleTime = currentElapsed;
     }
 
-    private static double Percentile(IReadOnlyList<double> samples, double percentile)
+    private static double Percentile(List<double> samples, double percentile)
     {
         if (samples.Count == 0)
         {
