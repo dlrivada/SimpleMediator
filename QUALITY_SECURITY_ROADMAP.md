@@ -67,7 +67,7 @@
 
 #### 1.1 Documentación API Comprehensiva
 
-- [ ] **Auditar XML comments:** Verificar que el 100% del API público tenga documentación XML completa con:
+- [x] **Auditar XML comments:** ✅ 100% del API público tiene documentación XML completa con:
   - Resumen claro y conciso
   - Descripción de parámetros y returns
   - Ejemplos de uso donde sea relevante
@@ -110,13 +110,12 @@
 
 #### 1.4 Análisis Estático Avanzado
 
-- [x] **Escaneo de calidad (SonarCloud o CodeFactor):**
-  - Configurar SonarCloud en el repositorio
-  - Integrar en CI con quality gate obligatorio
-  - Technical Debt Ratio ≤ 5%
-  - Maintainability Rating A
-  - Reliability Rating A
-  - Security Rating A
+- [x] **Escaneo de calidad (SonarCloud o CodeFactor):** ✅ Configurado
+  - Workflow de SonarCloud integrado con .NET scanner
+  - Quality gate badges añadidos al README
+  - Métricas de Coverage, Bugs, Code Smells, Technical Debt
+  - Ratings de Maintainability, Security y Reliability
+  - Pendiente: ejecutar primer análisis tras configurar SONAR_TOKEN
 - [ ] **Análisis de complejidad ciclomática:** Identificar y simplificar métodos complejos (target: ≤10 por método)
 - [ ] **Análisis de duplicación:** Eliminar código duplicado (target: <3%)
 - [ ] **Security hotspots:** Revisar y resolver todos los security hotspots identificados
@@ -312,11 +311,11 @@
 
 ### Inmediatos (Sprint Actual)
 
-- [ ] Configurar SonarCloud y añadir quality gate al README
-- [ ] Auditar y completar XML documentation en todo el API público (actualmente ~23%, objetivo 100%)
-- [ ] Elevar cobertura de tests a ≥95% (actualmente 92.9%)
+- [x] Configurar SonarCloud y añadir quality gate al README ✅
+- [x] Auditar y completar XML documentation en todo el API público ✅ (100% completado)
+- [ ] Elevar cobertura de tests a ≥95% (actualmente 92.3% líneas, 83.2% ramas)
 - [ ] Elevar mutation score a ≥95% (actualmente 93.74%)
-- [x] Adoptar namespaces con ámbito de archivo (completado - 30/30 archivos)
+- [x] Adoptar namespaces con ámbito de archivo ✅ (30/30 archivos)
 - [ ] Extraer guard clauses reutilizables
 - [ ] Configurar DocFX para documentación API
 
@@ -348,11 +347,13 @@
 
 | Métrica | Valor Actual | Objetivo | Estado |
 |---------|-------------|----------|--------|
-| Cobertura de Líneas | 92.9% | ≥95% | 🟡 Cerca |
+| Cobertura de Líneas | 92.3% | ≥95% | 🟡 Cerca |
+| Cobertura de Ramas | 83.2% | ≥90% | 🟡 Necesita trabajo |
 | Mutation Score | 93.74% | ≥95% | 🟡 Cerca |
 | Build Warnings | 0 | 0 | ✅ OK |
 | Tests Passing | 212/212 | 100% | ✅ OK |
-| XML Documentation | ~23% | 100% | 🔴 Necesita trabajo |
+| XML Documentation | 100% (108/108) | 100% | ✅ OK |
+| SonarCloud Quality Gate | Configurado | Pass | ⏳ Pendiente primer scan |
 | Technical Debt | Unknown | ≤5% | ⏳ Pendiente (SonarCloud) |
 | Complexity | Unknown | ≤10/método | ⏳ Pendiente |
 | Duplication | Unknown | <3% | ⏳ Pendiente |
