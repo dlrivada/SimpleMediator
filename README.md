@@ -1,6 +1,8 @@
 # SimpleMediator
 
 [![.NET Quality Gate](https://github.com/dlrivada/SimpleMediator/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/dlrivada/SimpleMediator/actions/workflows/dotnet-ci.yml)
+[![SonarCloud](https://github.com/dlrivada/SimpleMediator/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/dlrivada/SimpleMediator/actions/workflows/sonarcloud.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=dlrivada_SimpleMediator&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=dlrivada_SimpleMediator)
 [![CodeQL](https://github.com/dlrivada/SimpleMediator/actions/workflows/codeql.yml/badge.svg)](https://github.com/dlrivada/SimpleMediator/actions/workflows/codeql.yml)
 [![SBOM](https://github.com/dlrivada/SimpleMediator/actions/workflows/sbom.yml/badge.svg)](https://github.com/dlrivada/SimpleMediator/actions/workflows/sbom.yml)
 [![Benchmarks](https://github.com/dlrivada/SimpleMediator/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/dlrivada/SimpleMediator/actions/workflows/benchmarks.yml)
@@ -9,7 +11,14 @@
 ![.NET 10.0](https://img.shields.io/badge/.NET-10.0-512BD4.svg)
 ![Status](https://img.shields.io/badge/status-internal-blue.svg)
 ![License](https://img.shields.io/badge/license-private-important.svg)
-[![.NET Coverage](./badges/dotnet-coverage.svg)](./badges/dotnet-coverage.svg)
+
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=dlrivada_SimpleMediator&metric=coverage)](https://sonarcloud.io/summary/new_code?id=dlrivada_SimpleMediator)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=dlrivada_SimpleMediator&metric=bugs)](https://sonarcloud.io/summary/new_code?id=dlrivada_SimpleMediator)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=dlrivada_SimpleMediator&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=dlrivada_SimpleMediator)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=dlrivada_SimpleMediator&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=dlrivada_SimpleMediator)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=dlrivada_SimpleMediator&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=dlrivada_SimpleMediator)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dlrivada_SimpleMediator&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=dlrivada_SimpleMediator)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=dlrivada_SimpleMediator&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=dlrivada_SimpleMediator)
 ![Mutation](https://img.shields.io/badge/mutation-93.74%25-4C934C.svg)
 
 SimpleMediator is a lightweight mediator abstraction for .NET applications that lean on functional programming principles. It keeps request and response contracts explicit, integrates naturally with [LanguageExt](https://github.com/louthy/language-ext), and embraces pipeline behaviors so cross-cutting concerns stay composable.
