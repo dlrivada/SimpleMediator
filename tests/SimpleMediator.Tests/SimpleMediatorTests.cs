@@ -297,6 +297,39 @@ public sealed class SimpleMediatorTests
     }
 
     [Fact]
+    public async Task Send_TracksCancellationInMetrics_WhenDispatcherCatchesCancellation()
+    {
+        var metrics = new MediatorMetricsSpy();
+        using var activityCollector = new ActivityCollector();
+
+        var services = BuildServiceCollection(mediatorMetrics: metrics);
+
+        await using var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var result = await mediator.Send(new CancellableRequest(), cts.Token);
+
+        var error = ExpectFailure(result, MediatorErrorCodes.HandlerCancelled);
+
+        // Verify metrics tracked cancellation specifically
+        var failure = metrics.Failures.ShouldHaveSingleItem();
+        failure.Reason.ShouldBe(MediatorErrorCodes.HandlerCancelled);
+        failure.Kind.ShouldBe("request");
+        failure.Name.ShouldBe(nameof(CancellableRequest));
+        metrics.Successes.ShouldBeEmpty();
+
+        // Verify activity recorded cancellation
+        var activity = activityCollector.Activities.Last(a =>
+            a.DisplayName == "SimpleMediator.Send" &&
+            Equals(a.GetTagItem("mediator.request_type"), typeof(CancellableRequest).FullName));
+        activity.Status.ShouldBe(ActivityStatusCode.Error);
+        activity.GetTagItem("mediator.failure_reason").ShouldBe(MediatorErrorCodes.HandlerCancelled);
+    }
+
+    [Fact]
     public async Task LogSendOutcome_EmitsWarningWithoutErrorForCancelledPrefix()
     {
         var loggerCollector = new LoggerCollector();
