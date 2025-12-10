@@ -86,7 +86,7 @@
 
 #### 1.2 Código y Estilo
 
-- [ ] **Adoptar namespaces con ámbito de archivo:** Aplicar en todo `src/SimpleMediator` para coherencia y legibilidad
+- [x] **Adoptar namespaces con ámbito de archivo:** Ya aplicado en todo `src/SimpleMediator` (30/30 archivos usan file-scoped namespaces)
 - [ ] **Extraer guard clauses reutilizables:** Crear `EnsureRequest`, `EnsureNextStep`, etc. que encapsulen la creación de errores estándar
 - [ ] **Refactorizar `SimpleMediator.Publish`:** Delegar validaciones/guards en helpers internos (parcialmente completado con `Send`)
 - [ ] **Optimizar cachés de delegados:** Minimizar reflection y boxing en `RequestHandlerCache` y `NotificationHandlerInvokerCache`
@@ -313,10 +313,10 @@
 ### Inmediatos (Sprint Actual)
 
 - [ ] Configurar SonarCloud y añadir quality gate al README
-- [ ] Auditar y completar XML documentation en todo el API público
-- [ ] Elevar cobertura de tests a ≥95%
-- [ ] Elevar mutation score a ≥95%
-- [ ] Adoptar namespaces con ámbito de archivo
+- [ ] Auditar y completar XML documentation en todo el API público (actualmente ~23%, objetivo 100%)
+- [ ] Elevar cobertura de tests a ≥95% (actualmente 92.9%)
+- [ ] Elevar mutation score a ≥95% (actualmente 93.74%)
+- [x] Adoptar namespaces con ámbito de archivo (completado - 30/30 archivos)
 - [ ] Extraer guard clauses reutilizables
 - [ ] Configurar DocFX para documentación API
 
