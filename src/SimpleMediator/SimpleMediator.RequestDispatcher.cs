@@ -26,25 +26,29 @@ public sealed partial class SimpleMediator
 
             var handler = dispatcher.ResolveHandler(serviceProvider);
 
-            if (handler is null || !dispatcher.HandlerServiceType.IsInstanceOfType(handler))
+            if (!MediatorRequestGuards.TryValidateHandler<TResponse>(handler, requestType, typeof(TResponse), out var handlerError))
             {
-                var message = $"No registered IRequestHandler was found for {requestType.Name} -> {typeof(TResponse).Name}.";
-                var metadata = new Dictionary<string, object?>
-                {
-                    ["request"] = requestType.FullName,
-                    ["response"] = typeof(TResponse).FullName
-                };
                 Log.HandlerMissing(mediator._logger, requestType.Name, typeof(TResponse).Name);
                 stopwatch.Stop();
-                metrics?.TrackFailure(requestKind, requestType.Name, stopwatch.Elapsed, MediatorErrorCodes.HandlerMissing);
-                var error = MediatorErrors.Create(MediatorErrorCodes.HandlerMissing, message, details: metadata);
+                metrics?.TrackFailure(requestKind, requestType.Name, stopwatch.Elapsed, MediatorErrorCodes.RequestHandlerMissing);
+                var error = handlerError.Match(Left: err => err, Right: _ => MediatorErrors.Unknown);
                 MediatorDiagnostics.SendCompleted(activity, isSuccess: false, errorCode: error.GetMediatorCode(), errorMessage: error.Message);
-                return Left<MediatorError, TResponse>(error);
+                return handlerError;
+            }
+
+            if (!MediatorRequestGuards.TryValidateHandlerType<TResponse>(handler!, dispatcher.HandlerServiceType, requestType, out var typeError))
+            {
+                Log.HandlerMissing(mediator._logger, requestType.Name, typeof(TResponse).Name);
+                stopwatch.Stop();
+                metrics?.TrackFailure(requestKind, requestType.Name, stopwatch.Elapsed, MediatorErrorCodes.RequestHandlerTypeMismatch);
+                var error = typeError.Match(Left: err => err, Right: _ => MediatorErrors.Unknown);
+                MediatorDiagnostics.SendCompleted(activity, isSuccess: false, errorCode: error.GetMediatorCode(), errorMessage: error.Message);
+                return typeError;
             }
 
             try
             {
-                Log.ProcessingRequest(mediator._logger, requestType.Name, handler.GetType().Name);
+                Log.ProcessingRequest(mediator._logger, requestType.Name, handler!.GetType().Name);
                 activity?.SetTag("mediator.handler", handler.GetType().FullName);
                 activity?.SetTag("mediator.handler_count", 1);
 
@@ -83,7 +87,7 @@ public sealed partial class SimpleMediator
                 var metadata = new Dictionary<string, object?>
                 {
                     ["request"] = requestType.FullName,
-                    ["handler"] = handler.GetType().FullName,
+                    ["handler"] = handler!.GetType().FullName,
                     ["stage"] = "request"
                 };
                 Log.RequestCancelledDuringSend(mediator._logger, requestType.Name);
@@ -97,7 +101,7 @@ public sealed partial class SimpleMediator
                 var metadata = new Dictionary<string, object?>
                 {
                     ["request"] = requestType.FullName,
-                    ["handler"] = handler.GetType().FullName,
+                    ["handler"] = handler!.GetType().FullName,
                     ["stage"] = "pipeline"
                 };
                 var error = MediatorErrors.FromException(MediatorErrorCodes.PipelineException, ex, $"Unexpected error while processing {requestType.Name}.", metadata);

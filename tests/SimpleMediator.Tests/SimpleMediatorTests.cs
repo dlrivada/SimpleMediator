@@ -76,7 +76,7 @@ public sealed class SimpleMediatorTests
 
         var result = await mediator.Send(new MissingHandlerRequest(), CancellationToken.None);
 
-        var error = ExpectFailure(result, MediatorErrorCodes.HandlerMissing);
+        var error = ExpectFailure(result, MediatorErrorCodes.RequestHandlerMissing);
         var activity = activityCollector.Activities.Last(
             a => a.DisplayName == "SimpleMediator.Send"
                  && Equals(a.GetTagItem("mediator.request_type"), typeof(MissingHandlerRequest).FullName));
@@ -119,7 +119,7 @@ public sealed class SimpleMediatorTests
 
         var result = await mediator.Send(new MissingHandlerRequest(), CancellationToken.None);
 
-        var error = ExpectFailure(result, "mediator.handler.missing");
+        var error = ExpectFailure(result, MediatorErrorCodes.RequestHandlerMissing);
         error.Message.ShouldContain("No registered IRequestHandler was found");
         error.Message.ShouldContain(nameof(MissingHandlerRequest));
         loggerCollector.Entries.ShouldContain(entry =>
@@ -218,7 +218,7 @@ public sealed class SimpleMediatorTests
 
         var result = await mediator.Send(new MissingHandlerRequest(), CancellationToken.None);
 
-        var error = ExpectFailure(result, MediatorErrorCodes.HandlerMissing);
+        var error = ExpectFailure(result, MediatorErrorCodes.RequestHandlerMissing);
         var failure = metrics.Failures.ShouldHaveSingleItem();
         failure.Kind.ShouldBe("request");
         failure.Name.ShouldBe(nameof(MissingHandlerRequest));

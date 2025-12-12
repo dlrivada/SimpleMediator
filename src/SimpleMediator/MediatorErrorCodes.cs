@@ -26,6 +26,12 @@ public static class MediatorErrorCodes
     /// <summary>No request handler registered.</summary>
     public const string HandlerMissing = "mediator.handler.missing";
 
+    /// <summary>No request handler registered.</summary>
+    public const string RequestHandlerMissing = "mediator.request.handler_missing";
+
+    /// <summary>Request handler type mismatch.</summary>
+    public const string RequestHandlerTypeMismatch = "mediator.request.handler_type_mismatch";
+
     /// <summary>Request handler returned an invalid result.</summary>
     public const string HandlerInvalidResult = "mediator.handler.invalid_result";
 

@@ -19,6 +19,8 @@ const SimpleMediator.MediatorErrorCodes.PostProcessorException = "mediator.postp
 const SimpleMediator.MediatorErrorCodes.PreProcessorCancelled = "mediator.preprocessor.cancelled" -> string!
 const SimpleMediator.MediatorErrorCodes.PreProcessorException = "mediator.preprocessor.exception" -> string!
 const SimpleMediator.MediatorErrorCodes.RequestCancelled = "mediator.request.cancelled" -> string!
+const SimpleMediator.MediatorErrorCodes.RequestHandlerMissing = "mediator.request.handler_missing" -> string!
+const SimpleMediator.MediatorErrorCodes.RequestHandlerTypeMismatch = "mediator.request.handler_type_mismatch" -> string!
 const SimpleMediator.MediatorErrorCodes.RequestNull = "mediator.request.null" -> string!
 const SimpleMediator.MediatorErrorCodes.Timeout = "mediator.timeout" -> string!
 SimpleMediator.CommandActivityPipelineBehavior<TCommand, TResponse>

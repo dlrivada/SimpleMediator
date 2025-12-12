@@ -32,11 +32,10 @@ public sealed partial class SimpleMediator(IServiceScopeFactory scopeFactory, IL
     /// <inheritdoc />
     public ValueTask<Either<MediatorError, TResponse>> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
-        if (request is null)
+        if (!MediatorRequestGuards.TryValidateRequest<TResponse>(request, out var error))
         {
-            const string message = "The request cannot be null.";
             Log.NullRequest(_logger);
-            return new ValueTask<Either<MediatorError, TResponse>>(Left<MediatorError, TResponse>(MediatorErrors.Create(MediatorErrorCodes.RequestNull, message)));
+            return new ValueTask<Either<MediatorError, TResponse>>(error);
         }
         return new ValueTask<Either<MediatorError, TResponse>>(RequestDispatcher.ExecuteAsync(this, request, cancellationToken));
     }
@@ -45,11 +44,10 @@ public sealed partial class SimpleMediator(IServiceScopeFactory scopeFactory, IL
     public ValueTask<Either<MediatorError, Unit>> Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
         where TNotification : INotification
     {
-        if (notification is null)
+        if (!MediatorRequestGuards.TryValidateNotification(notification, out var error))
         {
-            const string message = "The notification cannot be null.";
             Log.NotificationNull(_logger);
-            return new ValueTask<Either<MediatorError, Unit>>(Left<MediatorError, Unit>(MediatorErrors.Create(MediatorErrorCodes.NotificationNull, message)));
+            return new ValueTask<Either<MediatorError, Unit>>(error);
         }
         return new ValueTask<Either<MediatorError, Unit>>(NotificationDispatcher.ExecuteAsync(this, notification, cancellationToken));
     }
