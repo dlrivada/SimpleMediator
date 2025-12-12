@@ -99,6 +99,28 @@ public sealed class PipelineBehaviorsTests
     }
 
     [Fact]
+    public async Task CommandActivityBehavior_OmitsCodeAndMessageTagsWhenEmpty()
+    {
+        var detector = new FunctionalFailureDetectorStub();
+        detector.SetFailure("validation-failed", code: "  ", message: "");
+        var behavior = new CommandActivityPipelineBehavior<PingCommand, string>(detector);
+        var request = new PingCommand("test");
+
+        using var listener = ActivityTestListener.Start(out var activities);
+        var outcome = await behavior.Handle(request, () => Success("result"), CancellationToken.None);
+
+        var response = ExpectSuccess(outcome);
+        response.ShouldBe("result");
+        var activity = activities.ShouldHaveSingleItem();
+        activity.Status.ShouldBe(ActivityStatusCode.Error);
+        activity.GetTagItem("mediator.functional_failure").ShouldBe(true);
+        activity.GetTagItem("mediator.failure_reason").ShouldBe("validation-failed");
+        // Code and message tags should not be present when empty/whitespace
+        activity.TagObjects.Any(tag => tag.Key == "mediator.failure_code").ShouldBeFalse();
+        activity.TagObjects.Any(tag => tag.Key == "mediator.failure_message").ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task CommandActivityBehavior_PropagatesCancellation()
     {
         var detector = new FunctionalFailureDetectorStub();
@@ -211,6 +233,28 @@ public sealed class PipelineBehaviorsTests
         activity.GetTagItem("mediator.failure_reason").ShouldBe("cache-miss");
         activity.GetTagItem("mediator.failure_code").ShouldBe("CACHE_MISS");
         activity.GetTagItem("mediator.failure_message").ShouldBe("Query not cached");
+    }
+
+    [Fact]
+    public async Task QueryActivityBehavior_OmitsCodeAndMessageTagsWhenEmpty()
+    {
+        var detector = new FunctionalFailureDetectorStub();
+        detector.SetFailure("not-found", code: null, message: "   ");
+        var behavior = new QueryActivityPipelineBehavior<PongQuery, string>(detector);
+        var request = new PongQuery(99);
+
+        using var listener = ActivityTestListener.Start(out var activities);
+        var outcome = await behavior.Handle(request, () => Success("fallback"), CancellationToken.None);
+
+        var response = ExpectSuccess(outcome);
+        response.ShouldBe("fallback");
+        var activity = activities.ShouldHaveSingleItem();
+        activity.Status.ShouldBe(ActivityStatusCode.Error);
+        activity.GetTagItem("mediator.functional_failure").ShouldBe(true);
+        activity.GetTagItem("mediator.failure_reason").ShouldBe("not-found");
+        // Code and message tags should not be present when null/whitespace
+        activity.TagObjects.Any(tag => tag.Key == "mediator.failure_code").ShouldBeFalse();
+        activity.TagObjects.Any(tag => tag.Key == "mediator.failure_message").ShouldBeFalse();
     }
 
     [Fact]

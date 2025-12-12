@@ -170,4 +170,34 @@ public sealed class MediatorErrorExtensionsTests
             Some: ex => ex.ShouldBe(innerException),
             None: () => throw new InvalidOperationException("Expected exception to be present"));
     }
+
+    [Fact]
+    public void MediatorErrors_Create_WithNonDictionaryDetails_WrapsInMetadata()
+    {
+        var customDetail = new { Value = 42, Name = "Test" };
+        var error = MediatorErrors.Create("test.code", "test message", details: customDetail);
+
+        error.GetMediatorCode().ShouldBe("test.code");
+        error.Message.ShouldBe("test message");
+
+        var details = error.GetMediatorDetails();
+        details.ShouldBe(customDetail);
+
+        var metadata = error.GetMediatorMetadata();
+        metadata.ShouldNotBeNull();
+        metadata.ShouldContainKey("detail");
+        metadata["detail"].ShouldBe(customDetail);
+    }
+
+    [Fact]
+    public void GetMediatorMetadata_ReturnsEmptyDictionary_WhenMetadataIsNull()
+    {
+        // Create an error with dictionary details that could potentially be null
+        var error = MediatorErrors.Create("test.null", "test", details: (IReadOnlyDictionary<string, object?>?)null);
+
+        var metadata = error.GetMediatorMetadata();
+
+        metadata.ShouldNotBeNull();
+        metadata.ShouldBeEmpty();
+    }
 }
