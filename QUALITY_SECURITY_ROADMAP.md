@@ -74,6 +74,14 @@
   - Referencias cruzadas a tipos relacionados
   - Remarks para casos especiales o consideraciones de rendimiento
 - [ ] **Documentar patrones internos:** Añadir comentarios explicativos en código complejo (RequestDispatcher, NotificationDispatcher, PipelineBuilder)
+- [ ] **Reorganizar ficheros por responsabilidad (sin cambios de código):**
+  - `Abstractions/`: `IMediator.cs`, `IRequest.cs`, `IRequestHandler.cs`, `IRequestPreProcessor.cs`, `IRequestPostProcessor.cs`, `INotification.cs`, `INotificationHandler.cs`, `IFunctionalFailureDetector.cs`, `IPipelineBehavior.cs`, `RequestHandlerDelegate.cs`.
+  - `Pipeline/`: `PipelineBuilder.cs`, `MediatorBehaviorGuards.cs`, `MediatorNotificationGuards.cs`, carpeta `Behaviors/` completa.
+  - `Dispatchers/`: `SimpleMediator.RequestDispatcher.cs`, `SimpleMediator.NotificationDispatcher.cs`, `MediatorAssemblyScanner.cs`.
+  - `Core/`: `SimpleMediator.cs`, `SimpleMediatorConfiguration.cs`, `ServiceCollectionExtensions.cs`.
+  - `Diagnostics/`: `MediatorDiagnostics.cs`, `MediatorMetrics.cs`.
+  - `Errors/`: `MediatorError.cs`, `MediatorErrorCodes.cs`, `Error.cs` (si sigue vigente).
+  - `Results/`: `MediatorResult.cs`, `NullFunctionalFailureDetector.cs` (impl por defecto/stub).
 - [ ] **Generar documentación API con DocFX:**
   - Configurar DocFX en el proyecto
   - Generar sitio de documentación HTML
@@ -255,7 +263,7 @@
 - [ ] **Optimizaciones avanzadas:**
   - Source generators para eliminar reflection completamente
   - Memory pooling para hot paths
-  - Span<T> y stackalloc donde sea seguro
+  - `Span<T>` y `stackalloc` donde sea seguro
   - Inlining hints para JIT
 - [ ] **Load testing en producción:**
   - Chaos engineering scenarios
