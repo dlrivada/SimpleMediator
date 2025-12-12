@@ -48,7 +48,7 @@ public sealed class NotificationProperties
 
         return result.Outcome.Match(
             Left: err => err.Exception.Match(Some: ex => ex is InvalidOperationException, None: () => false)
-                             && err.GetMediatorCode() == "mediator.notification.invoke_exception"
+                             && err.GetMediatorCode() == "mediator.notification.exception"
                              && result.Events.SequenceEqual(expected),
             Right: _ => false);
     }
