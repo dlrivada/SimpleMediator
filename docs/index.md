@@ -57,9 +57,10 @@ result.Match(
 
 ## Documentation
 
-- [API Reference](api/SimpleMediator.html) - Complete API documentation
-- [Getting Started](docs/getting-started.html) - Quick start guide
-- [Introduction](docs/introduction.html) - Core concepts and architecture
+- [Getting Started](docs/getting-started.md) - Quick start guide
+- [Introduction](docs/introduction.md) - Core concepts and architecture
+- [Architecture Patterns](architecture/patterns-guide.md) - Design patterns and best practices
+- [Architecture Decision Records](architecture/adr/) - Key architectural decisions
 
 ## Quality Metrics
 
@@ -70,7 +71,7 @@ result.Match(
 | Mutation Score | 93.74% | ≥95% | 🟡 Near |
 | Build Warnings | 0 | 0 | ✅ Perfect |
 | XML Documentation | 100% | 100% | ✅ Perfect |
-| Tests Passing | 229/229 | 100% | ✅ Perfect |
+| Tests Passing | 204/204 | 100% | ✅ Perfect |
 
 ## Architecture Highlights
 
