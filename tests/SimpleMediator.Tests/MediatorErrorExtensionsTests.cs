@@ -83,4 +83,91 @@ public sealed class MediatorErrorExtensionsTests
         metadata.ShouldNotBeNull();
         metadata.ShouldBeEmpty();
     }
+
+    [Fact]
+    public void MediatorError_New_WithNullException_ReturnsErrorWithoutException()
+    {
+        var error = MediatorError.New("test message", (Exception?)null);
+
+        error.Message.ShouldBe("test message");
+        error.Exception.IsNone.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void MediatorError_New_FromNullException_UsesDefaultMessage()
+    {
+        var error = MediatorError.New((Exception)null!);
+
+        error.Message.ShouldBe("An error occurred");
+        error.Exception.IsNone.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void MediatorError_New_FromNullExceptionWithMessage_UsesProvidedMessage()
+    {
+        var error = MediatorError.New((Exception)null!, "custom message");
+
+        error.Message.ShouldBe("custom message");
+        error.Exception.IsNone.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void MediatorError_New_WithEmptyMessage_UsesDefaultMessage()
+    {
+        var error = MediatorError.New("");
+
+        error.Message.ShouldBe("An error occurred");
+    }
+
+    [Fact]
+    public void MediatorError_New_WithWhitespaceMessage_UsesDefaultMessage()
+    {
+        var error = MediatorError.New("   ");
+
+        error.Message.ShouldBe("An error occurred");
+    }
+
+    [Fact]
+    public void MediatorError_ImplicitConversionFromString_CreatesError()
+    {
+        MediatorError error = "test error";
+
+        error.Message.ShouldBe("test error");
+        error.Exception.IsNone.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void MediatorError_ImplicitConversionFromException_CreatesError()
+    {
+        var exception = new InvalidOperationException("test exception");
+        MediatorError error = exception;
+
+        error.Message.ShouldBe("test exception");
+        error.Exception.IsSome.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void MediatorError_New_WithExceptionWithNullMessage_UsesExceptionMessage()
+    {
+        var exception = new InvalidOperationException(); // Exception with default message
+        var error = MediatorError.New(exception);
+
+        error.Message.ShouldNotBeNullOrWhiteSpace();
+        error.Exception.IsSome.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void MediatorError_New_WithMediatorException_NormalizesInnerException()
+    {
+        var innerException = new InvalidOperationException("inner");
+        var mediatorException = new MediatorException("mediator.test", "wrapper", innerException, details: null);
+
+        var error = MediatorError.New(mediatorException);
+
+        error.Message.ShouldBe("wrapper");
+        error.Exception.IsSome.ShouldBeTrue();
+        error.Exception.Match(
+            Some: ex => ex.ShouldBe(innerException),
+            None: () => throw new InvalidOperationException("Expected exception to be present"));
+    }
 }
