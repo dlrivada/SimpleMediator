@@ -742,6 +742,30 @@ public sealed class SimpleMediatorTests
     }
 
     [Fact]
+    public async Task Publish_SkipsNullHandlers_AndContinuesWithValidHandlers()
+    {
+        var tracker = new NotificationTracker();
+        var services = new ServiceCollection();
+        services.AddSimpleMediator();
+        services.AddScoped(_ => tracker);
+
+        // Register valid handler
+        services.AddScoped<INotificationHandler<SampleNotification>, AsyncSampleNotificationHandler>();
+
+        // Register a factory that returns null (simulating DI returning null handler)
+        services.AddScoped<INotificationHandler<SampleNotification>>(_ => null!);
+
+        await using var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        var result = await mediator.Publish(new SampleNotification(42), CancellationToken.None);
+
+        ExpectSuccess(result);
+        // The valid handler should have processed despite the null handler
+        tracker.Handled.ShouldContain("Async:42");
+    }
+
+    [Fact]
     public async Task Publish_HonorsCancellationRequests()
     {
         var loggerCollector = new LoggerCollector();
