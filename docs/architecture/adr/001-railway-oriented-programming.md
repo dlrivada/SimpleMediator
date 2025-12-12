@@ -34,7 +34,9 @@ We adopt **Railway Oriented Programming (ROP)** using `Either<MediatorError, TRe
 3. **Short-Circuiting:** First Left value stops pipeline execution
 4. **Exception Safety Net:** Unexpected exceptions are caught at dispatcher level and converted to Left
 
-### Implementation
+### Implementation (Pure ROP - Updated 2025-12-12)
+
+**Status:** Fully migrated to Pure Railway Oriented Programming
 
 ```csharp
 // Public API
@@ -44,9 +46,12 @@ ValueTask<Either<MediatorError, Unit>> Publish<TNotification>(TNotification noti
 // Pipeline behaviors
 ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, RequestHandlerCallback<TResponse> next, ...);
 
-// Handlers return plain TResponse
-Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken);
+// Handlers now return Either (Pure ROP - no exceptions)
+Task<Either<MediatorError, TResponse>> Handle(TRequest request, CancellationToken cancellationToken);
+Task<Either<MediatorError, Unit>> Handle(TNotification notification, CancellationToken cancellationToken);
 ```
+
+**Key Change:** Handlers now return `Either` types directly instead of plain `TResponse`. This completes the Pure ROP migration - handlers are responsible for returning success/failure explicitly rather than throwing exceptions.
 
 ### Error Flow
 
@@ -85,14 +90,15 @@ public sealed class MediatorError
 ### Negative
 
 - **Learning Curve:** Developers unfamiliar with functional patterns need to learn Either/Left/Right
-- **Verbosity:** Slightly more verbose than try-catch blocks
-- **Mixed Paradigm:** Handlers still return `Task<TResponse>` (not Either) to keep handler implementation simple
+- **Verbosity:** More verbose than try-catch blocks, requires explicit error handling
 - **Library Dependency:** Depends on LanguageExt for Either type
+- **Handler Complexity:** Handlers must return `Either` instead of throwing, requiring more ceremony
 
 ### Neutral
 
-- **Exception Handling:** Unexpected exceptions are still caught and converted to Either at the dispatcher boundary
-- **Interoperability:** External code can still throw exceptions; they're converted to MediatorError
+- **Exception Policy:** Exceptions are allowed in startup/configuration code but discouraged in runtime handlers
+- **Safety Net:** Unexpected exceptions during handler execution are caught and converted to `MediatorError` with code `mediator.handler.exception`
+- **Interoperability:** External dependencies that throw are wrapped in try-catch and converted to Left
 
 ## Alternatives Considered
 
@@ -175,8 +181,47 @@ public async ValueTask<Either<MediatorError, TResponse>> Handle(...)
 - [LanguageExt Either Documentation](https://github.com/louthy/language-ext/wiki/Either)
 - [Functional C# with Language-Ext](https://github.com/louthy/language-ext)
 
+## Exception Policy
+
+### When Exceptions ARE Allowed
+
+1. **Startup and Configuration:**
+   - During service registration (`AddSimpleMediator`)
+   - Assembly scanning failures
+   - Invalid configuration (missing handlers, invalid behavior registration)
+   - These are fail-fast scenarios that prevent the application from starting
+
+2. **Programming Errors:**
+   - Null reference exceptions from bugs
+   - Argument validation in public APIs
+   - Contract violations (e.g., null parameters)
+
+### When Exceptions are NOT Allowed
+
+1. **Handler Execution:**
+   - Handlers must return `Left<MediatorError>` for expected failures
+   - Validation errors → `Left`
+   - Business rule violations → `Left`
+   - Not found scenarios → `Left`
+   - Unauthorized access → `Left`
+
+2. **Expected Operational Failures:**
+   - Database connection issues → `Left`
+   - External API failures → `Left`
+   - Timeout scenarios → `Left`
+
+### Exception Safety Net
+
+If a handler accidentally throws an exception during execution:
+- The exception is caught at the dispatcher level
+- Converted to `MediatorError` with code `mediator.handler.exception`
+- Logged with full context (handler type, request type, stage)
+- Returned as `Left<MediatorError>` to the caller
+
+This provides graceful degradation while encouraging proper Either-based error handling.
+
 ## Notes
 
-This decision was made early in the project and has proven robust. The functional approach with Either provides excellent composability and makes error handling explicit and testable. The learning curve is acceptable given the benefits.
+This decision was made early in the project and fully adopted on 2025-12-12 with the Pure ROP migration. All handlers now return `Either` types, making error handling completely explicit and type-safe.
 
-Future consideration: Introduce `MediatorResult<T>` as a wrapper over `Either<MediatorError, T>` with convenience methods for better discoverability, while maintaining Either internally for composition.
+The functional approach with Either provides excellent composability and makes error handling explicit and testable. The learning curve is acceptable given the benefits, and the exception safety net ensures the framework remains resilient even when handlers don't follow best practices.

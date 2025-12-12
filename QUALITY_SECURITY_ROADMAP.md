@@ -138,11 +138,10 @@
 
 #### 2.1 Observabilidad Mejorada
 
-- [ ] **Introducir `MediatorResult<T>`:** Envoltura legible sobre `Either` con adaptadores de compatibilidad
-  - Métodos de conveniencia (IsSuccess, GetValue, GetError, etc.)
-  - Pattern matching mejorado
-  - Serialización JSON
-  - Tests de regresión completos
+- [x] **~~Introducir `MediatorResult<T>`~~:** ❌ **DESCARTADO** - Ver ADR-004
+  - Decisión: Mantener `Either<MediatorError, T>` directamente
+  - Razón: No aporta valor sobre Either de LanguageExt
+  - Alternativa: Mejorar documentación y ejemplos de uso de Either
 - [ ] **Ampliar `MediatorDiagnostics`:**
   - Eventos adicionales de ciclo de vida
   - Correlation IDs para tracing distribuido
@@ -267,10 +266,13 @@
   - Regression testing automático
   - Publicar resultados
 - [ ] **Optimizaciones avanzadas:**
-  - Source generators para eliminar reflection completamente
-  - Memory pooling para hot paths
-  - `Span<T>` y `stackalloc` donde sea seguro
-  - Inlining hints para JIT
+  - [x] **~~Source generators~~** ❌ **DESCARTADO** - Ver ADR-005
+    - Decisión: Mantener Expression Tree compilation con caching
+    - Razón: Complejidad no justifica ganancia mínima (~150μs en cold start)
+    - Performance actual: 6.8M ops/sec con expression trees
+  - [ ] Memory pooling para hot paths
+  - [ ] `Span<T>` y `stackalloc` donde sea seguro
+  - [ ] Inlining hints para JIT
 - [ ] **Load testing en producción:**
   - Chaos engineering scenarios
   - Stress testing con NBomber
@@ -297,14 +299,14 @@
 ### Mejora Continua del Core
 
 - [ ] Refactorizar `SimpleMediator.Publish` para delegar validaciones/guards en helpers internos (parcialmente: `Send` ya usa `PipelineBuilder`).
-- [ ] Extraer guard clauses reutilizables (`EnsureRequest`, `EnsureNextStep`, etc.) que encapsulen la creación de errores estándar.
-- [x] Adoptar namespaces con ámbito de archivo en todo `src/SimpleMediator` para incrementar la legibilidad y coherencia de estilo.
-- [x] Evolucionar `RequestHandlerCallback<T>` a `ValueTask<Either<MediatorError,T>>`.
+- [x] Extraer guard clauses reutilizables ✅ (MediatorRequestGuards, MediatorBehaviorGuards, MediatorNotificationGuards)
+- [x] Adoptar namespaces con ámbito de archivo en todo `src/SimpleMediator` ✅
+- [x] Evolucionar `RequestHandlerCallback<T>` a `ValueTask<Either<MediatorError,T>>` ✅
 - [ ] Replantear las cachés para minimizar reflection y boxing en el camino crítico.
-- [x] Introducir un `PipelineBuilder<TRequest,TResponse>` reutilizable.
-- [ ] Definir una envoltura `MediatorResult<T>` para expresar el resultado de forma más legible.
-- [x] Centralizar los códigos de error en `MediatorErrorCodes`.
-- [x] Encapsular la instrumentación en `MediatorDiagnostics`.
+- [x] Introducir un `PipelineBuilder<TRequest,TResponse>` reutilizable ✅
+- [x] **~~Definir una envoltura `MediatorResult<T>`~~** ❌ **DESCARTADO** - Ver ADR-004
+- [x] Centralizar los códigos de error en `MediatorErrorCodes` ✅
+- [x] Encapsular la instrumentación en `MediatorDiagnostics` ✅
 - [ ] Sustituir `object? Details` por un contenedor inmutable.
 - [ ] Considerar `CollectionsMarshal.AsSpan` para iteraciones de alto rendimiento.
 
@@ -352,14 +354,18 @@
   - PipelineBuilder.cs (42.86% - 39 killed, 76 survived)
   - MediatorBehaviorGuards.cs (40% - 8 killed, 16 survived)
   - SimpleMediator.NotificationDispatcher.cs (60.48% - 75 killed, 92 survived)
-- [ ] Implementar `MediatorResult<T>`
+- [x] **~~Implementar `MediatorResult<T>`~~** ❌ **DESCARTADO** - Ver ADR-004
 - [ ] Optimizar cachés de delegados
 - [ ] Ampliar property-based testing
 - [ ] Configurar SLSA Level 2
+- [x] **Documentar decisiones arquitecturales** ✅
+  - ADR-001: Updated con Pure ROP policy
+  - ADR-004: Decisión de NO implementar MediatorResult<T>
+  - ADR-005: Decisión de NO usar Source Generators
 
 ### Mediano Plazo
 
-- [ ] Source generators para eliminar reflection
+- [x] **~~Source generators para eliminar reflection~~** ❌ **DESCARTADO** - Ver ADR-005
 - [ ] Behaviors adicionales (retry, circuit breaker, etc.)
 - [ ] Templates y samples
 - [ ] Multi-framework support
