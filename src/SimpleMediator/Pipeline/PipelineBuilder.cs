@@ -125,6 +125,20 @@ internal sealed class PipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TR
         return response;
     }
 
+    /// <summary>
+    /// Executes the handler and returns its result directly.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Since handlers now return <see cref="Either{L,R}"/>, they are already on the functional rail.
+    /// We only need a try-catch as a safety net for unexpected exceptions (bugs in handler code),
+    /// not for functional failures which should be returned as Left values.
+    /// </para>
+    /// <para>
+    /// The handler is responsible for catching and converting expected errors to Either.
+    /// Any exception that escapes is treated as an unexpected bug and wrapped in HandlerException.
+    /// </para>
+    /// </remarks>
     private static async ValueTask<Either<MediatorError, TResponse>> ExecuteHandlerAsync(
         IRequestHandler<TRequest, TResponse> handler,
         TRequest request,
@@ -132,27 +146,13 @@ internal sealed class PipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TR
     {
         try
         {
-            var task = handler.Handle(request, cancellationToken);
-            if (task is null)
-            {
-                var message = $"Handler {handler.GetType().Name} returned a null task while processing {typeof(TRequest).Name}.";
-                var exception = new InvalidOperationException(message);
-                var metadata = new Dictionary<string, object?>
-                {
-                    ["handler"] = handler.GetType().FullName,
-                    ["request"] = typeof(TRequest).FullName,
-                    ["stage"] = "handler_null_task"
-                };
-                var error = MediatorErrors.FromException(MediatorErrorCodes.HandlerException, exception, message, metadata);
-                return Left<MediatorError, TResponse>(error);
-            }
-
-            var result = await task.ConfigureAwait(false);
-            return Right<MediatorError, TResponse>(result);
+            var result = await handler.Handle(request, cancellationToken).ConfigureAwait(false);
+            return result;
         }
         catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
         {
-            var message = $"Handler {handler.GetType().Name} cancelled the {typeof(TRequest).Name} request.";
+            // Cancellation is expected behavior, convert to Left
+            var message = $"Handler {handler.GetType().Name} was cancelled while processing {typeof(TRequest).Name}.";
             var metadata = new Dictionary<string, object?>
             {
                 ["handler"] = handler.GetType().FullName,
@@ -163,13 +163,18 @@ internal sealed class PipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TR
         }
         catch (Exception ex)
         {
+            // Unexpected exception - this indicates a bug in the handler
+            // Handlers should catch expected errors and return Left instead of throwing
+            var message = $"Unexpected exception in handler {handler.GetType().Name} for {typeof(TRequest).Name}. " +
+                          $"Handlers should return Left for expected failures instead of throwing exceptions.";
             var metadata = new Dictionary<string, object?>
             {
                 ["handler"] = handler.GetType().FullName,
                 ["request"] = typeof(TRequest).FullName,
-                ["stage"] = "handler"
+                ["stage"] = "handler",
+                ["exception_type"] = ex.GetType().FullName
             };
-            var error = MediatorErrors.FromException(MediatorErrorCodes.HandlerException, ex, $"Error running {handler.GetType().Name} for {typeof(TRequest).Name}.", metadata);
+            var error = MediatorErrors.FromException(MediatorErrorCodes.HandlerException, ex, message, metadata);
             return Left<MediatorError, TResponse>(error);
         }
     }

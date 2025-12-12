@@ -47,7 +47,7 @@ SimpleMediator.IMediatorMetrics.TrackFailure(string! requestKind, string! reques
 SimpleMediator.IMediatorMetrics.TrackSuccess(string! requestKind, string! requestName, System.TimeSpan duration) -> void
 SimpleMediator.INotification
 SimpleMediator.INotificationHandler<TNotification>
-SimpleMediator.INotificationHandler<TNotification>.Handle(TNotification notification, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SimpleMediator.INotificationHandler<TNotification>.Handle(TNotification notification, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<LanguageExt.Either<SimpleMediator.MediatorError, LanguageExt.Unit>>!
 SimpleMediator.IPipelineBehavior<TRequest, TResponse>
 SimpleMediator.IPipelineBehavior<TRequest, TResponse>.Handle(TRequest request, SimpleMediator.RequestHandlerCallback<TResponse>! nextStep, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>
 SimpleMediator.IQuery
@@ -58,7 +58,7 @@ SimpleMediator.IQueryPipelineBehavior<TQuery, TResponse>
 SimpleMediator.IQueryPipelineBehavior<TQuery>
 SimpleMediator.IRequest<TResponse>
 SimpleMediator.IRequestHandler<TRequest, TResponse>
-SimpleMediator.IRequestHandler<TRequest, TResponse>.Handle(TRequest request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResponse>!
+SimpleMediator.IRequestHandler<TRequest, TResponse>.Handle(TRequest request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>!
 SimpleMediator.IRequestPostProcessor<TRequest, TResponse>
 SimpleMediator.IRequestPostProcessor<TRequest, TResponse>.Process(TRequest request, LanguageExt.Either<SimpleMediator.MediatorError, TResponse> response, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 SimpleMediator.IRequestPreProcessor<TRequest>

@@ -128,6 +128,13 @@ public sealed partial class SimpleMediator
             return true;
         }
 
+        /// <summary>
+        /// Invokes a notification handler that now returns Either{MediatorError, Unit}.
+        /// </summary>
+        /// <remarks>
+        /// Since handlers now return Either, they handle their own functional failures.
+        /// We only catch unexpected exceptions as a safety net for bugs.
+        /// </remarks>
         internal static async Task<Either<MediatorError, Unit>> InvokeNotificationHandler<TNotification>(object handler, TNotification notification, CancellationToken cancellationToken)
             where TNotification : INotification
         {
@@ -144,93 +151,43 @@ public sealed partial class SimpleMediator
                 return Left<MediatorError, Unit>(failure);
             }
 
-            Task? execution;
             try
             {
-                execution = executor(handler, notification, cancellationToken);
+                // Executor now returns Task<Either<MediatorError, Unit>>
+                var result = await executor(handler, notification, cancellationToken).ConfigureAwait(false);
+                return result;
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
             {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    var message = $"Publishing {notificationName} was cancelled by {handlerType.Name}.";
-                    var invokeMetadata = new Dictionary<string, object?>
-                    {
-                        ["handler"] = handlerType.FullName,
-                        ["notification"] = notificationName,
-                        ["stage"] = "invoke"
-                    };
-                    return Left<MediatorError, Unit>(MediatorErrors.Create(MediatorErrorCodes.NotificationCancelled, message, ex, invokeMetadata));
-                }
-
-                var invokeErrorMetadata = new Dictionary<string, object?>
+                // Cancellation is expected behavior
+                var message = $"Notification handler {handlerType.Name} was cancelled while processing {notificationName}.";
+                var metadata = new Dictionary<string, object?>
                 {
                     ["handler"] = handlerType.FullName,
                     ["notification"] = notificationName,
-                    ["stage"] = "invoke"
+                    ["stage"] = "handler"
                 };
-                var error = MediatorErrors.FromException(MediatorErrorCodes.NotificationException, ex, $"Error processing {notificationName} with {handlerType.Name}.", invokeErrorMetadata);
-                return Left<MediatorError, Unit>(error);
+                return Left<MediatorError, Unit>(MediatorErrors.Create(MediatorErrorCodes.NotificationCancelled, message, ex, metadata));
             }
             catch (Exception ex)
             {
-                var invokeExceptionMetadata = new Dictionary<string, object?>
+                // Unexpected exception - indicates a bug in the handler
+                // Handlers should return Left for expected failures instead of throwing
+                var message = $"Unexpected exception in notification handler {handlerType.Name} for {notificationName}. " +
+                              $"Handlers should return Left for expected failures instead of throwing exceptions.";
+                var metadata = new Dictionary<string, object?>
                 {
                     ["handler"] = handlerType.FullName,
                     ["notification"] = notificationName,
-                    ["stage"] = "invoke"
+                    ["stage"] = "handler",
+                    ["exception_type"] = ex.GetType().FullName
                 };
-                var error = MediatorErrors.FromException(MediatorErrorCodes.NotificationException, ex, $"Error processing {notificationName} with {handlerType.Name}.", invokeExceptionMetadata);
-                return Left<MediatorError, Unit>(error);
-            }
-
-            if (execution is null)
-            {
-                return Right<MediatorError, Unit>(Unit.Default);
-            }
-
-            try
-            {
-                await execution.ConfigureAwait(false);
-                return Right<MediatorError, Unit>(Unit.Default);
-            }
-            catch (OperationCanceledException ex)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    var message = $"Publishing {notificationName} was cancelled by {handlerType.Name}.";
-                    var executeMetadata = new Dictionary<string, object?>
-                    {
-                        ["handler"] = handlerType.FullName,
-                        ["notification"] = notificationName,
-                        ["stage"] = "execute"
-                    };
-                    return Left<MediatorError, Unit>(MediatorErrors.Create(MediatorErrorCodes.NotificationCancelled, message, ex, executeMetadata));
-                }
-
-                var executeErrorMetadata = new Dictionary<string, object?>
-                {
-                    ["handler"] = handlerType.FullName,
-                    ["notification"] = notificationName,
-                    ["stage"] = "execute"
-                };
-                var error = MediatorErrors.FromException(MediatorErrorCodes.NotificationException, ex, $"Error processing {notificationName} with {handlerType.Name}.", executeErrorMetadata);
-                return Left<MediatorError, Unit>(error);
-            }
-            catch (Exception ex)
-            {
-                var invokeFailureMetadata = new Dictionary<string, object?>
-                {
-                    ["handler"] = handlerType.FullName,
-                    ["notification"] = notificationName,
-                    ["stage"] = "execute"
-                };
-                var error = MediatorErrors.FromException(MediatorErrorCodes.NotificationInvokeException, ex, $"Error invoking {handlerType.Name}.Handle.", invokeFailureMetadata);
+                var error = MediatorErrors.FromException(MediatorErrorCodes.NotificationException, ex, message, metadata);
                 return Left<MediatorError, Unit>(error);
             }
         }
 
-        private static bool TryGetNotificationExecutor(Type handlerType, Type desiredNotificationType, Type? runtimeNotificationType, string notificationName, out Func<object, object?, CancellationToken, Task> executor, out MediatorError failure)
+        private static bool TryGetNotificationExecutor(Type handlerType, Type desiredNotificationType, Type? runtimeNotificationType, string notificationName, out Func<object, object?, CancellationToken, Task<Either<MediatorError, Unit>>> executor, out MediatorError failure)
         {
             if (NotificationHandlerInvokerCache.TryGetValue((handlerType, desiredNotificationType), out var cached))
             {
@@ -250,13 +207,13 @@ public sealed partial class SimpleMediator
                     ["expectedNotification"] = desiredNotificationType.FullName
                 };
                 failure = MediatorErrors.Create(MediatorErrorCodes.NotificationMissingHandle, message, details: metadata);
-                executor = static (_, _, _) => Task.CompletedTask;
+                executor = static (_, _, _) => Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
                 return false;
             }
 
             if (!MediatorNotificationGuards.TryValidateHandleMethod(method, handlerType, notificationName, out failure))
             {
-                executor = static (_, _, _) => Task.CompletedTask;
+                executor = static (_, _, _) => Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
                 return false;
             }
 
@@ -283,11 +240,11 @@ public sealed partial class SimpleMediator
         /// If the notification is null and the type is a value type, we use the default value instead of
         /// attempting to cast null.</para>
         /// <para><b>Generated Delegate Signature:</b></para>
-        /// <para>Func&lt;object handler, object? notification, CancellationToken, Task&gt;</para>
+        /// <para>Func&lt;object handler, object? notification, CancellationToken, Task&lt;Either&lt;MediatorError, Unit&gt;&gt;&gt;</para>
         /// <para>This allows the cached delegate to be invoked with object parameters while maintaining type safety
-        /// internally through the generated casts.</para>
+        /// internally through the generated casts. The handler now returns Either to enable Railway Oriented Programming.</para>
         /// </remarks>
-        private static Func<object, object?, CancellationToken, Task> CreateNotificationInvoker(MethodInfo method, Type handlerType, Type notificationType)
+        private static Func<object, object?, CancellationToken, Task<Either<MediatorError, Unit>>> CreateNotificationInvoker(MethodInfo method, Type handlerType, Type notificationType)
         {
             // Define parameters for the lambda: (object handler, object? notification, CancellationToken cancellationToken)
             var handlerParameter = Expression.Parameter(typeof(object), "handler");
@@ -331,13 +288,12 @@ public sealed partial class SimpleMediator
                 call = Expression.Call(castHandler, method, castNotification, cancellationTokenParameter);
             }
 
-            // Ensure the return type is Task (handle Task vs ValueTask)
-            Expression body = method.ReturnType == typeof(Task)
-                ? call
-                : Expression.Convert(call, typeof(Task));
+            // Handler now returns Task<Either<MediatorError, Unit>>
+            // No conversion needed - it's already the correct type
+            Expression body = call;
 
             // Build and compile the lambda expression
-            var lambda = Expression.Lambda<Func<object, object?, CancellationToken, Task>>(
+            var lambda = Expression.Lambda<Func<object, object?, CancellationToken, Task<Either<MediatorError, Unit>>>>(
                 body,
                 handlerParameter,
                 notificationParameter,

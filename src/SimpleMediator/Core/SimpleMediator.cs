@@ -24,7 +24,7 @@ namespace SimpleMediator;
 public sealed partial class SimpleMediator(IServiceScopeFactory scopeFactory, ILogger<SimpleMediator>? logger = null) : IMediator
 {
     private static readonly ConcurrentDictionary<(Type Request, Type Response), RequestHandlerBase> RequestHandlerCache = new();
-    private static readonly ConcurrentDictionary<(Type Handler, Type Notification), Func<object, object?, CancellationToken, Task>> NotificationHandlerInvokerCache = new();
+    private static readonly ConcurrentDictionary<(Type Handler, Type Notification), Func<object, object?, CancellationToken, Task<Either<MediatorError, Unit>>>> NotificationHandlerInvokerCache = new();
 
     private readonly IServiceScopeFactory _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
     private readonly ILogger<SimpleMediator> _logger = logger ?? NullLogger<SimpleMediator>.Instance;
