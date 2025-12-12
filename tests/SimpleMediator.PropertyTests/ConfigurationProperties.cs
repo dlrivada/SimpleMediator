@@ -3,6 +3,7 @@ using FsCheck;
 using FsCheck.Xunit;
 using LanguageExt;
 using Microsoft.Extensions.DependencyInjection;
+using static LanguageExt.Prelude;
 
 namespace SimpleMediator.PropertyTests;
 
@@ -259,7 +260,7 @@ public sealed class ConfigurationProperties
         var property = typeof(SimpleMediatorConfiguration)
             .GetProperty("PipelineBehaviorTypes", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
-        return property?.GetValue(configuration) as IReadOnlyList<Type> ?? Array.Empty<Type>();
+        return property?.GetValue(configuration) as IReadOnlyList<Type> ?? System.Array.Empty<Type>();
     }
 
     private static IReadOnlyList<Type> GetRequestPreProcessorTypes(SimpleMediatorConfiguration configuration)
@@ -267,7 +268,7 @@ public sealed class ConfigurationProperties
         var property = typeof(SimpleMediatorConfiguration)
             .GetProperty("RequestPreProcessorTypes", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
-        return property?.GetValue(configuration) as IReadOnlyList<Type> ?? Array.Empty<Type>();
+        return property?.GetValue(configuration) as IReadOnlyList<Type> ?? System.Array.Empty<Type>();
     }
 
     private static IReadOnlyList<Type> GetRequestPostProcessorTypes(SimpleMediatorConfiguration configuration)
@@ -275,7 +276,7 @@ public sealed class ConfigurationProperties
         var property = typeof(SimpleMediatorConfiguration)
             .GetProperty("RequestPostProcessorTypes", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
-        return property?.GetValue(configuration) as IReadOnlyList<Type> ?? Array.Empty<Type>();
+        return property?.GetValue(configuration) as IReadOnlyList<Type> ?? System.Array.Empty<Type>();
     }
 
     [Property(MaxTest = 150)]
@@ -423,23 +424,23 @@ public sealed class ConfigurationProperties
     {
         private readonly CallRecorder _recorder = recorder;
 
-        public Task<int> Handle(TrackedRequest request, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, int>> Handle(TrackedRequest request, CancellationToken cancellationToken)
         {
             _recorder.Add("handler");
 
             return request.Execution switch
             {
-                HandlerExecution.Success => Task.FromResult(request.Value),
+                HandlerExecution.Success => Task.FromResult(Right<MediatorError, int>(request.Value)),
                 HandlerExecution.Exception => ThrowAsFault<int>(),
                 HandlerExecution.Cancellation => ThrowAsCancellation<int>(cancellationToken),
-                _ => Task.FromResult(request.Value)
+                _ => Task.FromResult(Right<MediatorError, int>(request.Value))
             };
 
-            static Task<T> ThrowAsFault<T>() => Task.FromException<T>(new InvalidOperationException("boom"));
+            static Task<Either<MediatorError, T>> ThrowAsFault<T>() => Task.FromException<Either<MediatorError, T>>(new InvalidOperationException("boom"));
 
-            static Task<T> ThrowAsCancellation<T>(CancellationToken token)
+            static Task<Either<MediatorError, T>> ThrowAsCancellation<T>(CancellationToken token)
             {
-                var source = Task.FromCanceled<T>(token);
+                var source = Task.FromCanceled<Either<MediatorError, T>>(token);
                 return source;
             }
         }

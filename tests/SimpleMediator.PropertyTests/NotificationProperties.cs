@@ -4,6 +4,7 @@ using FsCheck;
 using FsCheck.Xunit;
 using LanguageExt;
 using Microsoft.Extensions.DependencyInjection;
+using static LanguageExt.Prelude;
 
 namespace SimpleMediator.PropertyTests;
 
@@ -83,7 +84,7 @@ public sealed class NotificationProperties
 
         var services = new ServiceCollection();
         services.AddSingleton<CallRecorder>();
-        services.AddSimpleMediator(Array.Empty<Assembly>());
+        services.AddSimpleMediator(System.Array.Empty<Assembly>());
 
         for (var index = 0; index < handlerCount; index++)
         {
@@ -138,7 +139,7 @@ public sealed class NotificationProperties
     {
         var services = new ServiceCollection();
         services.AddSingleton<CallRecorder>();
-        services.AddSimpleMediator(Array.Empty<Assembly>());
+        services.AddSimpleMediator(System.Array.Empty<Assembly>());
 
         for (var index = 0; index < outcomes.Count; index++)
         {
@@ -188,18 +189,18 @@ public sealed class NotificationProperties
         private readonly int _label = label;
         private readonly HandlerOutcome _outcome = outcome;
 
-        public Task Handle(TrackedNotification notification, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, Unit>> Handle(TrackedNotification notification, CancellationToken cancellationToken)
         {
             _recorder.Add($"handler:{_label}");
 
             return _outcome switch
             {
-                HandlerOutcome.Success => Task.CompletedTask,
-                HandlerOutcome.Fault => Task.FromException(new InvalidOperationException($"fault:{_label}")),
-                HandlerOutcome.Cancellation => Task.FromCanceled(cancellationToken.IsCancellationRequested
+                HandlerOutcome.Success => Task.FromResult(Right<MediatorError, Unit>(Unit.Default)),
+                HandlerOutcome.Fault => Task.FromException<Either<MediatorError, Unit>>(new InvalidOperationException($"fault:{_label}")),
+                HandlerOutcome.Cancellation => Task.FromCanceled<Either<MediatorError, Unit>>(cancellationToken.IsCancellationRequested
                     ? cancellationToken
                     : new CancellationToken(true)),
-                _ => Task.CompletedTask
+                _ => Task.FromResult(Right<MediatorError, Unit>(Unit.Default))
             };
         }
     }

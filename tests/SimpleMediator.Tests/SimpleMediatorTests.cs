@@ -1686,10 +1686,10 @@ public sealed class SimpleMediatorTests
     {
         private readonly PipelineTracker _tracker = tracker;
 
-        public Task<string> Handle(EchoRequest request, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, string>> Handle(EchoRequest request, CancellationToken cancellationToken)
         {
             _tracker.Events.Add("handler");
-            return Task.FromResult(request.Value);
+            return Task.FromResult(Right<MediatorError, string>(request.Value));
         }
     }
 
@@ -1697,7 +1697,7 @@ public sealed class SimpleMediatorTests
 
     private sealed class FaultyRequestHandler : IRequestHandler<FaultyRequest, string>
     {
-        public Task<string> Handle(FaultyRequest request, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, string>> Handle(FaultyRequest request, CancellationToken cancellationToken)
             => throw new InvalidOperationException("boom");
     }
 
@@ -1705,10 +1705,10 @@ public sealed class SimpleMediatorTests
 
     private sealed class CancellableRequestHandler : IRequestHandler<CancellableRequest, string>
     {
-        public Task<string> Handle(CancellableRequest request, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, string>> Handle(CancellableRequest request, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Task.FromResult("ok");
+            return Task.FromResult(Right<MediatorError, string>("ok"));
         }
     }
 
@@ -1716,7 +1716,7 @@ public sealed class SimpleMediatorTests
 
     private sealed class NullTaskRequestHandler : IRequestHandler<NullTaskRequest, string>
     {
-        public Task<string> Handle(NullTaskRequest request, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, string>> Handle(NullTaskRequest request, CancellationToken cancellationToken)
             => null!;
     }
 
@@ -1724,15 +1724,15 @@ public sealed class SimpleMediatorTests
 
     private sealed class CacheProbeRequestHandler : IRequestHandler<CacheProbeRequest, string>
     {
-        public Task<string> Handle(CacheProbeRequest request, CancellationToken cancellationToken)
-            => Task.FromResult(request.Value + ":cached");
+        public Task<Either<MediatorError, string>> Handle(CacheProbeRequest request, CancellationToken cancellationToken)
+            => Task.FromResult(Right<MediatorError, string>(request.Value + ":cached"));
     }
 
     private sealed record AccidentalCancellationRequest() : IRequest<string>;
 
     private sealed class AccidentalCancellationRequestHandler : IRequestHandler<AccidentalCancellationRequest, string>
     {
-        public Task<string> Handle(AccidentalCancellationRequest request, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, string>> Handle(AccidentalCancellationRequest request, CancellationToken cancellationToken)
             => throw new OperationCanceledException("forced cancellation without linked token");
     }
 
@@ -1740,8 +1740,8 @@ public sealed class SimpleMediatorTests
 
     private sealed class CancelledOutcomeRequestHandler : IRequestHandler<CancelledOutcomeRequest, string>
     {
-        public Task<string> Handle(CancelledOutcomeRequest request, CancellationToken cancellationToken)
-            => Task.FromResult("ok");
+        public Task<Either<MediatorError, string>> Handle(CancelledOutcomeRequest request, CancellationToken cancellationToken)
+            => Task.FromResult(Right<MediatorError, string>("ok"));
     }
 
     private sealed class CancelledOutcomeBehavior : IPipelineBehavior<CancelledOutcomeRequest, string>
@@ -1756,10 +1756,10 @@ public sealed class SimpleMediatorTests
     {
         private readonly LifecycleTracker _tracker = tracker;
 
-        public Task<string> Handle(LifecycleRequest request, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, string>> Handle(LifecycleRequest request, CancellationToken cancellationToken)
         {
             _tracker.Events.Add("handler");
-            return Task.FromResult(request.Value + ":ok");
+            return Task.FromResult(Right<MediatorError, string>(request.Value + ":ok"));
         }
     }
 
@@ -1775,10 +1775,10 @@ public sealed class SimpleMediatorTests
     {
         private readonly NotificationTracker _tracker = tracker;
 
-        public Task Handle(SampleNotification notification, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, Unit>> Handle(SampleNotification notification, CancellationToken cancellationToken)
         {
             _tracker.Handled.Add($"A:{notification.Value}");
-            return Task.CompletedTask;
+            return Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
         }
     }
 
@@ -1786,49 +1786,49 @@ public sealed class SimpleMediatorTests
     {
         private readonly NotificationTracker _tracker = tracker;
 
-        public Task Handle(SampleNotification notification, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, Unit>> Handle(SampleNotification notification, CancellationToken cancellationToken)
         {
             _tracker.Handled.Add($"B:{notification.Value}");
-            return Task.CompletedTask;
+            return Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
         }
     }
 
     private sealed class FaultyNotificationHandler : INotificationHandler<SampleNotification>
     {
-        public Task Handle(SampleNotification notification, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, Unit>> Handle(SampleNotification notification, CancellationToken cancellationToken)
             => throw new InvalidOperationException("notify-failure");
     }
 
     private sealed class NullReturningNotificationHandler : INotificationHandler<SampleNotification>
     {
-        public Task Handle(SampleNotification notification, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, Unit>> Handle(SampleNotification notification, CancellationToken cancellationToken)
             => null!;
     }
 
     private sealed class CancellableNotificationHandler : INotificationHandler<SampleNotification>
     {
-        public Task Handle(SampleNotification notification, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, Unit>> Handle(SampleNotification notification, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Task.CompletedTask;
+            return Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
         }
     }
 
     private sealed class AccidentalCancellationNotificationHandler : INotificationHandler<AccidentalCancellationNotification>
     {
-        public Task Handle(AccidentalCancellationNotification notification, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, Unit>> Handle(AccidentalCancellationNotification notification, CancellationToken cancellationToken)
             => throw new OperationCanceledException("forced cancellation without linked token");
     }
 
     private sealed class ExplicitInterfaceNotificationHandler : INotificationHandler<ExplicitNotification>
     {
-        Task INotificationHandler<ExplicitNotification>.Handle(ExplicitNotification notification, CancellationToken cancellationToken)
-            => Task.CompletedTask;
+        Task<Either<MediatorError, Unit>> INotificationHandler<ExplicitNotification>.Handle(ExplicitNotification notification, CancellationToken cancellationToken)
+            => Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
     }
 
     private sealed class ThrowingExplicitNotificationHandler
     {
-        public static Task Handle(ExplicitNotification notification, CancellationToken cancellationToken)
+        public static Task<Either<MediatorError, Unit>> Handle(ExplicitNotification notification, CancellationToken cancellationToken)
             => throw new InvalidOperationException("explicit boom");
     }
 
@@ -1840,7 +1840,7 @@ public sealed class SimpleMediatorTests
 
     private sealed class ThrowingCancelledExplicitNotificationHandler
     {
-        public static Task Handle(ExplicitNotification notification, CancellationToken cancellationToken)
+        public static Task<Either<MediatorError, Unit>> Handle(ExplicitNotification notification, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             throw new OperationCanceledException("explicit cancellation", cancellationToken);
@@ -1849,8 +1849,8 @@ public sealed class SimpleMediatorTests
 
     private sealed class TaskCancellingExplicitNotificationHandler
     {
-        public static Task Handle(ExplicitNotification notification, CancellationToken cancellationToken)
-            => Task.FromCanceled(cancellationToken);
+        public static Task<Either<MediatorError, Unit>> Handle(ExplicitNotification notification, CancellationToken cancellationToken)
+            => Task.FromCanceled<Either<MediatorError, Unit>>(cancellationToken);
     }
 
     private sealed record PostProcessorRequest(string Value) : IRequest<string>;
@@ -1859,10 +1859,10 @@ public sealed class SimpleMediatorTests
     {
         private readonly PostProcessorTracker _tracker = tracker;
 
-        public Task<string> Handle(PostProcessorRequest request, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, string>> Handle(PostProcessorRequest request, CancellationToken cancellationToken)
         {
             _tracker.Events.Add("handler");
-            return Task.FromResult(request.Value + ":handled");
+            return Task.FromResult(Right<MediatorError, string>(request.Value + ":handled"));
         }
     }
 
@@ -1891,25 +1891,26 @@ public sealed class SimpleMediatorTests
 
     private sealed class CancellingExplicitNotificationHandler : INotificationHandler<ExplicitNotification>
     {
-        public Task Handle(ExplicitNotification notification, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, Unit>> Handle(ExplicitNotification notification, CancellationToken cancellationToken)
             => throw new OperationCanceledException("explicit cancellation", cancellationToken);
     }
 
     private sealed class MissingCancellationTokenNotificationHandler
     {
-        public static Task Handle(ExplicitNotification notification)
-            => Task.CompletedTask;
+        public static Task<Either<MediatorError, Unit>> Handle(ExplicitNotification notification)
+            => Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
     }
 
     private sealed class AsyncSampleNotificationHandler(SimpleMediatorTests.NotificationTracker tracker) : INotificationHandler<SampleNotification>
     {
         private readonly NotificationTracker _tracker = tracker;
 
-        public async Task Handle(SampleNotification notification, CancellationToken cancellationToken)
+        public async Task<Either<MediatorError, Unit>> Handle(SampleNotification notification, CancellationToken cancellationToken)
         {
             await Task.Delay(1, cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             _tracker.Handled.Add($"Async:{notification.Value}");
+            return Right<MediatorError, Unit>(Unit.Default);
         }
     }
 
@@ -1919,11 +1920,11 @@ public sealed class SimpleMediatorTests
 
     private sealed class AsyncRequestHandler : IRequestHandler<AsyncRequest, string>
     {
-        public async Task<string> Handle(AsyncRequest request, CancellationToken cancellationToken)
+        public async Task<Either<MediatorError, string>> Handle(AsyncRequest request, CancellationToken cancellationToken)
         {
             await Task.Delay(1, cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
-            return request.Value + ":async";
+            return Right<MediatorError, string>(request.Value + ":async");
         }
     }
 
@@ -2057,8 +2058,8 @@ public sealed class SimpleMediatorTests
 
     private sealed class MisleadingNotificationHandler : INotificationHandler<SampleNotification>
     {
-        Task INotificationHandler<SampleNotification>.Handle(SampleNotification notification, CancellationToken cancellationToken)
-            => Task.CompletedTask;
+        Task<Either<MediatorError, Unit>> INotificationHandler<SampleNotification>.Handle(SampleNotification notification, CancellationToken cancellationToken)
+            => Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
 
         public static string Handle(SampleNotification notification, CancellationToken cancellationToken)
             => "invalid";
@@ -2172,11 +2173,11 @@ public sealed class SimpleMediatorTests
     {
         private readonly AsyncPipelineTracker _tracker = tracker;
 
-        public async Task<string> Handle(AsyncPipelineRequest request, CancellationToken cancellationToken)
+        public async Task<Either<MediatorError, string>> Handle(AsyncPipelineRequest request, CancellationToken cancellationToken)
         {
             await Task.Delay(1, cancellationToken).ConfigureAwait(false);
             _tracker.Events.Add("handler");
-            return request.Value + ":async";
+            return Right<MediatorError, string>(request.Value + ":async");
         }
     }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Reflection;
+using LanguageExt;
 
 namespace SimpleMediator;
 
@@ -25,14 +26,17 @@ internal static class MediatorNotificationGuards
             return false;
         }
 
-        if (!typeof(Task).IsAssignableFrom(method.ReturnType))
+        // Validate return type is Task<Either<MediatorError, Unit>>
+        var expectedReturnType = typeof(Task<>).MakeGenericType(typeof(Either<MediatorError, Unit>));
+        if (method.ReturnType != expectedReturnType)
         {
-            var message = $"Handler {handlerType.Name} returned an unexpected type while processing {notificationName}.";
+            var message = $"Handler {handlerType.Name} must return Task<Either<MediatorError, Unit>> but returned {method.ReturnType.Name}.";
             var metadata = new Dictionary<string, object?>
             {
                 ["handler"] = handlerType.FullName,
                 ["notification"] = notificationName,
-                ["returnType"] = method.ReturnType.FullName
+                ["expectedReturnType"] = expectedReturnType.FullName,
+                ["actualReturnType"] = method.ReturnType.FullName
             };
             failure = MediatorErrors.Create(MediatorErrorCodes.NotificationInvalidReturn, message, details: metadata);
             return false;

@@ -1,6 +1,8 @@
 using System.Reflection;
+using LanguageExt;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using static LanguageExt.Prelude;
 
 namespace SimpleMediator.ContractTests;
 
@@ -38,7 +40,7 @@ public sealed class ConfigurationEdgeCaseContracts
     {
         var services = new ServiceCollection();
 
-        services.AddSimpleMediator(Array.Empty<Assembly>());
+        services.AddSimpleMediator(System.Array.Empty<Assembly>());
 
         var pipelineDescriptors = services.Where(IsPipelineDescriptor).ToList();
         pipelineDescriptors.Count.ShouldBe(4, "Default pipeline behaviors should remain intact when no assemblies are provided.");
@@ -60,9 +62,9 @@ public sealed class ConfigurationEdgeCaseContracts
 
     private sealed class TestCommandHandler : global::SimpleMediator.ICommandHandler<TestCommand, string>
     {
-        public Task<string> Handle(TestCommand request, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, string>> Handle(TestCommand request, CancellationToken cancellationToken)
         {
-            return Task.FromResult(request.Payload);
+            return Task.FromResult(Right<MediatorError, string>(request.Payload));
         }
     }
 }

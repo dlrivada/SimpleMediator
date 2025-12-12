@@ -1,7 +1,9 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using LanguageExt;
 using Microsoft.Extensions.DependencyInjection;
 using SimpleMediator;
+using static LanguageExt.Prelude;
 
 var options = LoadHarnessOptions.Parse(Environment.GetCommandLineArgs().Skip(1).ToArray());
 
@@ -222,10 +224,10 @@ internal sealed record PingCommand(long Id) : IRequest<int>;
 
 internal sealed class PingCommandHandler : IRequestHandler<PingCommand, int>
 {
-    public Task<int> Handle(PingCommand request, CancellationToken cancellationToken)
+    public Task<Either<MediatorError, int>> Handle(PingCommand request, CancellationToken cancellationToken)
     {
         var computed = unchecked((int)(request.Id % 1_000));
-        return Task.FromResult(computed);
+        return Task.FromResult(Right<MediatorError, int>(computed));
     }
 }
 
@@ -233,9 +235,9 @@ internal sealed record BroadcastNotification(long Id) : INotification;
 
 internal sealed class BroadcastNotificationHandler : INotificationHandler<BroadcastNotification>
 {
-    public Task Handle(BroadcastNotification notification, CancellationToken cancellationToken)
+    public Task<Either<MediatorError, Unit>> Handle(BroadcastNotification notification, CancellationToken cancellationToken)
     {
-        return Task.CompletedTask;
+        return Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
     }
 }
 

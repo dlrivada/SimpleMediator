@@ -1,6 +1,7 @@
 using System.Reflection;
 using LanguageExt;
 using Shouldly;
+using static LanguageExt.Prelude;
 
 namespace SimpleMediator.Tests;
 
@@ -84,14 +85,16 @@ public sealed class MediatorAssemblyScannerTests
 
     private sealed class PingHandler : IRequestHandler<PingRequest, string>
     {
-        public Task<string> Handle(PingRequest request, CancellationToken cancellationToken) => Task.FromResult(request.Value);
+        public Task<Either<MediatorError, string>> Handle(PingRequest request, CancellationToken cancellationToken)
+            => Task.FromResult(Right<MediatorError, string>(request.Value));
     }
 
     private sealed record PingNotification(string Value) : INotification;
 
     private sealed class PingNotificationHandler : INotificationHandler<PingNotification>
     {
-        public Task Handle(PingNotification notification, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<Either<MediatorError, Unit>> Handle(PingNotification notification, CancellationToken cancellationToken)
+            => Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
     }
 
     private sealed class ClosedPipelineBehavior : IPipelineBehavior<PingRequest, string>
@@ -139,12 +142,13 @@ public sealed class MediatorAssemblyScannerTests
 
     private abstract class AbstractHandler : IRequestHandler<PingRequest, string>
     {
-        public abstract Task<string> Handle(PingRequest request, CancellationToken cancellationToken);
+        public abstract Task<Either<MediatorError, string>> Handle(PingRequest request, CancellationToken cancellationToken);
     }
 
     private struct ValueTypeHandler : IRequestHandler<PingRequest, string>
     {
-        public Task<string> Handle(PingRequest request, CancellationToken cancellationToken) => Task.FromResult(request.Value);
+        public Task<Either<MediatorError, string>> Handle(PingRequest request, CancellationToken cancellationToken)
+            => Task.FromResult(Right<MediatorError, string>(request.Value));
     }
 
     private static void ResetScannerCache()
