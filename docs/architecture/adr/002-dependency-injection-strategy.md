@@ -8,6 +8,7 @@
 ## Context
 
 SimpleMediator needs a robust dependency injection strategy that:
+
 - Integrates seamlessly with ASP.NET Core and .NET Generic Host applications
 - Supports proper service lifetimes for handlers, behaviors, and processors
 - Enables testability and mockability of all components
@@ -16,6 +17,7 @@ SimpleMediator needs a robust dependency injection strategy that:
 - Allows flexible registration patterns (manual, assembly scanning, open generics)
 
 The mediator orchestrates multiple component types with different lifecycle needs:
+
 - **Handlers:** Process individual requests/notifications (may be stateful, database-dependent)
 - **Behaviors:** Cross-cutting concerns that wrap handlers (logging, caching, validation)
 - **Pre/Post Processors:** Side-effect operations (auditing, metrics, enrichment)
@@ -48,6 +50,7 @@ var serviceProvider = scope.ServiceProvider;
 ```
 
 **Benefits:**
+
 - Isolates service resolution between concurrent requests
 - Enables scoped service injection (DbContext, HttpContext, user context)
 - Automatic disposal of scoped services when request completes
@@ -167,6 +170,7 @@ public SimpleMediator(IServiceScopeFactory scopeFactory, ILogger<SimpleMediator>
 ```
 
 **Why `IServiceScopeFactory` instead of `IServiceProvider`?**
+
 - Enables explicit scope creation for request isolation
 - Prevents accidental singleton service resolution when scoped is intended
 - Gives mediator control over service lifetime boundaries

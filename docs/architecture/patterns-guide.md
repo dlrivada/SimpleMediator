@@ -20,10 +20,13 @@ This guide explains the key design patterns used in SimpleMediator, their purpos
 ## Mediator Pattern
 
 ### Purpose
+
 Reduce coupling between components by introducing a central coordinator that handles communication between objects without them knowing about each other.
 
 ### Problem
+
 Without a mediator:
+
 ```csharp
 // Controller tightly coupled to business logic
 public class UserController
@@ -52,6 +55,7 @@ public class UserController
 ```
 
 **Issues:**
+
 - Controller knows about 4 different services
 - Hard to test (must mock all dependencies)
 - Cross-cutting concerns (validation, caching, logging) scattered across controllers
@@ -104,6 +108,7 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
 ```
 
 ### Benefits
+
 - **Single Responsibility:** Controller only coordinates, handler only contains business logic
 - **Open/Closed Principle:** Add new commands without modifying existing code
 - **Testability:** Easy to test handlers in isolation
@@ -134,10 +139,13 @@ public sealed partial class SimpleMediator : IMediator
 ## Railway Oriented Programming
 
 ### Purpose
+
 Make error handling explicit in the type system and enable composable error handling without exceptions.
 
 ### Problem
+
 Traditional exception-based error handling:
+
 ```csharp
 public async Task<User> GetUser(int id)
 {
@@ -154,6 +162,7 @@ var user = await GetUser(123); // May throw - not visible in code
 ```
 
 **Issues:**
+
 - Exceptions are invisible in method signatures
 - Expensive (stack unwinding, allocation)
 - Control flow is implicit (hard to follow)
@@ -227,6 +236,7 @@ private static async ValueTask<Either<MediatorError, TResponse>> ExecutePipeline
 ```
 
 ### Benefits
+
 - **Explicit Errors:** Type system forces you to handle errors
 - **Composability:** Chain operations with `Bind`, `Map`, `Match`
 - **Performance:** No exception throwing for expected failures
@@ -255,10 +265,13 @@ result.Match(
 ## Chain of Responsibility
 
 ### Purpose
+
 Pass a request through a chain of handlers, where each handler can either process the request or pass it to the next handler.
 
 ### Problem
+
 Cross-cutting concerns (logging, validation, caching) duplicated across handlers:
+
 ```csharp
 public class CreateUserHandler : IRequestHandler<CreateUserCommand, User>
 {
@@ -376,6 +389,7 @@ public RequestHandlerCallback<TResponse> Build(IServiceProvider serviceProvider)
 ```
 
 ### Benefits
+
 - **Separation of Concerns:** Each behavior handles one responsibility
 - **Reusability:** Behaviors apply to all requests automatically
 - **Flexibility:** Add/remove behaviors via DI registration
@@ -386,12 +400,15 @@ public RequestHandlerCallback<TResponse> Build(IServiceProvider serviceProvider)
 ## Decorator Pattern
 
 ### Purpose
+
 Dynamically add responsibilities to objects by wrapping them in decorator objects.
 
 ### Problem
+
 Want to add functionality (caching, logging, metrics) to handlers without modifying them.
 
 ### Solution
+
 Pipeline behaviors are decorators around the handler:
 
 ```csharp
@@ -431,6 +448,7 @@ public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
 ```
 
 **Execution Flow:**
+
 ```
 CachingBehavior.Handle
   ↓ (calls next)
@@ -442,10 +460,12 @@ GetUserHandler.Handle (actual logic)
 ```
 
 ### Difference from Chain of Responsibility
+
 - **Chain:** One handler processes OR passes to next
 - **Decorator:** All decorators execute in sequence, wrapping the core handler
 
 In SimpleMediator, behaviors are both:
+
 - **Chain:** Can short-circuit by returning Left without calling `next()`
 - **Decorator:** Wrap the handler and add functionality before/after
 
@@ -454,10 +474,13 @@ In SimpleMediator, behaviors are both:
 ## Observer Pattern
 
 ### Purpose
+
 Define a one-to-many dependency so that when one object changes state, all dependents are notified.
 
 ### Problem
+
 Multiple components need to react to the same event:
+
 ```csharp
 // Tightly coupled event handling
 public async Task CreateOrder(Order order)
@@ -546,6 +569,7 @@ public static async Task<Either<MediatorError, Unit>> ExecuteAsync<TNotification
 ```
 
 ### Benefits
+
 - **Decoupling:** Publisher doesn't know about observers
 - **Extensibility:** Add new observers without modifying publisher
 - **Single Responsibility:** Each observer handles one concern
@@ -555,6 +579,7 @@ public static async Task<Either<MediatorError, Unit>> ExecuteAsync<TNotification
 ## Factory Pattern
 
 ### Purpose
+
 Encapsulate object creation logic and provide a common interface for creating families of related objects.
 
 ### Implementation in SimpleMediator
@@ -600,6 +625,7 @@ private static IRequestHandlerWrapper CreateRequestHandlerWrapper(Type requestTy
 ```
 
 ### Benefits
+
 - **Type Erasure:** Hide generic type parameters behind non-generic interface
 - **Caching:** Factory objects are cached and reused
 - **Testability:** Easy to mock factory interface
@@ -609,10 +635,13 @@ private static IRequestHandlerWrapper CreateRequestHandlerWrapper(Type requestTy
 ## Guard Clauses
 
 ### Purpose
+
 Validate preconditions early and fail fast with clear error messages.
 
 ### Problem
+
 Validation logic scattered throughout methods:
+
 ```csharp
 public async Task<Either<MediatorError, TResponse>> Send<TResponse>(
     IRequest<TResponse> request, CancellationToken ct)
@@ -685,6 +714,7 @@ public ValueTask<Either<MediatorError, TResponse>> Send<TResponse>(
 ```
 
 ### Benefits
+
 - **DRY:** Validation logic in one place
 - **Consistency:** Same error messages and codes everywhere
 - **Testability:** Easy to test validation logic in isolation
@@ -695,10 +725,13 @@ public ValueTask<Either<MediatorError, TResponse>> Send<TResponse>(
 ## Expression Tree Compilation
 
 ### Purpose
+
 Generate optimized code at runtime to avoid reflection overhead.
 
 ### Problem
+
 Reflection is slow (~50-100x slower than direct calls):
+
 ```csharp
 // Slow: Reflection invocation
 var method = handler.GetType().GetMethod("Handle");
@@ -751,6 +784,7 @@ await result;
 | MethodInfo.Invoke | 2,500ns | 16.7x |
 
 ### Benefits
+
 - **Performance:** 50-100x faster than reflection
 - **Type Safety:** Casts are validated at compile time
 - **Caching:** Compiled once, reused forever

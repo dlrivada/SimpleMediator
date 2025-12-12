@@ -8,6 +8,7 @@
 ## Context
 
 The mediator needs a robust, type-safe error handling strategy that:
+
 - Avoids throwing exceptions for expected failures (validation errors, business rule violations, not found, etc.)
 - Maintains type safety throughout the pipeline
 - Enables composable error handling in behaviors and processors
@@ -15,6 +16,7 @@ The mediator needs a robust, type-safe error handling strategy that:
 - Supports functional programming patterns
 
 Traditional exception-based error handling has several drawbacks:
+
 - Exceptions are invisible in method signatures (no compile-time verification)
 - Performance overhead for control flow
 - Makes composition and chaining difficult

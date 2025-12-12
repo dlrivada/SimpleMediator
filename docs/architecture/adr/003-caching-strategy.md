@@ -8,18 +8,21 @@
 ## Context
 
 The mediator needs to resolve and invoke handlers dynamically based on request/notification types. Without caching, this requires:
+
 - Reflection to determine handler types from request types
 - Reflection to invoke handler methods
 - Generic type construction on every request
 - Service resolution from DI container
 
 **Performance Problem:**
+
 - Reflection is ~10-100x slower than direct method calls
 - `MakeGenericType()` and `MethodInfo.Invoke()` are particularly expensive
 - Request processing happens on the hot path (every API call in typical web applications)
 - Mediator is often invoked hundreds of times per second in production
 
 **Requirements:**
+
 - Minimize reflection overhead without sacrificing type safety
 - Cache compiled delegates for near-native performance
 - Thread-safe caching (mediator is registered as Singleton)
@@ -38,6 +41,7 @@ private static readonly ConcurrentDictionary<(Type Request, Type Response), IReq
 ```
 
 **What it caches:** Wrapper objects that know how to:
+
 - Construct the generic `IRequestHandler<TRequest, TResponse>` service type
 - Resolve the handler from DI
 - Invoke the pipeline (behaviors → handler → processors)
@@ -56,6 +60,7 @@ private static readonly ConcurrentDictionary<(Type HandlerType, Type Notificatio
 ```
 
 **What it caches:** Compiled delegates generated from Expression trees that:
+
 - Cast `object handler` to concrete handler type
 - Cast `object? notification` to concrete notification type
 - Invoke `handler.Handle(notification, cancellationToken)`
@@ -179,6 +184,7 @@ internal sealed class RequestHandlerWrapper<TRequest, TResponse> : IRequestHandl
 ```
 
 **Why wrapper instead of delegate?**
+
 - Need to resolve handler from DI (requires service type)
 - Need to build pipeline with behaviors/processors (complex logic)
 - Wrapper encapsulates all request-specific type knowledge
@@ -188,12 +194,14 @@ internal sealed class RequestHandlerWrapper<TRequest, TResponse> : IRequestHandl
 **Current Approach:** No invalidation - caches are populated on first use and retained for application lifetime.
 
 **Rationale:**
+
 - Handler registrations are static (configured at startup)
 - DI container doesn't support runtime registration changes
 - Cache entries are small (~100-500 bytes each)
 - Typical application has 10-100 handler types (max ~50KB cache)
 
 **Future Consideration:** If dynamic handler registration is added, consider:
+
 - `IChangeToken` to invalidate cache when registrations change
 - Weak references for rarely-used handlers
 - LRU eviction policy with size limit
