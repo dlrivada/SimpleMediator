@@ -221,6 +221,7 @@ public async ValueTask<Either<MediatorError, TResponse>> Handle(...)
 ### Exception Safety Net
 
 If a handler accidentally throws an exception during execution:
+
 - The exception is caught at the dispatcher level
 - Converted to `MediatorError` with code `mediator.handler.exception`
 - Logged with full context (handler type, request type, stage)
