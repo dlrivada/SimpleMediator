@@ -57,6 +57,7 @@ result.Match(
 
 ## Documentation
 
+- [API Reference](https://dlrivada.github.io/SimpleMediator/api/SimpleMediator.html) - Complete API documentation
 - [Getting Started](docs/getting-started.md) - Quick start guide
 - [Introduction](docs/introduction.md) - Core concepts and architecture
 - [Architecture Patterns](architecture/patterns-guide.md) - Design patterns and best practices

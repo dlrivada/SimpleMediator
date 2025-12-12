@@ -30,6 +30,14 @@ SimpleMediator is a lightweight mediator abstraction for .NET applications that 
 > - `benchmarks/*` – BenchmarkDotNet harness.
 > - `docs/` – architecture notes, RFCs, and policies.
 
+## Documentation
+
+- 📘 [API Reference](https://dlrivada.github.io/SimpleMediator/api/SimpleMediator.html) - Complete API documentation (auto-generated with DocFX)
+- 🚀 [Getting Started Guide](docs/docs/getting-started.md) - Quick start guide
+- 📖 [Introduction](docs/docs/introduction.md) - Core concepts and architecture
+- 🏛️ [Architecture Patterns](docs/architecture/patterns-guide.md) - Design patterns and best practices
+- 📋 [Architecture Decision Records](docs/architecture/adr/) - Key architectural decisions
+
 ## Table of Contents
 
 - [Why SimpleMediator](#why-simplemediator)
