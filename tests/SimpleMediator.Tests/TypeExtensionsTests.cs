@@ -23,6 +23,19 @@ public sealed class TypeExtensionsTests
         typeof(IDisposable).IsAssignableFromGeneric(typeof(SampleDisposable)).ShouldBeTrue();
     }
 
+    [Fact]
+    public void IsAssignableFromGeneric_WorksWithConcreteClasses()
+    {
+        typeof(object).IsAssignableFromGeneric(typeof(string)).ShouldBeTrue();
+        typeof(string).IsAssignableFromGeneric(typeof(object)).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void IsAssignableFromGeneric_ReturnsFalseForUnrelatedTypes()
+    {
+        typeof(IDisposable).IsAssignableFromGeneric(typeof(string)).ShouldBeFalse();
+    }
+
     private sealed class InstrumentationPipeline<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
