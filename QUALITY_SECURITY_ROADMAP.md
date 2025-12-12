@@ -73,7 +73,11 @@
   - Ejemplos de uso donde sea relevante
   - Referencias cruzadas a tipos relacionados
   - Remarks para casos especiales o consideraciones de rendimiento
-- [ ] **Documentar patrones internos:** Añadir comentarios explicativos en código complejo (RequestDispatcher, NotificationDispatcher, PipelineBuilder)
+- [x] **Documentar patrones internos:** ✅ Completado
+  - Añadidos comentarios explicativos y XML docs en RequestDispatcher (162 líneas de documentación)
+  - Documentado NotificationDispatcher con detalles de Expression tree compilation
+  - Documentado PipelineBuilder con explicación del patrón Decorator y Russian doll pattern
+  - Comentarios inline explicando flujo del pipeline y decisiones de diseño
 - [x] **Reorganizar ficheros por responsabilidad (sin cambios de código):** ✅ Completado
   - `Abstractions/`: 11 archivos (IMediator, IRequest, IRequestHandler, IRequestPreProcessor, IRequestPostProcessor, INotification, INotificationHandler, IFunctionalFailureDetector, IPipelineBehavior, RequestHandlerDelegate, CqrsContracts)
   - `Core/`: 3 archivos (SimpleMediator, SimpleMediatorConfiguration, ServiceCollectionExtensions)
@@ -87,10 +91,12 @@
   - Sitio de documentación HTML generado (34 páginas API + guías existentes)
   - Workflow de CI para auto-generación y deploy a GitHub Pages
   - Pendiente: configurar GitHub Pages y añadir badge al README
-- [ ] **Crear guías de arquitectura:**
-  - Architecture Decision Records (ADR) para decisiones clave
-  - Diagrama de componentes y dependencias
-  - Guía de patrones utilizados (ROP, DI, functional programming)
+- [x] **Crear guías de arquitectura:** ✅ Completado
+  - **ADR-001: Railway Oriented Programming** - Documenta estrategia de error handling con Either<L,R>
+  - **ADR-002: Dependency Injection Strategy** - Documenta service lifetimes, scoping y registration patterns
+  - **ADR-003: Caching Strategy** - Documenta Expression tree compilation y reflection caching
+  - **Component Diagram** - 5 diagramas Mermaid (arquitectura, flujos, error handling, caching, dependencias)
+  - **Patterns Guide** - Guía completa de 9 patrones de diseño con ejemplos y código
 
 #### 1.2 Código y Estilo
 
@@ -346,7 +352,6 @@
   - PipelineBuilder.cs (42.86% - 39 killed, 76 survived)
   - MediatorBehaviorGuards.cs (40% - 8 killed, 16 survived)
   - SimpleMediator.NotificationDispatcher.cs (60.48% - 75 killed, 92 survived)
-- [ ] Crear Architecture Decision Records (ADRs)
 - [ ] Implementar `MediatorResult<T>`
 - [ ] Optimizar cachés de delegados
 - [ ] Ampliar property-based testing
