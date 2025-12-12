@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NBomber.Contracts;
 using NBomber.CSharp;
 using SimpleMediator;
+using static LanguageExt.Prelude;
 
 var options = NbomberOptions.Parse(Environment.GetCommandLineArgs().Skip(1).ToArray());
 options.Normalize();
@@ -428,10 +429,10 @@ internal sealed record BroadcastNotification(long Id) : INotification;
 
 internal sealed class PingCommandHandler : IRequestHandler<PingCommand, int>
 {
-    public Task<int> Handle(PingCommand request, CancellationToken cancellationToken)
+    public Task<Either<MediatorError, int>> Handle(PingCommand request, CancellationToken cancellationToken)
     {
         var computed = unchecked((int)(request.Id % 1_000));
-        return Task.FromResult(computed);
+        return Task.FromResult(Right<MediatorError, int>(computed));
     }
 }
 
@@ -629,8 +630,8 @@ internal sealed class ScenarioMetrics
 
 internal sealed class BroadcastNotificationHandler : INotificationHandler<BroadcastNotification>
 {
-    public Task Handle(BroadcastNotification notification, CancellationToken cancellationToken)
+    public Task<Either<MediatorError, Unit>> Handle(BroadcastNotification notification, CancellationToken cancellationToken)
     {
-        return Task.CompletedTask;
+        return Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
     }
 }

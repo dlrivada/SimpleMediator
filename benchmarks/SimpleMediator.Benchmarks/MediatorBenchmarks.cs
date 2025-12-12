@@ -2,6 +2,7 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using LanguageExt;
 using Microsoft.Extensions.DependencyInjection;
+using static LanguageExt.Prelude;
 
 namespace SimpleMediator.Benchmarks;
 
@@ -63,9 +64,9 @@ public class MediatorBenchmarks
 
     private sealed class SampleCommandHandler : ICommandHandler<SampleCommand, int>
     {
-        public Task<int> Handle(SampleCommand request, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, int>> Handle(SampleCommand request, CancellationToken cancellationToken)
         {
-            return Task.FromResult(request.RequestId.GetHashCode());
+            return Task.FromResult(Right<MediatorError, int>(request.RequestId.GetHashCode()));
         }
     }
 
@@ -75,10 +76,10 @@ public class MediatorBenchmarks
     {
         private readonly CallRecorder _recorder = recorder;
 
-        public Task Handle(SampleNotification notification, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, Unit>> Handle(SampleNotification notification, CancellationToken cancellationToken)
         {
             _recorder.Register("handler-one");
-            return Task.CompletedTask;
+            return Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
         }
     }
 
@@ -86,10 +87,10 @@ public class MediatorBenchmarks
     {
         private readonly CallRecorder _recorder = recorder;
 
-        public Task Handle(SampleNotification notification, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, Unit>> Handle(SampleNotification notification, CancellationToken cancellationToken)
         {
             _recorder.Register("handler-two");
-            return Task.CompletedTask;
+            return Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
         }
     }
 

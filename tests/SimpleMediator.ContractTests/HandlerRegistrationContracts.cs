@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
+using LanguageExt;
 using Shouldly;
+using static LanguageExt.Prelude;
 
 namespace SimpleMediator.ContractTests;
 
@@ -75,9 +77,9 @@ public sealed class HandlerRegistrationContracts
 
     private sealed class SampleCommandHandler : global::SimpleMediator.ICommandHandler<SampleCommand, string>
     {
-        public Task<string> Handle(SampleCommand request, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, string>> Handle(SampleCommand request, CancellationToken cancellationToken)
         {
-            return Task.FromResult(request.Payload);
+            return Task.FromResult(Right<MediatorError, string>(request.Payload));
         }
     }
 
@@ -85,17 +87,17 @@ public sealed class HandlerRegistrationContracts
 
     private sealed class SampleNotificationHandlerOne : global::SimpleMediator.INotificationHandler<SampleNotification>
     {
-        public Task Handle(SampleNotification notification, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, Unit>> Handle(SampleNotification notification, CancellationToken cancellationToken)
         {
-            return Task.CompletedTask;
+            return Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
         }
     }
 
     private sealed class SampleNotificationHandlerTwo : global::SimpleMediator.INotificationHandler<SampleNotification>
     {
-        public Task Handle(SampleNotification notification, CancellationToken cancellationToken)
+        public Task<Either<MediatorError, Unit>> Handle(SampleNotification notification, CancellationToken cancellationToken)
         {
-            return Task.CompletedTask;
+            return Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
         }
     }
 }

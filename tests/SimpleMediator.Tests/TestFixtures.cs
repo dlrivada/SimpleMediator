@@ -1,4 +1,5 @@
 using LanguageExt;
+using static LanguageExt.Prelude;
 
 namespace SimpleMediator.Tests.Fixtures;
 
@@ -6,30 +7,30 @@ internal sealed record PingCommand(string Value) : ICommand<string>;
 
 internal sealed class PingCommandHandler : ICommandHandler<PingCommand, string>
 {
-    public Task<string> Handle(PingCommand request, CancellationToken cancellationToken)
-        => Task.FromResult(request.Value);
+    public Task<Either<MediatorError, string>> Handle(PingCommand request, CancellationToken cancellationToken)
+        => Task.FromResult(Right<MediatorError, string>(request.Value));
 }
 
 internal sealed record PongQuery(int Id) : IQuery<string>;
 
 internal sealed class PongQueryHandler : IQueryHandler<PongQuery, string>
 {
-    public Task<string> Handle(PongQuery request, CancellationToken cancellationToken)
-        => Task.FromResult($"pong:{request.Id}");
+    public Task<Either<MediatorError, string>> Handle(PongQuery request, CancellationToken cancellationToken)
+        => Task.FromResult(Right<MediatorError, string>($"pong:{request.Id}"));
 }
 
 internal sealed record DomainNotification(int Value) : INotification;
 
 internal sealed class DomainNotificationAlphaHandler : INotificationHandler<DomainNotification>
 {
-    public Task Handle(DomainNotification notification, CancellationToken cancellationToken)
-        => Task.CompletedTask;
+    public Task<Either<MediatorError, Unit>> Handle(DomainNotification notification, CancellationToken cancellationToken)
+        => Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
 }
 
 internal sealed class DomainNotificationBetaHandler : INotificationHandler<DomainNotification>
 {
-    public Task Handle(DomainNotification notification, CancellationToken cancellationToken)
-        => Task.CompletedTask;
+    public Task<Either<MediatorError, Unit>> Handle(DomainNotification notification, CancellationToken cancellationToken)
+        => Task.FromResult(Right<MediatorError, Unit>(Unit.Default));
 }
 
 internal sealed class PassThroughPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
