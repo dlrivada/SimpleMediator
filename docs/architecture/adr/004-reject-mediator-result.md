@@ -178,7 +178,7 @@ Create a Roslyn analyzer to suggest `Either` usage patterns.
 
 ## Examples
 
-### Instead of MediatorResult, use Either directly:
+### Instead of MediatorResult, use Either directly
 
 ```csharp
 // ✅ Correct usage with Either
@@ -215,6 +215,7 @@ var combinedResult =
 ## Review
 
 This decision will be reviewed if:
+
 - Significant developer friction with `Either` API is observed
 - LanguageExt makes breaking changes to `Either`
 - Community feedback strongly favors a wrapper type

@@ -219,7 +219,7 @@ internal sealed class RequestHandlerWrapper<TRequest, TResponse> : IRequestHandl
 
 ### Negative
 
-- **Warmup Cost:** First invocation of each handler type incurs compilation cost (~1-5ms)
+- **Warmup Cost:** First invocation of each handler type incurs expression compilation (estimated ~1-5ms, not measured)
 - **Memory Retention:** Cache entries never evicted (acceptable for typical applications)
 - **Complexity:** Expression tree code is harder to understand and maintain than simple reflection
 - **Debugging Difficulty:** Compiled delegates are harder to step through in debugger
@@ -231,16 +231,23 @@ internal sealed class RequestHandlerWrapper<TRequest, TResponse> : IRequestHandl
 
 ## Performance Benchmarks
 
-Based on internal benchmarking (BenchmarkDotNet):
+**End-to-End Mediator Performance (BenchmarkDotNet, .NET 10):**
 
-| Approach | Mean Time | Ratio | Allocations |
-|----------|-----------|-------|-------------|
-| Direct call | 150 ns | 1.00x | 0 B |
-| Cached compiled delegate | 180 ns | 1.20x | 0 B |
-| MethodInfo.Invoke | 2,500 ns | 16.67x | 120 B |
-| MakeGenericType + Invoke | 8,500 ns | 56.67x | 450 B |
+| Scenario | Mean Latency | Allocated | Notes |
+|----------|-------------|-----------|-------|
+| Send with full pipeline | 1.4μs | 4.5 KB | Includes DI, behaviors, processors |
+| Publish to 2 handlers | 990 ns | 2.4 KB | Parallel notification dispatch |
 
-**Takeaway:** Compiled delegates are only 20% slower than direct calls, while reflection is 17-57x slower.
+**Micro-Benchmark Estimates (delegate invocation only):**
+
+| Approach | Estimated Time | Ratio | Allocations |
+|----------|---------------|-------|-------------|
+| Direct method call | ~150 ns | 1.00x | 0 B |
+| Cached compiled delegate | ~180 ns | 1.20x | 0 B |
+| MethodInfo.Invoke | ~2,500 ns | 16.67x | 120 B |
+| MakeGenericType + Invoke | ~8,500 ns | 56.67x | 450 B |
+
+**Note:** Micro-benchmark numbers are theoretical estimates based on .NET runtime characteristics. End-to-end performance is dominated by DI resolution and pipeline overhead (~1.2μs), not delegate invocation (~180ns).
 
 ## Examples
 
@@ -251,8 +258,8 @@ Based on internal benchmarking (BenchmarkDotNet):
 var requestType = request.GetType();
 var responseType = typeof(TResponse);
 
-// First call: Creates wrapper (slow, ~1-5ms)
-// Subsequent calls: Dictionary lookup (fast, ~10ns)
+// First call: Creates wrapper (one-time cost)
+// Subsequent calls: Dictionary lookup (O(1))
 var dispatcher = RequestHandlerCache.GetOrAdd(
     (requestType, responseType),
     static key => CreateRequestHandlerWrapper(key.Request, key.Response));
@@ -268,8 +275,8 @@ var result = await dispatcher.Handle(mediator, request, handler, serviceProvider
 var handlerType = handler.GetType();
 var notificationType = notification.GetType();
 
-// First call: Compiles Expression tree (slow, ~1-5ms)
-// Subsequent calls: Dictionary lookup (fast, ~10ns)
+// First call: Compiles Expression tree (one-time cost)
+// Subsequent calls: Dictionary lookup (O(1))
 if (!NotificationHandlerInvokerCache.TryGetValue((handlerType, notificationType), out var invoker))
 {
     var method = ResolveHandleMethod(handlerType, notificationType);
@@ -349,6 +356,6 @@ private static readonly ConditionalWeakTable<Type, IRequestHandlerWrapper> WeakC
 
 The decision to use Expression trees over source generators was made to keep the library flexible and easy to debug. While source generators provide the best possible performance (identical to direct calls), they require compile-time knowledge of all handlers, which conflicts with the DI-based registration pattern.
 
-Expression trees provide 95% of the performance benefit with full runtime flexibility. The 20% overhead compared to direct calls is negligible in practice (30ns difference) and far outweighed by the ~10-50ms spent in actual handler logic (database queries, HTTP calls, business logic).
+Expression trees provide near-native performance with full runtime flexibility. The estimated ~20% overhead of compiled delegates vs direct calls (~30ns difference) is negligible compared to end-to-end latency (1.4μs measured) and far outweighed by typical handler logic (database queries, HTTP calls, business logic - often 10-50ms).
 
 Future consideration: Add a source generator as an **optional** optimization for applications where startup time is critical and all handlers are known at compile time. This would be a separate NuGet package (SimpleMediator.SourceGenerators) to keep the core library simple.
