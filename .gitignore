@@ -18,4 +18,6 @@ tests/**/TestResults/
 docs/internal
 docs/MutationPlanPause.md
 docs/ZeroExceptionsInitiative.md
+docs/_site/
+docs/api/
 .claude/

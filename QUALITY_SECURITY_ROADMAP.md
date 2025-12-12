@@ -82,11 +82,11 @@
   - `Diagnostics/`: `MediatorDiagnostics.cs`, `MediatorMetrics.cs`.
   - `Errors/`: `MediatorError.cs`, `MediatorErrorCodes.cs`, `Error.cs` (si sigue vigente).
   - `Results/`: `MediatorResult.cs`, `NullFunctionalFailureDetector.cs` (impl por defecto/stub).
-- [ ] **Generar documentación API con DocFX:**
-  - Configurar DocFX en el proyecto
-  - Generar sitio de documentación HTML
-  - Publicar en GitHub Pages o sitio dedicado
-  - Añadir badge al README
+- [x] **Generar documentación API con DocFX:** ✅ Completado
+  - DocFX 2.78.4 instalado y configurado
+  - Sitio de documentación HTML generado (34 páginas API + guías existentes)
+  - Workflow de CI para auto-generación y deploy a GitHub Pages
+  - Pendiente: configurar GitHub Pages y añadir badge al README
 - [ ] **Crear guías de arquitectura:**
   - Architecture Decision Records (ADR) para decisiones clave
   - Diagrama de componentes y dependencias
@@ -325,7 +325,12 @@
 - [ ] Elevar mutation score a ≥95% (actualmente 93.74%)
 - [x] Adoptar namespaces con ámbito de archivo ✅ (30/30 archivos)
 - [ ] Extraer guard clauses reutilizables
-- [ ] Configurar DocFX para documentación API
+- [x] Configurar DocFX para documentación API ✅
+  - DocFX 2.78.4 instalado como herramienta local
+  - Configuración docfx.json personalizada para SimpleMediator
+  - Generación de 34 páginas HTML de API desde XML docs
+  - Workflow de CI (docs.yml) para auto-generación y deploy a GitHub Pages
+  - Estructura: metadata extraction + build + deploy automático en push a main
 
 ### Siguiente Sprint
 

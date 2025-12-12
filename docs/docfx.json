@@ -1,0 +1,51 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dotnet/docfx/main/schemas/docfx.schema.json",
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "../src",
+          "files": [
+            "**/*.csproj"
+          ]
+        }
+      ],
+      "dest": "api"
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "**/*.{md,yml}"
+        ],
+        "exclude": [
+          "_site/**"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "images/**"
+        ]
+      }
+    ],
+    "output": "_site",
+    "template": [
+      "default",
+      "modern"
+    ],
+    "globalMetadata": {
+      "_appName": "SimpleMediator",
+      "_appTitle": "SimpleMediator - Railway Oriented Mediator",
+      "_enableSearch": true,
+      "_gitContribute": {
+        "repo": "https://github.com/dlrivada/SimpleMediator",
+        "branch": "main"
+      },
+      "_gitUrlPattern": "github",
+      "pdf": false
+    }
+  }
+}
