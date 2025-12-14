@@ -11,12 +11,14 @@
 **Decision:** Adopt `IRequestContext` as explicit parameter in all pipeline interfaces.
 
 **Rationale:**
+
 - Best technical solution (no compromises)
 - Clean API (context always available, no null checks)
 - Supports 100% of integration scenarios
 - Pre-1.0 = no breaking change concerns
 
 **Impact:**
+
 - ✅ All pipeline interfaces gain context parameter
 - ✅ Enables idempotency, multi-tenancy, user context, correlation IDs
 - ✅ Foundation for all satellite packages
@@ -146,6 +148,7 @@ public sealed class RequestContext : IRequestContext
 ### Week 1: Core Context Implementation
 
 **Tasks:**
+
 1. ✅ Create `IRequestContext` interface in `Abstractions/`
 2. ✅ Create `RequestContext` implementation in `Core/`
 3. ✅ Update `IPipelineBehavior<,>` signature
@@ -157,6 +160,7 @@ public sealed class RequestContext : IRequestContext
 9. ✅ Add tests for `RequestContext` (immutability, enrichment, creation)
 
 **Files Modified:**
+
 - `src/SimpleMediator/Abstractions/IRequestContext.cs` (NEW)
 - `src/SimpleMediator/Core/RequestContext.cs` (NEW)
 - `src/SimpleMediator/Abstractions/IPipelineBehavior.cs` (UPDATED)
@@ -169,6 +173,7 @@ public sealed class RequestContext : IRequestContext
 **Estimated LOC:** ~300 (150 new, 150 updated)
 
 **Tests Required:**
+
 - RequestContext creation
 - Immutability (With* methods)
 - FromHttpContext extraction
@@ -178,6 +183,7 @@ public sealed class RequestContext : IRequestContext
 ### Week 2: Update Built-in Behaviors
 
 **Tasks:**
+
 1. ✅ Update `CommandActivityPipelineBehavior<,>` to accept context
 2. ✅ Update `QueryActivityPipelineBehavior<,>` to accept context
 3. ✅ Update `CommandMetricsPipelineBehavior<,>` to accept context
@@ -186,6 +192,7 @@ public sealed class RequestContext : IRequestContext
 6. ✅ Update all behavior tests to pass context
 
 **Files Modified:**
+
 - `src/SimpleMediator/Pipeline/Behaviors/CommandActivityPipelineBehavior.cs`
 - `src/SimpleMediator/Pipeline/Behaviors/QueryActivityPipelineBehavior.cs`
 - `src/SimpleMediator/Pipeline/Behaviors/CommandMetricsPipelineBehavior.cs`
@@ -196,6 +203,7 @@ public sealed class RequestContext : IRequestContext
 **Estimated LOC:** ~200 (mostly test updates)
 
 **Tests Required:**
+
 - Behaviors receive context correctly
 - Activity enrichment with UserId/TenantId
 - Metrics tagged with user context
@@ -203,6 +211,7 @@ public sealed class RequestContext : IRequestContext
 ### Week 3: Handler Metadata Provider
 
 **Tasks:**
+
 1. ✅ Create `IRequestHandlerMetadataProvider` interface
 2. ✅ Create `HandlerMetadata` record
 3. ✅ Implement `RequestHandlerMetadataProvider` with caching
@@ -212,6 +221,7 @@ public sealed class RequestContext : IRequestContext
 7. ✅ Add performance benchmarks (reflection cost)
 
 **Files Modified:**
+
 - `src/SimpleMediator/Abstractions/IRequestHandlerMetadataProvider.cs` (NEW)
 - `src/SimpleMediator/Core/HandlerMetadata.cs` (NEW)
 - `src/SimpleMediator/Core/RequestHandlerMetadataProvider.cs` (NEW)
@@ -223,6 +233,7 @@ public sealed class RequestContext : IRequestContext
 **Estimated LOC:** ~250 (200 new, 50 updated)
 
 **Tests Required:**
+
 - Attribute discovery
 - Caching behavior
 - Thread safety
@@ -235,6 +246,7 @@ public sealed class RequestContext : IRequestContext
 **Purpose:** Bridge between ASP.NET Core and SimpleMediator
 
 **Tasks:**
+
 1. ✅ Create new project `SimpleMediator.AspNetCore`
 2. ✅ Create `MediatorContextMiddleware` to extract context from HttpContext
 3. ✅ Extension method: `app.UseSimpleMediatorContext()`
@@ -244,6 +256,7 @@ public sealed class RequestContext : IRequestContext
 7. ✅ Documentation + examples
 
 **Features:**
+
 - Auto-extract UserId from ClaimsPrincipal
 - Auto-extract CorrelationId from Activity or TraceIdentifier
 - Auto-extract IdempotencyKey from header "Idempotency-Key"
@@ -256,6 +269,7 @@ public sealed class RequestContext : IRequestContext
 **Package 1:** `SimpleMediator.FluentValidation`
 
 **Tasks:**
+
 1. ✅ Create `ValidationBehavior<,>`
 2. ✅ Extension: `cfg.AddFluentValidation()`
 3. ✅ Auto-discover validators from assemblies
@@ -268,6 +282,7 @@ public sealed class RequestContext : IRequestContext
 **Package 2:** `SimpleMediator.EntityFrameworkCore`
 
 **Tasks:**
+
 1. ✅ Create `TransactionBehavior<,>` (commands only)
 2. ✅ Create `OutboxBehavior<,>` for domain events
 3. ✅ Extension: `cfg.AddEntityFrameworkCore<TDbContext>()`
@@ -281,6 +296,7 @@ public sealed class RequestContext : IRequestContext
 **Package 1:** `SimpleMediator.Idempotency`
 
 **Tasks:**
+
 1. ✅ Create `IdempotencyBehavior<,>` (reads context.IdempotencyKey)
 2. ✅ Create `IIdempotencyStore` abstraction
 3. ✅ Implement `InMemoryIdempotencyStore`
@@ -294,6 +310,7 @@ public sealed class RequestContext : IRequestContext
 **Package 2:** `SimpleMediator.Polly`
 
 **Tasks:**
+
 1. ✅ Create `RetryBehavior<,>` with attribute support
 2. ✅ Create `CircuitBreakerBehavior<,>` with attribute support
 3. ✅ Attributes: `[Retry(MaxAttempts = 3)]`, `[CircuitBreaker(...)]`
@@ -307,6 +324,7 @@ public sealed class RequestContext : IRequestContext
 ### Week 7: Documentation + Polish
 
 **Tasks:**
+
 1. ✅ Update integration guide with all satellite packages
 2. ✅ Create sample app: E-commerce with validation + EF Core + idempotency
 3. ✅ Create sample app: Multi-tenant SaaS with context enrichment
@@ -316,6 +334,7 @@ public sealed class RequestContext : IRequestContext
 7. ✅ Migration guide (current → new architecture)
 
 **Deliverables:**
+
 - Updated `docs/integration-guide.md`
 - Sample repo with 2+ apps
 - Benchmarks showing <1% overhead for context
@@ -330,6 +349,7 @@ public sealed class RequestContext : IRequestContext
 From `QUALITY_SECURITY_ROADMAP.md`:
 
 **Fase 1 - Fundamentos de Calidad Extrema:**
+
 - ✅ 1.1 Documentación API Comprehensiva (100% completado)
 - ✅ 1.2 Código y Estilo (namespaces, guards completados)
 - ✅ 1.3 Testing Comprehensivo (92.5% cobertura, 79.75% mutation score)
@@ -378,22 +398,26 @@ From `QUALITY_SECURITY_ROADMAP.md`:
 All changes must pass:
 
 ✅ **Code Quality:**
+
 - 0 warnings
 - 0 analyzer violations
 - Mutation score ≥ 79% (current baseline)
 - Code coverage ≥ 92% (current baseline)
 
 ✅ **Performance:**
+
 - Context overhead < 1% (benchmark)
 - Metadata provider < 1ms per handler (cached)
 - No allocations in hot path (stackalloc for small contexts)
 
 ✅ **Tests:**
+
 - All existing tests updated
 - New tests for context, metadata provider
 - Contract tests for satellite packages
 
 ✅ **Documentation:**
+
 - XML docs for all public APIs
 - Integration guide updated
 - Sample apps functional
@@ -403,18 +427,22 @@ All changes must pass:
 ## Risk Mitigation
 
 **Risk 1:** Context overhead impacts performance
+
 - **Mitigation:** Benchmark early (Week 1), optimize allocation
 - **Acceptance:** <1% overhead vs current architecture
 
 **Risk 2:** Satellite packages delay 1.0 release
+
 - **Mitigation:** Core changes (Weeks 1-3) sufficient for 1.0, satellites can ship after
 - **Minimum viable:** Core + AspNetCore + FluentValidation
 
 **Risk 3:** Migration complexity for tests
+
 - **Mitigation:** Create test helper `RequestContext.CreateForTest()`
 - **Estimated effort:** ~2 hours for all tests
 
 **Risk 4:** Metadata provider reflection cost
+
 - **Mitigation:** Aggressive caching, benchmark target <1ms
 - **Fallback:** Compile expression trees for attribute reading
 
@@ -423,23 +451,27 @@ All changes must pass:
 ## Success Metrics
 
 ✅ **Week 1 Complete:**
+
 - IRequestContext implemented
 - All pipeline signatures updated
 - All tests passing (225/225)
 - Mutation score ≥79%
 
 ✅ **Week 3 Complete:**
+
 - Handler metadata provider working
 - Benchmark: <1ms reflection cost
 - Satellite package foundation ready
 
 ✅ **Week 7 Complete:**
+
 - 5+ satellite packages published
 - Integration guide with 10+ examples
 - 2+ sample apps running
 - All quality gates passing
 
 ✅ **Post-1.0:**
+
 - User feedback on context API
 - Performance metrics from real apps
 - Additional satellite packages based on demand
@@ -449,6 +481,7 @@ All changes must pass:
 ## Next Immediate Actions
 
 **Today:**
+
 1. Create branch: `feature/request-context`
 2. Implement `IRequestContext` interface
 3. Implement `RequestContext` class

@@ -13,14 +13,23 @@ namespace SimpleMediator;
 /// </remarks>
 /// <example>
 /// <code>
-/// public sealed class PublishEmailOnSuccess : IRequestPostProcessor&lt;SendEmailCommand, Unit&gt;
+/// public sealed class AuditLogPostProcessor&lt;TRequest, TResponse&gt; : IRequestPostProcessor&lt;TRequest, TResponse&gt;
 /// {
-///     public Task Process(SendEmailCommand request, Either&lt;MediatorError, Unit&gt; response, CancellationToken cancellationToken)
+///     private readonly IAuditLogger _auditLogger;
+///
+///     public Task Process(
+///         TRequest request,
+///         IRequestContext context,
+///         Either&lt;MediatorError, TResponse&gt; response,
+///         CancellationToken cancellationToken)
 ///     {
-///         if (response.IsRight)
+///         await _auditLogger.LogAsync(new AuditEntry
 ///         {
-///             metrics.Increment("email.sent");
-///         }
+///             UserId = context.UserId,
+///             Action = typeof(TRequest).Name,
+///             Timestamp = context.Timestamp,
+///             Success = response.IsRight
+///         });
 ///         return Task.CompletedTask;
 ///     }
 /// }
@@ -32,7 +41,16 @@ public interface IRequestPostProcessor<in TRequest, TResponse>
     /// Executes the post-processing logic using the request and the final response.
     /// </summary>
     /// <param name="request">Original request.</param>
+    /// <param name="context">Request context with correlation ID, user info, etc.</param>
     /// <param name="response">Response returned by the pipeline.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    Task Process(TRequest request, Either<MediatorError, TResponse> response, CancellationToken cancellationToken);
+    /// <remarks>
+    /// Post-processors have read-only access to context.
+    /// Use context for audit logging, metrics tagging, or conditional side effects.
+    /// </remarks>
+    Task Process(
+        TRequest request,
+        IRequestContext context,
+        Either<MediatorError, TResponse> response,
+        CancellationToken cancellationToken);
 }

@@ -16,12 +16,17 @@ namespace SimpleMediator;
 /// public sealed class LoggingBehavior&lt;TRequest, TResponse&gt; : IPipelineBehavior&lt;TRequest, TResponse&gt;
 ///     where TRequest : IRequest&lt;TResponse&gt;
 /// {
-///     public async ValueTask&lt;Either&lt;Error, TResponse&gt;&gt; Handle(
+///     public async ValueTask&lt;Either&lt;MediatorError, TResponse&gt;&gt; Handle(
 ///         TRequest request,
+///         IRequestContext context,
 ///         RequestHandlerCallback&lt;TResponse&gt; nextStep,
 ///         CancellationToken cancellationToken)
 ///     {
-///         logger.LogInformation("Handling {Request}", typeof(TRequest).Name);
+///         logger.LogInformation(
+///             "Handling {Request} for user {UserId} (correlation: {CorrelationId})",
+///             typeof(TRequest).Name,
+///             context.UserId,
+///             context.CorrelationId);
 ///         var response = await nextStep().ConfigureAwait(false);
 ///         logger.LogInformation("Handled {Request}", typeof(TRequest).Name);
 ///         return response;
@@ -36,8 +41,13 @@ public interface IPipelineBehavior<TRequest, TResponse>
     /// Executes the behavior logic around the next pipeline element.
     /// </summary>
     /// <param name="request">Request being processed.</param>
+    /// <param name="context">Ambient context with correlation ID, user info, tenant info, etc.</param>
     /// <param name="nextStep">Callback to the next behavior or handler.</param>
     /// <param name="cancellationToken">Token to cancel the flow.</param>
     /// <returns>Final result or the modified response from the behavior.</returns>
-    ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken);
+    ValueTask<Either<MediatorError, TResponse>> Handle(
+        TRequest request,
+        IRequestContext context,
+        RequestHandlerCallback<TResponse> nextStep,
+        CancellationToken cancellationToken);
 }
