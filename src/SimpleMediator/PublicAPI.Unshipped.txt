@@ -23,12 +23,13 @@ const SimpleMediator.MediatorErrorCodes.RequestHandlerMissing = "mediator.reques
 const SimpleMediator.MediatorErrorCodes.RequestHandlerTypeMismatch = "mediator.request.handler_type_mismatch" -> string!
 const SimpleMediator.MediatorErrorCodes.RequestNull = "mediator.request.null" -> string!
 const SimpleMediator.MediatorErrorCodes.Timeout = "mediator.timeout" -> string!
+override SimpleMediator.RequestContext.ToString() -> string!
 SimpleMediator.CommandActivityPipelineBehavior<TCommand, TResponse>
 SimpleMediator.CommandActivityPipelineBehavior<TCommand, TResponse>.CommandActivityPipelineBehavior(SimpleMediator.IFunctionalFailureDetector! failureDetector) -> void
-SimpleMediator.CommandActivityPipelineBehavior<TCommand, TResponse>.Handle(TCommand request, SimpleMediator.RequestHandlerCallback<TResponse>! nextStep, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>
+SimpleMediator.CommandActivityPipelineBehavior<TCommand, TResponse>.Handle(TCommand request, SimpleMediator.IRequestContext! context, SimpleMediator.RequestHandlerCallback<TResponse>! nextStep, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>
 SimpleMediator.CommandMetricsPipelineBehavior<TCommand, TResponse>
 SimpleMediator.CommandMetricsPipelineBehavior<TCommand, TResponse>.CommandMetricsPipelineBehavior(SimpleMediator.IMediatorMetrics! metrics, SimpleMediator.IFunctionalFailureDetector! failureDetector) -> void
-SimpleMediator.CommandMetricsPipelineBehavior<TCommand, TResponse>.Handle(TCommand request, SimpleMediator.RequestHandlerCallback<TResponse>! nextStep, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>
+SimpleMediator.CommandMetricsPipelineBehavior<TCommand, TResponse>.Handle(TCommand request, SimpleMediator.IRequestContext! context, SimpleMediator.RequestHandlerCallback<TResponse>! nextStep, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>
 SimpleMediator.ICommand
 SimpleMediator.ICommand<TResponse>
 SimpleMediator.ICommandHandler<TCommand, TResponse>
@@ -49,7 +50,7 @@ SimpleMediator.INotification
 SimpleMediator.INotificationHandler<TNotification>
 SimpleMediator.INotificationHandler<TNotification>.Handle(TNotification notification, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<LanguageExt.Either<SimpleMediator.MediatorError, LanguageExt.Unit>>!
 SimpleMediator.IPipelineBehavior<TRequest, TResponse>
-SimpleMediator.IPipelineBehavior<TRequest, TResponse>.Handle(TRequest request, SimpleMediator.RequestHandlerCallback<TResponse>! nextStep, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>
+SimpleMediator.IPipelineBehavior<TRequest, TResponse>.Handle(TRequest request, SimpleMediator.IRequestContext! context, SimpleMediator.RequestHandlerCallback<TResponse>! nextStep, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>
 SimpleMediator.IQuery
 SimpleMediator.IQuery<TResponse>
 SimpleMediator.IQueryHandler<TQuery, TResponse>
@@ -57,12 +58,23 @@ SimpleMediator.IQueryHandler<TQuery>
 SimpleMediator.IQueryPipelineBehavior<TQuery, TResponse>
 SimpleMediator.IQueryPipelineBehavior<TQuery>
 SimpleMediator.IRequest<TResponse>
+SimpleMediator.IRequestContext
+SimpleMediator.IRequestContext.CorrelationId.get -> string!
+SimpleMediator.IRequestContext.IdempotencyKey.get -> string?
+SimpleMediator.IRequestContext.Metadata.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+SimpleMediator.IRequestContext.TenantId.get -> string?
+SimpleMediator.IRequestContext.Timestamp.get -> System.DateTimeOffset
+SimpleMediator.IRequestContext.UserId.get -> string?
+SimpleMediator.IRequestContext.WithIdempotencyKey(string? idempotencyKey) -> SimpleMediator.IRequestContext!
+SimpleMediator.IRequestContext.WithMetadata(string! key, object? value) -> SimpleMediator.IRequestContext!
+SimpleMediator.IRequestContext.WithTenantId(string? tenantId) -> SimpleMediator.IRequestContext!
+SimpleMediator.IRequestContext.WithUserId(string? userId) -> SimpleMediator.IRequestContext!
 SimpleMediator.IRequestHandler<TRequest, TResponse>
 SimpleMediator.IRequestHandler<TRequest, TResponse>.Handle(TRequest request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>!
 SimpleMediator.IRequestPostProcessor<TRequest, TResponse>
-SimpleMediator.IRequestPostProcessor<TRequest, TResponse>.Process(TRequest request, LanguageExt.Either<SimpleMediator.MediatorError, TResponse> response, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SimpleMediator.IRequestPostProcessor<TRequest, TResponse>.Process(TRequest request, SimpleMediator.IRequestContext! context, LanguageExt.Either<SimpleMediator.MediatorError, TResponse> response, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 SimpleMediator.IRequestPreProcessor<TRequest>
-SimpleMediator.IRequestPreProcessor<TRequest>.Process(TRequest request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SimpleMediator.IRequestPreProcessor<TRequest>.Process(TRequest request, SimpleMediator.IRequestContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 SimpleMediator.MediatorError
 SimpleMediator.MediatorError.Exception.get -> LanguageExt.Option<System.Exception!>
 SimpleMediator.MediatorError.MediatorError() -> void
@@ -73,11 +85,28 @@ SimpleMediator.MediatorMetrics.MediatorMetrics() -> void
 SimpleMediator.MediatorMetrics.TrackFailure(string! requestKind, string! requestName, System.TimeSpan duration, string! reason) -> void
 SimpleMediator.MediatorMetrics.TrackSuccess(string! requestKind, string! requestName, System.TimeSpan duration) -> void
 SimpleMediator.QueryActivityPipelineBehavior<TQuery, TResponse>
-SimpleMediator.QueryActivityPipelineBehavior<TQuery, TResponse>.Handle(TQuery request, SimpleMediator.RequestHandlerCallback<TResponse>! nextStep, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>
+SimpleMediator.QueryActivityPipelineBehavior<TQuery, TResponse>.Handle(TQuery request, SimpleMediator.IRequestContext! context, SimpleMediator.RequestHandlerCallback<TResponse>! nextStep, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>
 SimpleMediator.QueryActivityPipelineBehavior<TQuery, TResponse>.QueryActivityPipelineBehavior(SimpleMediator.IFunctionalFailureDetector! failureDetector) -> void
 SimpleMediator.QueryMetricsPipelineBehavior<TQuery, TResponse>
-SimpleMediator.QueryMetricsPipelineBehavior<TQuery, TResponse>.Handle(TQuery request, SimpleMediator.RequestHandlerCallback<TResponse>! nextStep, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>
+SimpleMediator.QueryMetricsPipelineBehavior<TQuery, TResponse>.Handle(TQuery request, SimpleMediator.IRequestContext! context, SimpleMediator.RequestHandlerCallback<TResponse>! nextStep, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>
 SimpleMediator.QueryMetricsPipelineBehavior<TQuery, TResponse>.QueryMetricsPipelineBehavior(SimpleMediator.IMediatorMetrics! metrics, SimpleMediator.IFunctionalFailureDetector! failureDetector) -> void
+SimpleMediator.RequestContext
+SimpleMediator.RequestContext.CorrelationId.get -> string!
+SimpleMediator.RequestContext.CorrelationId.init -> void
+SimpleMediator.RequestContext.IdempotencyKey.get -> string?
+SimpleMediator.RequestContext.IdempotencyKey.init -> void
+SimpleMediator.RequestContext.Metadata.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+SimpleMediator.RequestContext.Metadata.init -> void
+SimpleMediator.RequestContext.TenantId.get -> string?
+SimpleMediator.RequestContext.TenantId.init -> void
+SimpleMediator.RequestContext.Timestamp.get -> System.DateTimeOffset
+SimpleMediator.RequestContext.Timestamp.init -> void
+SimpleMediator.RequestContext.UserId.get -> string?
+SimpleMediator.RequestContext.UserId.init -> void
+SimpleMediator.RequestContext.WithIdempotencyKey(string? idempotencyKey) -> SimpleMediator.IRequestContext!
+SimpleMediator.RequestContext.WithMetadata(string! key, object? value) -> SimpleMediator.IRequestContext!
+SimpleMediator.RequestContext.WithTenantId(string? tenantId) -> SimpleMediator.IRequestContext!
+SimpleMediator.RequestContext.WithUserId(string? userId) -> SimpleMediator.IRequestContext!
 SimpleMediator.RequestHandlerCallback<TResponse>
 SimpleMediator.ServiceCollectionExtensions
 SimpleMediator.SimpleMediator
@@ -103,6 +132,9 @@ static SimpleMediator.MediatorError.New(string! message) -> SimpleMediator.Media
 static SimpleMediator.MediatorError.New(string! message, System.Exception? exception) -> SimpleMediator.MediatorError
 static SimpleMediator.MediatorError.New(System.Exception! exception) -> SimpleMediator.MediatorError
 static SimpleMediator.MediatorError.New(System.Exception! exception, string! message) -> SimpleMediator.MediatorError
+static SimpleMediator.RequestContext.Create() -> SimpleMediator.IRequestContext!
+static SimpleMediator.RequestContext.Create(string! correlationId) -> SimpleMediator.IRequestContext!
+static SimpleMediator.RequestContext.CreateForTest(string? userId = null, string? tenantId = null, string? idempotencyKey = null, string? correlationId = null) -> SimpleMediator.IRequestContext!
 static SimpleMediator.ServiceCollectionExtensions.AddApplicationMessaging(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static SimpleMediator.ServiceCollectionExtensions.AddApplicationMessaging(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<SimpleMediator.SimpleMediatorConfiguration!>? configure, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static SimpleMediator.ServiceCollectionExtensions.AddSimpleMediator(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

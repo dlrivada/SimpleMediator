@@ -28,7 +28,7 @@ public sealed class QueryActivityPipelineBehavior<TQuery, TResponse>(IFunctional
     private readonly IFunctionalFailureDetector _failureDetector = failureDetector ?? NullFunctionalFailureDetector.Instance;
 
     /// <inheritdoc />
-    public async ValueTask<Either<MediatorError, TResponse>> Handle(TQuery request, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
+    public async ValueTask<Either<MediatorError, TResponse>> Handle(TQuery request, IRequestContext context, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
     {
         if (!MediatorBehaviorGuards.TryValidateRequest(GetType(), request, out var failure))
         {

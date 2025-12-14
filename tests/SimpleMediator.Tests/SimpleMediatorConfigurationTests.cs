@@ -445,7 +445,7 @@ public sealed class SimpleMediatorConfigurationTests
 
     private abstract class AbstractBehavior : IPipelineBehavior<PingCommand, string>
     {
-        public ValueTask<Either<MediatorError, string>> Handle(PingCommand request, RequestHandlerCallback<string> nextStep, CancellationToken cancellationToken)
+        public ValueTask<Either<MediatorError, string>> Handle(PingCommand request, IRequestContext context, RequestHandlerCallback<string> nextStep, CancellationToken cancellationToken)
             => nextStep();
     }
 
@@ -455,19 +455,19 @@ public sealed class SimpleMediatorConfigurationTests
 
     private abstract class AbstractPreProcessor : IRequestPreProcessor<PingCommand>
     {
-        public Task Process(PingCommand request, CancellationToken cancellationToken)
+        public Task Process(PingCommand request, IRequestContext context, CancellationToken cancellationToken)
             => Task.CompletedTask;
     }
 
     private sealed class ConfiguredPostProcessor : IRequestPostProcessor<PingCommand, string>
     {
-        public Task Process(PingCommand request, Either<MediatorError, string> response, CancellationToken cancellationToken)
+        public Task Process(PingCommand request, IRequestContext context, Either<MediatorError, string> response, CancellationToken cancellationToken)
             => Task.CompletedTask;
     }
 
     private sealed class ConfiguredPreProcessor : IRequestPreProcessor<PingCommand>
     {
-        public Task Process(PingCommand request, CancellationToken cancellationToken)
+        public Task Process(PingCommand request, IRequestContext context, CancellationToken cancellationToken)
             => Task.CompletedTask;
     }
 
@@ -477,32 +477,32 @@ public sealed class SimpleMediatorConfigurationTests
 
     private abstract class AbstractPostProcessor : IRequestPostProcessor<PingCommand, string>
     {
-        public Task Process(PingCommand request, Either<MediatorError, string> response, CancellationToken cancellationToken)
+        public Task Process(PingCommand request, IRequestContext context, Either<MediatorError, string> response, CancellationToken cancellationToken)
             => Task.CompletedTask;
     }
 
     private sealed class OpenGenericPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        public ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
+        public ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, IRequestContext context, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
             => nextStep();
     }
 
     private sealed class OpenGenericPreProcessor<TRequest> : IRequestPreProcessor<TRequest>
     {
-        public Task Process(TRequest request, CancellationToken cancellationToken)
+        public Task Process(TRequest request, IRequestContext context, CancellationToken cancellationToken)
             => Task.CompletedTask;
     }
 
     private sealed class OpenGenericPostProcessor<TRequest, TResponse> : IRequestPostProcessor<TRequest, TResponse>
     {
-        public Task Process(TRequest request, Either<MediatorError, TResponse> response, CancellationToken cancellationToken)
+        public Task Process(TRequest request, IRequestContext context, Either<MediatorError, TResponse> response, CancellationToken cancellationToken)
             => Task.CompletedTask;
     }
 
     private sealed class DisposablePipelineBehavior : IPipelineBehavior<PingCommand, string>, IDisposable
     {
-        public ValueTask<Either<MediatorError, string>> Handle(PingCommand request, RequestHandlerCallback<string> nextStep, CancellationToken cancellationToken)
+        public ValueTask<Either<MediatorError, string>> Handle(PingCommand request, IRequestContext context, RequestHandlerCallback<string> nextStep, CancellationToken cancellationToken)
             => nextStep();
 
         public void Dispose()
@@ -514,7 +514,7 @@ public sealed class SimpleMediatorConfigurationTests
     {
         internal sealed class NestedPreProcessor : IRequestPreProcessor<T>
         {
-            public Task Process(T request, CancellationToken cancellationToken)
+            public Task Process(T request, IRequestContext context, CancellationToken cancellationToken)
                 => Task.CompletedTask;
         }
     }

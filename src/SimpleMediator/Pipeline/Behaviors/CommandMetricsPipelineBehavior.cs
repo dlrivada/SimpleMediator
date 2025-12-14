@@ -29,7 +29,7 @@ public sealed class CommandMetricsPipelineBehavior<TCommand, TResponse>(IMediato
     private readonly IFunctionalFailureDetector _failureDetector = failureDetector ?? NullFunctionalFailureDetector.Instance;
 
     /// <inheritdoc />
-    public async ValueTask<Either<MediatorError, TResponse>> Handle(TCommand request, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
+    public async ValueTask<Either<MediatorError, TResponse>> Handle(TCommand request, IRequestContext context, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
     {
         var requestName = typeof(TCommand).Name;
         const string requestKind = "command";

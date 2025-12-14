@@ -114,7 +114,8 @@ public sealed partial class SimpleMediator(IServiceScopeFactory scopeFactory, IL
         {
             var typedRequest = (TRequest)request;
             var typedHandler = (IRequestHandler<TRequest, TResponse>)handler;
-            var pipelineBuilder = new PipelineBuilder<TRequest, TResponse>(typedRequest, typedHandler, cancellationToken);
+            var context = RequestContext.Create();
+            var pipelineBuilder = new PipelineBuilder<TRequest, TResponse>(typedRequest, typedHandler, context, cancellationToken);
             var pipeline = pipelineBuilder.Build(provider);
             var outcome = await pipeline().ConfigureAwait(false);
             return outcome;
@@ -125,30 +126,27 @@ public sealed partial class SimpleMediator(IServiceScopeFactory scopeFactory, IL
     private static async Task<Option<MediatorError>> ExecutePostProcessorAsync<TRequest, TResponse>(
         IRequestPostProcessor<TRequest, TResponse> postProcessor,
         TRequest request,
+        IRequestContext context,
         Either<MediatorError, TResponse> response,
         CancellationToken cancellationToken)
     {
         try
         {
-            await postProcessor.Process(request, response, cancellationToken).ConfigureAwait(false);
+            await postProcessor.Process(request, context, response, cancellationToken).ConfigureAwait(false);
             return Option<MediatorError>.None;
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
         {
-            if (cancellationToken.IsCancellationRequested)
+            var message = $"Post-processor {postProcessor.GetType().Name} cancelled the {typeof(TRequest).Name} request.";
+            var metadata = new Dictionary<string, object?>
             {
-                var message = $"Post-processor {postProcessor.GetType().Name} cancelled the {typeof(TRequest).Name} request.";
-                return Some(MediatorErrors.Create(MediatorErrorCodes.PostProcessorCancelled, message, ex));
-            }
-
-            var error = MediatorErrors.FromException(MediatorErrorCodes.PostProcessorException, ex, $"Error running {postProcessor.GetType().Name} for {typeof(TRequest).Name}.");
-            return Some(error);
+                ["postProcessor"] = postProcessor.GetType().FullName,
+                ["request"] = typeof(TRequest).FullName,
+                ["stage"] = "postprocessor"
+            };
+            return Some(MediatorErrors.Create(MediatorErrorCodes.PostProcessorCancelled, message, ex, metadata));
         }
-        catch (Exception ex)
-        {
-            var error = MediatorErrors.FromException(MediatorErrorCodes.PostProcessorException, ex, $"Error running {postProcessor.GetType().Name} for {typeof(TRequest).Name}.");
-            return Some(error);
-        }
+        // Pure ROP: Any other exception indicates a bug in the postprocessor and will propagate (fail-fast)
     }
 
     // Exposed for tests that reflect on the private notification helper to validate handler invocation semantics.

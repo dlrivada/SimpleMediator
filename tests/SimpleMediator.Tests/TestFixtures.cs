@@ -36,30 +36,30 @@ internal sealed class DomainNotificationBetaHandler : INotificationHandler<Domai
 internal sealed class PassThroughPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
-    public ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
+    public ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, IRequestContext context, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
         => nextStep();
 }
 
 internal sealed class ConcreteCommandBehavior : ICommandPipelineBehavior<PingCommand, string>
 {
-    public ValueTask<Either<MediatorError, string>> Handle(PingCommand request, RequestHandlerCallback<string> nextStep, CancellationToken cancellationToken)
+    public ValueTask<Either<MediatorError, string>> Handle(PingCommand request, IRequestContext context, RequestHandlerCallback<string> nextStep, CancellationToken cancellationToken)
         => nextStep();
 }
 
 internal sealed class ConcreteQueryBehavior : IQueryPipelineBehavior<PongQuery, string>
 {
-    public ValueTask<Either<MediatorError, string>> Handle(PongQuery request, RequestHandlerCallback<string> nextStep, CancellationToken cancellationToken)
+    public ValueTask<Either<MediatorError, string>> Handle(PongQuery request, IRequestContext context, RequestHandlerCallback<string> nextStep, CancellationToken cancellationToken)
         => nextStep();
 }
 
 internal sealed class SamplePreProcessor : IRequestPreProcessor<PingCommand>
 {
-    public Task Process(PingCommand request, CancellationToken cancellationToken)
+    public Task Process(PingCommand request, IRequestContext context, CancellationToken cancellationToken)
         => Task.CompletedTask;
 }
 
 internal sealed class SamplePostProcessor : IRequestPostProcessor<PingCommand, string>
 {
-    public Task Process(PingCommand request, Either<MediatorError, string> response, CancellationToken cancellationToken)
+    public Task Process(PingCommand request, IRequestContext context, Either<MediatorError, string> response, CancellationToken cancellationToken)
         => Task.CompletedTask;
 }

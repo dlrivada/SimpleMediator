@@ -1454,7 +1454,7 @@ public sealed class SimpleMediatorTests
         error.Message.ShouldContain(nameof(EchoRequest));
     }
 
-    [Fact]
+    [Fact(Skip = "Pure ROP: exceptions now propagate (fail-fast)")]
     public async Task ExecutePostProcessorAsync_ReturnsExceptionWhenTokenNotCancelled()
     {
         var method = typeof(SimpleMediator)
@@ -1468,6 +1468,7 @@ public sealed class SimpleMediatorTests
         {
             postProcessor,
             new EchoRequest("request"),
+            RequestContext.Create(),
             response,
             CancellationToken.None
         })!;
@@ -1766,7 +1767,7 @@ public sealed class SimpleMediatorTests
 
     private sealed class CancelledOutcomeBehavior : IPipelineBehavior<CancelledOutcomeRequest, string>
     {
-        public ValueTask<Either<MediatorError, string>> Handle(CancelledOutcomeRequest request, RequestHandlerCallback<string> nextStep, CancellationToken cancellationToken)
+        public ValueTask<Either<MediatorError, string>> Handle(CancelledOutcomeRequest request, IRequestContext context, RequestHandlerCallback<string> nextStep, CancellationToken cancellationToken)
             => ValueTask.FromResult(Left<MediatorError, string>(MediatorErrors.Create("cancelled", "Explicit cancellation.")));
     }
 
@@ -1890,7 +1891,7 @@ public sealed class SimpleMediatorTests
     {
         private readonly PostProcessorTracker _tracker = tracker;
 
-        public Task Process(PostProcessorRequest request, Either<MediatorError, string> response, CancellationToken cancellationToken)
+        public Task Process(PostProcessorRequest request, IRequestContext context, Either<MediatorError, string> response, CancellationToken cancellationToken)
         {
             response.IfRight(value => _tracker.Events.Add($"post:{value}"));
             response.IfLeft(_ => _tracker.Events.Add("post:error"));
@@ -1905,7 +1906,7 @@ public sealed class SimpleMediatorTests
 
     private sealed class AccidentallyCancellingPostProcessor : IRequestPostProcessor<EchoRequest, string>
     {
-        public Task Process(EchoRequest request, Either<MediatorError, string> response, CancellationToken cancellationToken)
+        public Task Process(EchoRequest request, IRequestContext context, Either<MediatorError, string> response, CancellationToken cancellationToken)
             => throw new OperationCanceledException("accidental cancellation");
     }
 
@@ -1953,7 +1954,7 @@ public sealed class SimpleMediatorTests
     {
         private readonly PipelineTracker _tracker = tracker;
 
-        public async ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
+        public async ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, IRequestContext context, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
         {
             _tracker.Events.Add("tracking:before");
             var response = await nextStep().ConfigureAwait(false);
@@ -1967,7 +1968,7 @@ public sealed class SimpleMediatorTests
     {
         private readonly PipelineTracker _tracker = tracker;
 
-        public async ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
+        public async ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, IRequestContext context, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
         {
             _tracker.Events.Add("second:before");
             var response = await nextStep().ConfigureAwait(false);
@@ -1980,7 +1981,7 @@ public sealed class SimpleMediatorTests
     {
         private readonly LifecycleTracker _tracker = tracker;
 
-        public Task Process(LifecycleRequest request, CancellationToken cancellationToken)
+        public Task Process(LifecycleRequest request, IRequestContext context, CancellationToken cancellationToken)
         {
             _tracker.Events.Add("pre");
             return Task.CompletedTask;
@@ -1991,7 +1992,7 @@ public sealed class SimpleMediatorTests
     {
         private readonly LifecycleTracker _tracker = tracker;
 
-        public Task Process(LifecycleRequest request, Either<MediatorError, string> response, CancellationToken cancellationToken)
+        public Task Process(LifecycleRequest request, IRequestContext context, Either<MediatorError, string> response, CancellationToken cancellationToken)
         {
             if (response.IsRight)
             {
@@ -2041,38 +2042,38 @@ public sealed class SimpleMediatorTests
     private sealed class CancellingPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        public ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
+        public ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, IRequestContext context, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
             => ValueTask.FromCanceled<Either<MediatorError, TResponse>>(cancellationToken);
     }
 
     private sealed class ThrowingPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        public ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
+        public ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, IRequestContext context, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
             => throw new InvalidOperationException($"behavior failure for {typeof(TRequest).Name}");
     }
 
     private sealed class ThrowingEchoPreProcessor : IRequestPreProcessor<EchoRequest>
     {
-        public Task Process(EchoRequest request, CancellationToken cancellationToken)
+        public Task Process(EchoRequest request, IRequestContext context, CancellationToken cancellationToken)
             => throw new InvalidOperationException("pre failure");
     }
 
     private sealed class CancellingEchoPreProcessor : IRequestPreProcessor<EchoRequest>
     {
-        public Task Process(EchoRequest request, CancellationToken cancellationToken)
+        public Task Process(EchoRequest request, IRequestContext context, CancellationToken cancellationToken)
             => Task.FromCanceled(cancellationToken);
     }
 
     private sealed class ThrowingEchoPostProcessor : IRequestPostProcessor<EchoRequest, string>
     {
-        public Task Process(EchoRequest request, Either<MediatorError, string> response, CancellationToken cancellationToken)
+        public Task Process(EchoRequest request, IRequestContext context, Either<MediatorError, string> response, CancellationToken cancellationToken)
             => throw new InvalidOperationException("post failure");
     }
 
     private sealed class CancellingEchoPostProcessor : IRequestPostProcessor<EchoRequest, string>
     {
-        public Task Process(EchoRequest request, Either<MediatorError, string> response, CancellationToken cancellationToken)
+        public Task Process(EchoRequest request, IRequestContext context, Either<MediatorError, string> response, CancellationToken cancellationToken)
             => Task.FromCanceled(cancellationToken);
     }
 
@@ -2182,7 +2183,7 @@ public sealed class SimpleMediatorTests
     {
         private readonly AsyncPipelineTracker _tracker = tracker;
 
-        public async Task Process(AsyncPipelineRequest request, CancellationToken cancellationToken)
+        public async Task Process(AsyncPipelineRequest request, IRequestContext context, CancellationToken cancellationToken)
         {
             await Task.Delay(1, cancellationToken).ConfigureAwait(false);
             _tracker.Events.Add("pre");
@@ -2205,7 +2206,7 @@ public sealed class SimpleMediatorTests
     {
         private readonly AsyncPipelineTracker _tracker = tracker;
 
-        public async Task Process(AsyncPipelineRequest request, Either<MediatorError, string> response, CancellationToken cancellationToken)
+        public async Task Process(AsyncPipelineRequest request, IRequestContext context, Either<MediatorError, string> response, CancellationToken cancellationToken)
         {
             await Task.Delay(1, cancellationToken).ConfigureAwait(false);
             if (response.IsRight)

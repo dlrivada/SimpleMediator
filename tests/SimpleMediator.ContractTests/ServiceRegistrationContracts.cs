@@ -177,27 +177,27 @@ public sealed class ServiceRegistrationContracts
     private sealed class SamplePipelineBehavior<TRequest, TResponse> : global::SimpleMediator.IPipelineBehavior<TRequest, TResponse>
         where TRequest : global::SimpleMediator.IRequest<TResponse>
     {
-        public ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, global::SimpleMediator.RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
+        public ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, global::SimpleMediator.IRequestContext context, global::SimpleMediator.RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
             => nextStep();
     }
 
     private sealed class SampleCommandPipelineBehavior<TCommand, TResponse> : global::SimpleMediator.ICommandPipelineBehavior<TCommand, TResponse>
         where TCommand : global::SimpleMediator.ICommand<TResponse>
     {
-        public ValueTask<Either<MediatorError, TResponse>> Handle(TCommand request, global::SimpleMediator.RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
+        public ValueTask<Either<MediatorError, TResponse>> Handle(TCommand request, global::SimpleMediator.IRequestContext context, global::SimpleMediator.RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
             => nextStep();
     }
 
     private sealed class SampleQueryPipelineBehavior<TQuery, TResponse> : global::SimpleMediator.IQueryPipelineBehavior<TQuery, TResponse>
         where TQuery : global::SimpleMediator.IQuery<TResponse>
     {
-        public ValueTask<Either<MediatorError, TResponse>> Handle(TQuery request, global::SimpleMediator.RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
+        public ValueTask<Either<MediatorError, TResponse>> Handle(TQuery request, global::SimpleMediator.IRequestContext context, global::SimpleMediator.RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
             => nextStep();
     }
 
     private sealed class SampleRequestPreProcessor<TRequest> : global::SimpleMediator.IRequestPreProcessor<TRequest>
     {
-        public Task Process(TRequest request, CancellationToken cancellationToken)
+        public Task Process(TRequest request, global::SimpleMediator.IRequestContext context, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -205,7 +205,7 @@ public sealed class ServiceRegistrationContracts
 
     private sealed class SampleRequestPostProcessor<TRequest, TResponse> : global::SimpleMediator.IRequestPostProcessor<TRequest, TResponse>
     {
-        public Task Process(TRequest request, Either<MediatorError, TResponse> response, CancellationToken cancellationToken)
+        public Task Process(TRequest request, global::SimpleMediator.IRequestContext context, Either<MediatorError, TResponse> response, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }

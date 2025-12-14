@@ -38,12 +38,14 @@ internal sealed class PipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TR
 {
     private readonly TRequest _request;
     private readonly IRequestHandler<TRequest, TResponse> _handler;
+    private readonly IRequestContext _context;
     private readonly CancellationToken _cancellationToken;
 
-    public PipelineBuilder(TRequest request, IRequestHandler<TRequest, TResponse> handler, CancellationToken cancellationToken)
+    public PipelineBuilder(TRequest request, IRequestHandler<TRequest, TResponse> handler, IRequestContext context, CancellationToken cancellationToken)
     {
         _request = request ?? throw new ArgumentNullException(nameof(request));
         _handler = handler ?? throw new ArgumentNullException(nameof(handler));
+        _context = context ?? throw new ArgumentNullException(nameof(context));
         _cancellationToken = cancellationToken;
     }
 
@@ -77,12 +79,12 @@ internal sealed class PipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TR
             {
                 var behavior = behaviors[index];
                 var nextStep = current; // Capture in closure
-                current = () => ExecuteBehaviorAsync(behavior, _request, nextStep, _cancellationToken);
+                current = () => ExecuteBehaviorAsync(behavior, _request, _context, nextStep, _cancellationToken);
             }
         }
 
         // Wrap everything with pre/post processors (outermost layer)
-        return () => ExecutePipelineAsync(preProcessors, postProcessors, current, _request, _cancellationToken);
+        return () => ExecutePipelineAsync(preProcessors, postProcessors, current, _request, _context, _cancellationToken);
     }
 
     private static async ValueTask<Either<MediatorError, TResponse>> ExecutePipelineAsync(
@@ -90,11 +92,12 @@ internal sealed class PipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TR
         IReadOnlyList<IRequestPostProcessor<TRequest, TResponse>> postProcessors,
         RequestHandlerCallback<TResponse> terminal,
         TRequest request,
+        IRequestContext context,
         CancellationToken cancellationToken)
     {
         foreach (var preProcessor in preProcessors)
         {
-            var failure = await ExecutePreProcessorAsync(preProcessor, request, cancellationToken).ConfigureAwait(false);
+            var failure = await ExecutePreProcessorAsync(preProcessor, request, context, cancellationToken).ConfigureAwait(false);
             if (failure.IsSome)
             {
                 var error = failure.Match(err => err, () => MediatorErrors.Unknown);
@@ -106,7 +109,7 @@ internal sealed class PipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TR
 
         foreach (var postProcessor in postProcessors)
         {
-            var failure = await ExecutePostProcessorAsync(postProcessor, request, response, cancellationToken).ConfigureAwait(false);
+            var failure = await ExecutePostProcessorAsync(postProcessor, request, context, response, cancellationToken).ConfigureAwait(false);
             var hasFailure = false;
             MediatorError capturedError = default;
 
@@ -167,12 +170,13 @@ internal sealed class PipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TR
     private static async ValueTask<Either<MediatorError, TResponse>> ExecuteBehaviorAsync(
         IPipelineBehavior<TRequest, TResponse> behavior,
         TRequest request,
+        IRequestContext context,
         RequestHandlerCallback<TResponse> nextStep,
         CancellationToken cancellationToken)
     {
         try
         {
-            return await behavior.Handle(request, nextStep, cancellationToken).ConfigureAwait(false);
+            return await behavior.Handle(request, context, nextStep, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
         {
@@ -191,11 +195,12 @@ internal sealed class PipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TR
     private static async Task<Option<MediatorError>> ExecutePreProcessorAsync(
         IRequestPreProcessor<TRequest> preProcessor,
         TRequest request,
+        IRequestContext context,
         CancellationToken cancellationToken)
     {
         try
         {
-            await preProcessor.Process(request, cancellationToken).ConfigureAwait(false);
+            await preProcessor.Process(request, context, cancellationToken).ConfigureAwait(false);
             return Option<MediatorError>.None;
         }
         catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
@@ -215,12 +220,13 @@ internal sealed class PipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TR
     private static async Task<Option<MediatorError>> ExecutePostProcessorAsync(
         IRequestPostProcessor<TRequest, TResponse> postProcessor,
         TRequest request,
+        IRequestContext context,
         Either<MediatorError, TResponse> response,
         CancellationToken cancellationToken)
     {
         try
         {
-            await postProcessor.Process(request, response, cancellationToken).ConfigureAwait(false);
+            await postProcessor.Process(request, context, response, cancellationToken).ConfigureAwait(false);
             return Option<MediatorError>.None;
         }
         catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)

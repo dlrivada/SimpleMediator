@@ -29,7 +29,7 @@ public sealed class QueryMetricsPipelineBehavior<TQuery, TResponse>(IMediatorMet
     private readonly IFunctionalFailureDetector _failureDetector = failureDetector ?? NullFunctionalFailureDetector.Instance;
 
     /// <inheritdoc />
-    public async ValueTask<Either<MediatorError, TResponse>> Handle(TQuery request, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
+    public async ValueTask<Either<MediatorError, TResponse>> Handle(TQuery request, IRequestContext context, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
     {
         var requestName = typeof(TQuery).Name;
         const string requestKind = "query";

@@ -33,7 +33,7 @@ public sealed class CommandActivityPipelineBehavior<TCommand, TResponse>(IFuncti
     private readonly IFunctionalFailureDetector _failureDetector = failureDetector ?? NullFunctionalFailureDetector.Instance;
 
     /// <inheritdoc />
-    public async ValueTask<Either<MediatorError, TResponse>> Handle(TCommand request, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
+    public async ValueTask<Either<MediatorError, TResponse>> Handle(TCommand request, IRequestContext context, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
     {
         if (!MediatorBehaviorGuards.TryValidateRequest(GetType(), request, out var failure))
         {

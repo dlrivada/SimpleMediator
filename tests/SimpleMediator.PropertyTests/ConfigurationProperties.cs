@@ -483,7 +483,7 @@ public sealed class ConfigurationProperties
 
         protected abstract string Label { get; }
 
-        public async ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
+        public async ValueTask<Either<MediatorError, TResponse>> Handle(TRequest request, IRequestContext context, RequestHandlerCallback<TResponse> nextStep, CancellationToken cancellationToken)
         {
             _recorder.Add($"behavior:{Label}:enter");
             try
@@ -527,7 +527,7 @@ public sealed class ConfigurationProperties
 
         protected abstract string Label { get; }
 
-        public Task Process(TRequest request, CancellationToken cancellationToken)
+        public Task Process(TRequest request, IRequestContext context, CancellationToken cancellationToken)
         {
             _recorder.Add($"pre:{Label}");
             return Task.CompletedTask;
@@ -555,7 +555,7 @@ public sealed class ConfigurationProperties
 
         protected abstract string Label { get; }
 
-        public Task Process(TRequest request, Either<MediatorError, TResponse> response, CancellationToken cancellationToken)
+        public Task Process(TRequest request, IRequestContext context, Either<MediatorError, TResponse> response, CancellationToken cancellationToken)
         {
             if (response.IsRight)
             {
