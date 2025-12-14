@@ -232,6 +232,58 @@ services.AddSimpleMediator(cfg =>
 
 ---
 
+#### ✅ 1.1. SimpleMediator.DataAnnotations ⭐⭐⭐⭐
+
+**Status**: ✅ COMPLETADO
+
+**Objetivo**: Validación automática usando Data Annotations (built-in .NET, zero dependencies).
+
+**Prioridad**: ALTA (alternativa sin dependencies)
+**Complejidad**: ⭐ (Muy baja)
+**Timeline**: Pre-1.0
+
+**Implementado**:
+- `DataAnnotationsValidationBehavior<TRequest, TResponse>` with ROP integration
+- `AddDataAnnotationsValidation()` extension method
+- Zero external dependencies (uses System.ComponentModel.DataAnnotations)
+- Context enrichment (CorrelationId, UserId, TenantId)
+- Comprehensive test suite (10 tests, 100% passing)
+- Full XML documentation and comprehensive README
+
+**Ventajas**:
+- Zero dependencies (built-in .NET)
+- Ideal para prototipos y aplicaciones simples
+- Atributos declarativos sobre propiedades
+- Compatible con legacy code que ya usa Data Annotations
+
+---
+
+#### ✅ 1.2. SimpleMediator.MiniValidator ⭐⭐⭐⭐
+
+**Status**: ✅ COMPLETADO
+
+**Objetivo**: Validación lightweight usando MiniValidation (~20KB), perfect para Minimal APIs.
+
+**Prioridad**: ALTA (crecimiento en Minimal APIs)
+**Complejidad**: ⭐ (Muy baja)
+**Timeline**: Pre-1.0
+
+**Implementado**:
+- `MiniValidationBehavior<TRequest, TResponse>` with ROP integration
+- `AddMiniValidation()` extension method
+- Lightweight dependency (MiniValidation ~20KB)
+- Uses Data Annotations under the hood
+- Comprehensive test suite (10 tests, 100% passing)
+- Full XML documentation and PublicAPI support
+
+**Ventajas**:
+- Ultra-lightweight (~20KB vs 500KB FluentValidation)
+- Perfect para Minimal APIs
+- Uses Data Annotations but más minimalista
+- Growing trend en la comunidad
+
+---
+
 #### 2. SimpleMediator.AspNetCore ⭐⭐⭐⭐⭐
 
 **Objetivo**: Integración con ASP.NET Core (HttpContext, Authorization, Correlation IDs).
