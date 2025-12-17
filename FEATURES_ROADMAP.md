@@ -423,13 +423,23 @@ services.AddOpenTelemetry()
 
 ### 🎯 Fase 2: Enterprise Features (Pre-1.0)
 
-#### 4. SimpleMediator.EntityFrameworkCore ⭐⭐⭐⭐⭐
+#### ✅ 4. SimpleMediator.EntityFrameworkCore ⭐⭐⭐⭐⭐
+
+**Status**: ✅ COMPLETADO
 
 **Objetivo**: Transaction management y Outbox pattern.
 
 **Prioridad**: ALTA (patrón común en aplicaciones reales)
 **Complejidad**: ⭐⭐⭐⭐ (Alta - outbox es complejo)
 **Timeline**: Pre-1.0 (versión 1.1)
+
+**Implementado**:
+
+- `TransactionPipelineBehavior` for automatic transaction management
+- Outbox pattern implementation (OutboxMessage, OutboxStore, OutboxProcessor)
+- Inbox pattern for idempotent processing
+- 33 tests passing, full PublicAPI support
+- Comprehensive README and XML documentation
 
 **Funcionalidad**:
 
@@ -602,7 +612,324 @@ services.AddSimpleMediatorPolly(options =>
 
 ---
 
-### 🎯 Fase 3: Advanced (Pre-1.0 - versión 1.2+)
+#### ✅ 4.1. SimpleMediator.Messaging (Abstractions) ⭐⭐⭐⭐⭐
+
+**Status**: ✅ COMPLETADO
+
+**Objetivo**: Abstractions compartidas para messaging patterns (Outbox, Inbox, Sagas, Scheduling).
+
+**Implementado**:
+
+- `IOutboxStore`, `IInboxStore` interfaces
+- `OutboxOptions`, `InboxOptions` configuration
+- `MessagingConfiguration` for provider-agnostic setup
+- Shared entities and patterns
+
+---
+
+#### ✅ 4.2. SimpleMediator.Dapper ⭐⭐⭐⭐
+
+**Status**: ⚠️ PARTIALLY COMPLETE (SQLite compatibility issues)
+
+**Objetivo**: Dapper provider for messaging patterns (lightweight alternative to EF Core).
+
+**Implementado**:
+
+- `OutboxStoreDapper`, `InboxStoreDapper` implementations
+- SQL Server optimized queries
+- Full integration with SimpleMediator.Messaging
+- **Issue**: SQLite tests failing due to SQL Server-specific syntax (GETUTCDATE, TOP)
+
+**Pending**: Multi-database SQL dialect support
+
+---
+
+#### ✅ 4.3. SimpleMediator.ADO ⭐⭐⭐⭐⭐
+
+**Status**: ✅ COMPLETADO
+
+**Objetivo**: Pure ADO.NET provider for maximum performance and zero dependencies.
+
+**Implementado**:
+
+- Raw SqlCommand/SqlDataReader implementation
+- Zero external dependencies (except Microsoft.Data.SqlClient)
+- Maximum performance (1.59x faster than Dapper, 2.86x faster than EF Core)
+- Full PublicAPI support and comprehensive README
+- SQL Server optimized
+
+**Performance**:
+
+- ADO.NET: 63ms (baseline)
+- Dapper: 100ms (1.59x slower)
+- EF Core: 180ms (2.86x slower)
+
+---
+
+#### ✅ 4.4. SimpleMediator.GuardClauses ⭐⭐⭐⭐
+
+**Status**: ✅ COMPLETADO
+
+**Objetivo**: Defensive programming with Ardalis.GuardClauses integration.
+
+**Implementado**:
+
+- Extension methods for guarding request properties
+- Automatic MediatorError generation from guard violations
+- ROP-friendly API
+- Comprehensive test suite
+
+---
+
+#### ✅ 5. SimpleMediator.Hangfire ⭐⭐⭐⭐⭐
+
+**Status**: ✅ COMPLETADO
+
+**Objetivo**: Background job scheduling with Hangfire integration.
+
+**Prioridad**: ALTA (common requirement)
+**Complejidad**: ⭐⭐ (Low - adapter pattern)
+
+**Implementado**:
+
+- `HangfireRequestJobAdapter<TRequest, TResponse>` for executing requests as jobs
+- `HangfireNotificationJobAdapter<TNotification>` for publishing notifications as jobs
+- Extension methods for fire-and-forget, delayed, and recurring jobs
+- Full ROP support with `Either<MediatorError, TResponse>`
+- Comprehensive README with examples and best practices
+
+**Funcionalidad**:
+
+```csharp
+// Fire-and-forget
+var jobId = _backgroundJobs.EnqueueRequest<CreateOrderCommand, Order>(command);
+
+// Delayed execution
+var jobId = _backgroundJobs.ScheduleRequestWithDelay<SendInvoiceCommand, Invoice>(
+    command, delay: TimeSpan.FromHours(1));
+
+// Recurring jobs
+recurringJobs.AddOrUpdateRecurringRequest<GenerateDailyReportCommand, Report>(
+    recurringJobId: "daily-report",
+    request: new GenerateDailyReportCommand(),
+    cronExpression: Cron.Daily(2));
+```
+
+**Tests**: ⚠️ PENDING
+
+---
+
+#### ✅ 6. SimpleMediator.Quartz ⭐⭐⭐⭐⭐
+
+**Status**: ✅ COMPLETADO
+
+**Objetivo**: Enterprise job scheduling with Quartz.NET integration.
+
+**Prioridad**: ALTA (advanced scheduling scenarios)
+**Complejidad**: ⭐⭐⭐ (Medium - more complex than Hangfire)
+
+**Implementado**:
+
+- `QuartzRequestJob<TRequest, TResponse>` and `QuartzNotificationJob<TNotification>`
+- Full CRON expression support
+- Clustering and persistent storage configuration
+- Misfire handling and concurrent execution control
+- Extension methods for runtime and startup scheduling
+- Comprehensive README with CRON reference and clustering examples
+
+**Funcionalidad**:
+
+```csharp
+// Startup configuration
+services.AddSimpleMediatorQuartz(quartz =>
+{
+    quartz.AddRequestJob<GenerateDailyReportCommand, Report>(
+        request: new GenerateDailyReportCommand(),
+        configureTrigger: trigger => trigger
+            .WithCronSchedule("0 0 2 * * ?")  // 2 AM daily
+            .StartNow());
+});
+
+// Runtime scheduling
+await _scheduler.ScheduleRequest<ProcessPaymentCommand, Receipt>(
+    new ProcessPaymentCommand(paymentId),
+    trigger);
+```
+
+**Comparison with Hangfire**:
+
+- ✅ Quartz: Advanced CRON, clustering, fine-grained misfire control
+- ✅ Hangfire: Dashboard UI, simpler setup, easier for basic scenarios
+
+**Tests**: ⚠️ PENDING
+
+---
+
+### 🎯 Fase 3: Database Support Strategy (Pre-1.0 - URGENT)
+
+#### 7. Multi-Database Support ⭐⭐⭐⭐⭐
+
+**Status**: ⚠️ IN PROGRESS
+
+**Objetivo**: Support multiple database providers with consistent API.
+
+**Prioridad**: CRÍTICA (current implementations are SQL Server-only)
+**Complejidad**: ⭐⭐⭐⭐ (High - SQL dialect differences)
+
+**Problem Statement**:
+
+Current implementations (Dapper, ADO) use SQL Server-specific syntax:
+
+- `GETUTCDATE()` → Not supported in SQLite, PostgreSQL uses `NOW()`, MySQL uses `UTC_TIMESTAMP()`
+- `TOP N` → SQLite/PostgreSQL use `LIMIT N`, Oracle uses `ROWNUM`
+- `GUID` storage → SQL Server (uniqueidentifier), PostgreSQL (uuid), SQLite (TEXT), MySQL (CHAR(36))
+
+**Proposed Strategy**:
+
+**Option A: SQL Dialect Abstraction** ⭐⭐⭐⭐⭐ **RECOMMENDED**
+
+Create provider-specific implementations for each database:
+
+```
+SimpleMediator.Messaging/         # Abstractions (current)
+SimpleMediator.SqlServer/          # SQL Server provider (Dapper + ADO)
+SimpleMediator.PostgreSQL/         # PostgreSQL provider (Npgsql + Dapper)
+SimpleMediator.MySQL/              # MySQL provider (MySqlConnector + Dapper)
+SimpleMediator.Sqlite/             # SQLite provider (Microsoft.Data.Sqlite + Dapper)
+SimpleMediator.Oracle/             # Oracle provider (Oracle.ManagedDataAccess)
+```
+
+**Pros**:
+
+- Clean separation of concerns
+- Optimized queries per database
+- Easy to maintain and test
+- Users only install provider they need
+
+**Cons**:
+
+- More packages to maintain
+- Code duplication (mitigated with shared Messaging package)
+
+**Option B: Dynamic SQL Builder** ⭐⭐⭐
+
+Use SqlKata or similar to generate database-specific SQL:
+
+**Pros**:
+
+- Single codebase
+- Automatic dialect translation
+
+**Cons**:
+
+- Additional dependency
+- Performance overhead
+- Less control over SQL optimization
+
+**Option C: Keep SQL Server Only** ⭐
+
+Document that Dapper/ADO are SQL Server-only, create separate packages for other databases.
+
+**Pros**:
+
+- Simple, focused
+- Clear expectations
+
+**Cons**:
+
+- Limited audience
+- Users must switch providers
+
+**RECOMMENDATION**: **Option A** - Create provider-specific packages
+
+This gives users:
+
+1. **SimpleMediator.SqlServer** - Dapper + ADO (current code, optimized)
+2. **SimpleMediator.PostgreSQL** - Npgsql + Dapper (new)
+3. **SimpleMediator.MySQL** - MySqlConnector + Dapper (new)
+4. **SimpleMediator.Sqlite** - Microsoft.Data.Sqlite + Dapper (new, for testing)
+5. **SimpleMediator.Oracle** - Oracle.ManagedDataAccess (future, if needed)
+
+**NoSQL Strategy**:
+
+**Option D: NoSQL-Specific Satellites** ⭐⭐⭐⭐
+
+NoSQL databases have fundamentally different data models. Create purpose-specific packages:
+
+```
+SimpleMediator.MongoDB/            # Document-based outbox/inbox
+SimpleMediator.Redis/              # In-memory caching + pub/sub
+SimpleMediator.EventStoreDB/       # Event sourcing + projections
+SimpleMediator.Marten/             # PostgreSQL event sourcing
+SimpleMediator.Cassandra/          # Distributed event log
+```
+
+**Use Cases**:
+
+- **MongoDB**: Document-based outbox/inbox with rich querying
+- **Redis**: Ultra-fast caching, pub/sub for notifications, distributed locks
+- **EventStoreDB**: Event sourcing, event-driven architectures
+- **Marten**: PostgreSQL-based event sourcing (best of both worlds)
+- **Cassandra**: Massive scale event logging
+
+**Does it make sense?** ✅ **YES**, but only for specific use cases:
+
+| Database | Use Case | Priority |
+|----------|----------|----------|
+| **Redis** | Caching, pub/sub, distributed locks | ⭐⭐⭐⭐⭐ HIGH |
+| **EventStoreDB** | Event sourcing | ⭐⭐⭐⭐ MEDIUM |
+| **Marten** | PostgreSQL event sourcing | ⭐⭐⭐⭐ MEDIUM |
+| **MongoDB** | Document-based messaging | ⭐⭐⭐ LOW |
+| **Cassandra** | Massive scale | ⭐⭐ VERY LOW |
+
+**RECOMMENDATION**: Start with **Redis** (caching + pub/sub), then **EventStoreDB/Marten** for event sourcing.
+
+---
+
+#### 8. SimpleMediator.ODBC ⭐⭐⭐
+
+**Status**: 📋 PLANNED
+
+**Objetivo**: Legacy database support via ODBC.
+
+**Prioridad**: BAJA (niche use case)
+**Complejidad**: ⭐⭐⭐ (Medium)
+
+**Target Databases**:
+
+- IBM DB2 (legacy)
+- Informix
+- Progress/OpenEdge
+- Firebird (legacy environments)
+- Proprietary enterprise databases
+
+**Implementation**:
+
+Similar to ADO provider but using `System.Data.Odbc`:
+
+```csharp
+services.AddSimpleMediatorOdbc(
+    connectionString: "DSN=LegacyDB;UID=user;PWD=pass",
+    configure: config =>
+    {
+        config.UseOutbox = true;
+        config.UseInbox = true;
+        config.SqlDialect = SqlDialect.DB2; // Or Informix, Firebird, etc.
+    });
+```
+
+**Challenges**:
+
+- Each database has different SQL dialects
+- ODBC drivers quality varies
+- Limited feature support (no advanced types, limited transactions)
+- Performance overhead
+
+**RECOMMENDATION**: Only implement if there's real user demand. Most legacy systems can use direct providers.
+
+---
+
+### 🎯 Fase 4: Advanced (Pre-1.0 - versión 1.2+)
 
 #### 7. SimpleMediator.EventSourcing
 

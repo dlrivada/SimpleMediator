@@ -12,24 +12,31 @@
     <Project Path="load/SimpleMediator.NBomber/SimpleMediator.NBomber.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/SimpleMediator.ADO.SqlServer/SimpleMediator.ADO.SqlServer.csproj" />
     <Project Path="src/SimpleMediator.ADO/SimpleMediator.ADO.csproj" />
     <Project Path="src/SimpleMediator.AspNetCore/SimpleMediator.AspNetCore.csproj" />
+    <Project Path="src/SimpleMediator.Dapper.SqlServer/SimpleMediator.Dapper.SqlServer.csproj" />
     <Project Path="src/SimpleMediator.Dapper/SimpleMediator.Dapper.csproj" />
     <Project Path="src/SimpleMediator.DataAnnotations/SimpleMediator.DataAnnotations.csproj" />
     <Project Path="src/SimpleMediator.EntityFrameworkCore/SimpleMediator.EntityFrameworkCore.csproj" />
     <Project Path="src/SimpleMediator.FluentValidation/SimpleMediator.FluentValidation.csproj" />
+    <Project Path="src/SimpleMediator.Hangfire/SimpleMediator.Hangfire.csproj" />
     <Project Path="src/SimpleMediator.Messaging/SimpleMediator.Messaging.csproj" />
     <Project Path="src/SimpleMediator.MiniValidator/SimpleMediator.MiniValidator.csproj" />
+    <Project Path="src/SimpleMediator.Quartz/SimpleMediator.Quartz.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/SimpleMediator.AspNetCore.Tests/SimpleMediator.AspNetCore.Tests.csproj" />
     <Project Path="tests/SimpleMediator.ContractTests/SimpleMediator.ContractTests.csproj" />
+    <Project Path="tests/SimpleMediator.Dapper.SqlServer.Tests/SimpleMediator.Dapper.SqlServer.Tests.csproj" />
     <Project Path="tests/SimpleMediator.Dapper.Tests/SimpleMediator.Dapper.Tests.csproj" />
     <Project Path="tests/SimpleMediator.DataAnnotations.Tests/SimpleMediator.DataAnnotations.Tests.csproj" />
     <Project Path="tests/SimpleMediator.EntityFrameworkCore.Tests/SimpleMediator.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/SimpleMediator.FluentValidation.Tests/SimpleMediator.FluentValidation.Tests.csproj" />
+    <Project Path="tests/SimpleMediator.Hangfire.Tests/SimpleMediator.Hangfire.Tests.csproj" />
     <Project Path="tests/SimpleMediator.MiniValidator.Tests/SimpleMediator.MiniValidator.Tests.csproj" />
     <Project Path="tests/SimpleMediator.PropertyTests/SimpleMediator.PropertyTests.csproj" />
+    <Project Path="tests/SimpleMediator.Quartz.Tests/SimpleMediator.Quartz.Tests.csproj" />
     <Project Path="tests/SimpleMediator.Tests/SimpleMediator.Tests.csproj" />
   </Folder>
   <Project Path="src/SimpleMediator/SimpleMediator.csproj" />

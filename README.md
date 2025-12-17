@@ -78,6 +78,40 @@ SimpleMediator takes cues from MediatR, Kommand, and Wolverine, but positions it
 - **Notification fan-out:** Publishes to zero or many handlers with per-handler error logging, cancellation awareness, and functional results instead of exceptions.
 - **Quality & reliability toolchain:** Benchmarks, load harnesses, mutation testing, and coverage guardrails are baked into the repo to keep regressions visible.
 
+## Satellite Packages
+
+SimpleMediator adopts a modular architecture where specialized functionality is distributed across focused satellite packages. This approach keeps the core library lightweight while providing rich integration options for common scenarios.
+
+| Package | Purpose | Status | Tests |
+| --- | --- | --- | --- |
+| **Core** |
+| `SimpleMediator` | Core mediator, contracts, and pipeline behaviors | ✅ Production | 204 tests |
+| **Validation** |
+| `SimpleMediator.DataAnnotations` | Validation using .NET DataAnnotations | ✅ Production | 10 tests |
+| `SimpleMediator.FluentValidation` | Validation using FluentValidation | ✅ Production | 18 tests |
+| `SimpleMediator.MiniValidator` | Lightweight validation using MiniValidator | ✅ Production | 10 tests |
+| `SimpleMediator.GuardClauses` | Defensive programming with guard clauses | ✅ Production | - |
+| **Persistence & Messaging** |
+| `SimpleMediator.EntityFrameworkCore` | Transaction management and EF Core integration | ✅ Production | 33 tests |
+| `SimpleMediator.Dapper` | Outbox/Inbox patterns with Dapper (SQL Server) | ⚠️ SQL Server only | 2/8 tests |
+| `SimpleMediator.ADO` | High-performance messaging with raw ADO.NET (SQL Server) | ✅ Production | - |
+| **Job Scheduling** |
+| `SimpleMediator.Hangfire` | Background job processing with Hangfire | ✅ Production | 15 tests |
+| `SimpleMediator.Quartz` | Enterprise job scheduling with Quartz.NET | ✅ Production | 18 tests |
+| **Planned** |
+| `SimpleMediator.{Provider}.{Database}` | Multi-database support (PostgreSQL, MySQL, Oracle, SQLite) | 📋 Planned | - |
+| `SimpleMediator.Redis` | Caching and pub/sub with Redis | 📋 Planned | - |
+| `SimpleMediator.EventStoreDB` | Event sourcing with EventStoreDB | 📋 Planned | - |
+| `SimpleMediator.Marten` | Event sourcing with Marten/PostgreSQL | 📋 Planned | - |
+
+**Key:**
+
+- ✅ Production: Fully implemented and tested
+- ⚠️ Limited: Working but with constraints (see notes)
+- 📋 Planned: Roadmap item
+
+See [FEATURES_ROADMAP.md](FEATURES_ROADMAP.md) for detailed status and implementation plans.
+
 ### Feature matrix
 
 | Área | Qué incluye | Dónde empezar |

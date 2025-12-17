@@ -1,6 +1,6 @@
-# SimpleMediator.ADO
+# SimpleMediator.ADO.SqlServer
 
-[![NuGet](https://img.shields.io/nuget/v/SimpleMediator.ADO.svg)](https://www.nuget.org/packages/SimpleMediator.ADO)
+SQL Server implementation of SimpleMediator messaging patterns using raw ADO.NET for maximum performance.
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 **Pure ADO.NET provider for SimpleMediator messaging patterns** - Zero external dependencies (except Microsoft.Data.SqlClient), maximum performance, and complete control over SQL execution.
