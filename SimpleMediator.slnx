@@ -13,6 +13,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/SimpleMediator.AspNetCore/SimpleMediator.AspNetCore.csproj" />
+    <Project Path="src/SimpleMediator.Dapper/SimpleMediator.Dapper.csproj" />
     <Project Path="src/SimpleMediator.DataAnnotations/SimpleMediator.DataAnnotations.csproj" />
     <Project Path="src/SimpleMediator.EntityFrameworkCore/SimpleMediator.EntityFrameworkCore.csproj" />
     <Project Path="src/SimpleMediator.FluentValidation/SimpleMediator.FluentValidation.csproj" />
