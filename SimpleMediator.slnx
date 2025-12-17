@@ -12,6 +12,7 @@
     <Project Path="load/SimpleMediator.NBomber/SimpleMediator.NBomber.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/SimpleMediator.ADO.PostgreSQL/SimpleMediator.ADO.PostgreSQL.csproj" />
     <Project Path="src/SimpleMediator.ADO.SqlServer/SimpleMediator.ADO.SqlServer.csproj" />
     <Project Path="src/SimpleMediator.ADO/SimpleMediator.ADO.csproj" />
     <Project Path="src/SimpleMediator.AspNetCore/SimpleMediator.AspNetCore.csproj" />
