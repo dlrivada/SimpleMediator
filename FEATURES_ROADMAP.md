@@ -646,7 +646,7 @@ services.AddSimpleMediatorPolly(options =>
 - `SimpleMediator.Dapper.SqlServer` - SQL Server (COMPLETED 2025-12-18)
 - `SimpleMediator.Dapper.PostgreSQL` - PostgreSQL (COMPLETED 2025-12-18)
 - `SimpleMediator.Dapper.MySQL` - MySQL/MariaDB (COMPLETED 2025-12-18)
-- `SimpleMediator.Dapper.Sqlite` - SQLite (PLANNED)
+ánimo de las relacionales sólo tequeda SQLLite y Oracle- `SimpleMediator.Dapper.Sqlite` - SQLite (PLANNED)
 
 ---
 
