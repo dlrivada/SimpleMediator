@@ -14,7 +14,7 @@ permissions:
 jobs:
   sonarcloud:
     name: SonarCloud Code Quality
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     env:
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
