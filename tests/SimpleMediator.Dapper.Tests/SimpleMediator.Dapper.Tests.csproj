@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SimpleMediator.Dapper\SimpleMediator.Dapper.csproj" />
+    <ProjectReference Include="..\..\src\SimpleMediator.Dapper.Sqlite\SimpleMediator.Dapper.Sqlite.csproj" />
     <ProjectReference Include="..\..\src\SimpleMediator\SimpleMediator.csproj" />
   </ItemGroup>
 

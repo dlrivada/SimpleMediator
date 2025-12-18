@@ -1,5 +1,5 @@
 using Dapper;
-using SimpleMediator.Dapper.Outbox;
+using SimpleMediator.Dapper.Sqlite.Outbox;
 
 namespace SimpleMediator.Dapper.Tests.Outbox;
 
