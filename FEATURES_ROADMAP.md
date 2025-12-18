@@ -643,9 +643,9 @@ services.AddSimpleMediatorPolly(options =>
 
 **Note**: Original `SimpleMediator.Dapper` package deprecated. Use database-specific packages:
 
-- `SimpleMediator.Dapper.SqlServer` - SQL Server (COMPLETED)
-- `SimpleMediator.Dapper.PostgreSQL` - PostgreSQL (PLANNED)
-- `SimpleMediator.Dapper.MySQL` - MySQL/MariaDB (PLANNED)
+- `SimpleMediator.Dapper.SqlServer` - SQL Server (COMPLETED 2025-12-18)
+- `SimpleMediator.Dapper.PostgreSQL` - PostgreSQL (COMPLETED 2025-12-18)
+- `SimpleMediator.Dapper.MySQL` - MySQL/MariaDB (COMPLETED 2025-12-18)
 - `SimpleMediator.Dapper.Sqlite` - SQLite (PLANNED)
 
 ---
@@ -674,9 +674,9 @@ services.AddSimpleMediatorPolly(options =>
 
 **Note**: Original `SimpleMediator.ADO` package deprecated. Use database-specific packages:
 
-- `SimpleMediator.ADO.SqlServer` - SQL Server (COMPLETED)
-- `SimpleMediator.ADO.PostgreSQL` - PostgreSQL (PLANNED)
-- `SimpleMediator.ADO.MySQL` - MySQL/MariaDB (PLANNED)
+- `SimpleMediator.ADO.SqlServer` - SQL Server (COMPLETED 2025-12-18)
+- `SimpleMediator.ADO.PostgreSQL` - PostgreSQL (COMPLETED 2025-12-18)
+- `SimpleMediator.ADO.MySQL` - MySQL/MariaDB (COMPLETED 2025-12-18)
 - `SimpleMediator.ADO.Sqlite` - SQLite (PLANNED)
 
 ---
@@ -793,9 +793,9 @@ await _scheduler.ScheduleRequest<ProcessPaymentCommand, Receipt>(
 
 - ✅ Architecture designed (provider-specific packages)
 - ✅ SQL Server implementations completed (Dapper.SqlServer, ADO.SqlServer)
-- 🔄 PostgreSQL implementation (NEXT - proof of concept)
-- ⏳ MySQL/MariaDB implementation (PLANNED)
-- ⏳ SQLite implementation (PLANNED)
+- ✅ PostgreSQL implementations completed (Dapper.PostgreSQL, ADO.PostgreSQL) - 2025-12-18
+- ✅ MySQL/MariaDB implementations completed (Dapper.MySQL, ADO.MySQL) - 2025-12-18
+- ⏳ SQLite implementation (PLANNED - would complete relational DB coverage)
 
 **Problem Statement**:
 
@@ -904,6 +904,41 @@ SimpleMediator.Cassandra/          # Distributed event log
 | **Cassandra** | Massive scale | ⭐⭐ VERY LOW |
 
 **RECOMMENDATION**: Start with **Redis** (caching + pub/sub), then **EventStoreDB/Marten** for event sourcing.
+
+**Multi-Database Implementation Summary** (2025-12-18):
+
+✅ **Completed Providers**:
+
+| Database | Dapper Package | ADO.NET Package | Key Features |
+|----------|---------------|-----------------|--------------|
+| **SQL Server** | SimpleMediator.Dapper.SqlServer | SimpleMediator.ADO.SqlServer | GETUTCDATE(), TOP N, UNIQUEIDENTIFIER |
+| **PostgreSQL** | SimpleMediator.Dapper.PostgreSQL | SimpleMediator.ADO.PostgreSQL | NOW() AT TIME ZONE 'UTC', LIMIT N, UUID |
+| **MySQL/MariaDB** | SimpleMediator.Dapper.MySQL | SimpleMediator.ADO.MySQL | UTC_TIMESTAMP(), LIMIT N, CHAR(36) |
+
+All providers support:
+- ✅ Outbox Pattern (reliable event publishing)
+- ✅ Inbox Pattern (idempotent processing)
+- ✅ Saga Orchestration (distributed transactions)
+- ✅ Scheduled Messages (delayed/recurring execution)
+- ✅ Transaction Management (ROP-aware)
+- ✅ PublicAPI Analyzers compliance
+
+**SQL Dialect Translation Matrix**:
+
+| Feature | SQL Server | PostgreSQL | MySQL/MariaDB |
+|---------|-----------|------------|---------------|
+| UTC Timestamp | `GETUTCDATE()` | `NOW() AT TIME ZONE 'UTC'` | `UTC_TIMESTAMP()` |
+| Result Limit | `TOP N` | `LIMIT N` | `LIMIT N` |
+| GUID Type | `UNIQUEIDENTIFIER` | `UUID` | `CHAR(36)` |
+| Large Text | `NVARCHAR(MAX)` | `TEXT` | `TEXT` |
+| DateTime | `DATETIME2(7)` | `TIMESTAMP` | `DATETIME(6)` |
+
+**Package Dependencies**:
+- SQL Server: `Microsoft.Data.SqlClient 6.0.2`
+- PostgreSQL: `Npgsql 9.0.2`
+- MySQL: `MySqlConnector 2.4.0`
+
+**Next Step**: SQLite implementation would complete relational database coverage.
 
 ---
 
