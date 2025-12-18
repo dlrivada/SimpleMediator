@@ -16,21 +16,14 @@ if (!int.TryParse(args[1], out var mutantId))
 
 string? searchRoot = Directory.GetCurrentDirectory();
 string? outputRoot = null;
-
-var candidateRoots = new[]
-{
-    Path.Combine("artifacts", "mutation", "StrykerOutput"),
-    "StrykerOutput"
-};
+var mutationOutputPath = Path.Combine("artifacts", "mutation");
 
 while (!string.IsNullOrEmpty(searchRoot))
 {
-    outputRoot = candidateRoots
-        .Select(rel => Path.Combine(searchRoot, rel))
-        .FirstOrDefault(Directory.Exists);
-
-    if (outputRoot is not null)
+    var candidate = Path.Combine(searchRoot, mutationOutputPath);
+    if (Directory.Exists(candidate))
     {
+        outputRoot = candidate;
         break;
     }
 
@@ -39,7 +32,7 @@ while (!string.IsNullOrEmpty(searchRoot))
 
 if (outputRoot is null)
 {
-    Console.Error.WriteLine("Stryker output folder not found (expected under artifacts/mutation/StrykerOutput). Run Stryker before using this script.");
+    Console.Error.WriteLine("Stryker output folder not found (expected at artifacts/mutation). Run Stryker before using this script.");
     return;
 }
 
@@ -50,7 +43,7 @@ var latestReportDir = Directory
 
 if (latestReportDir is null)
 {
-    Console.Error.WriteLine("No Stryker runs found under artifacts/mutation/StrykerOutput.");
+    Console.Error.WriteLine("No Stryker runs found at artifacts/mutation.");
     return;
 }
 

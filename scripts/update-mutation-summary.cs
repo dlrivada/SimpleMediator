@@ -37,28 +37,21 @@ using (reportJson)
 static (string ReportPath, JsonDocument ReportJson)? ResolveLatestReport()
 {
     var searchRoot = Directory.GetCurrentDirectory();
-    var candidateRoots = new[]
-    {
-        Path.Combine("artifacts", "mutation", "StrykerOutput"),
-        "StrykerOutput"
-    };
+    var mutationOutputPath = Path.Combine("artifacts", "mutation");
 
     while (!string.IsNullOrEmpty(searchRoot))
     {
-        var existingRoot = candidateRoots
-            .Select(rel => Path.Combine(searchRoot, rel))
-            .FirstOrDefault(Directory.Exists);
-
-        if (existingRoot is not null)
+        var outputRoot = Path.Combine(searchRoot, mutationOutputPath);
+        if (Directory.Exists(outputRoot))
         {
             var latestRun = Directory
-                .EnumerateDirectories(existingRoot)
+                .EnumerateDirectories(outputRoot)
                 .OrderByDescending(path => path)
                 .FirstOrDefault();
 
             if (latestRun is null)
             {
-                Console.Error.WriteLine($"No Stryker runs found under {existingRoot}.");
+                Console.Error.WriteLine($"No Stryker runs found under {outputRoot}.");
                 return null;
             }
 
@@ -77,7 +70,7 @@ static (string ReportPath, JsonDocument ReportJson)? ResolveLatestReport()
         searchRoot = Directory.GetParent(searchRoot)?.FullName;
     }
 
-    Console.Error.WriteLine("Stryker output folder not found (expected under artifacts/mutation/StrykerOutput). Run Stryker before executing this script.");
+    Console.Error.WriteLine("Stryker output folder not found (expected at artifacts/mutation). Run Stryker before executing this script.");
     return null;
 }
 

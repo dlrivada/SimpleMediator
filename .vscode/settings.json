@@ -22,8 +22,7 @@
     "**/coverage/**": true,
     "docs/MutationPlanPause.md": true,
     "docs/ZeroExceptionsInitiative.md": true,
-    "docs/internal/testing-roadmap.md": true,
-    "StrykerOutput/**": true
+    "docs/internal/testing-roadmap.md": true
   },
 
   // ESLint
@@ -35,8 +34,7 @@
     "coverage/**",
     "docs/MutationPlanPause.md",
     "docs/ZeroExceptionsInitiative.md",
-    "docs/internal/testing-roadmap.md",
-    "StrykerOutput/**"
+    "docs/internal/testing-roadmap.md"
   ],
 
   // C# / OmniSharp
@@ -47,8 +45,7 @@
     "**/coverage/**",
     "docs/MutationPlanPause.md",
     "docs/ZeroExceptionsInitiative.md",
-    "docs/internal/testing-roadmap.md",
-    "StrykerOutput/**"
+    "docs/internal/testing-roadmap.md"
   ]
 }
 

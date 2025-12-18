@@ -18,38 +18,26 @@ if (!File.Exists(reportPath))
 
 static string ResolveDefaultReportPath()
 {
-    var candidateRoots = new[]
-    {
-        Path.Combine("artifacts", "mutation", "StrykerOutput"),
-        "StrykerOutput"
-    };
+    var mutationOutputPath = Path.Combine("artifacts", "mutation");
 
-    foreach (var root in candidateRoots)
+    if (Directory.Exists(mutationOutputPath))
     {
-        if (!Directory.Exists(root))
-        {
-            continue;
-        }
-
         var latest = Directory
-            .EnumerateDirectories(root)
+            .EnumerateDirectories(mutationOutputPath)
             .OrderByDescending(path => path)
             .FirstOrDefault();
 
-        if (latest is null)
+        if (latest is not null)
         {
-            continue;
-        }
-
-        var candidate = Path.Combine(latest, "reports", "mutation-report.json");
-        if (File.Exists(candidate))
-        {
-            return candidate;
+            var candidate = Path.Combine(latest, "reports", "mutation-report.json");
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
         }
     }
 
-    // Legacy fallback so the caller still gets a meaningful error message.
-    return Path.Combine("artifacts", "mutation", "StrykerOutput", "latest", "reports", "mutation-report.json");
+    return Path.Combine(mutationOutputPath, "latest", "reports", "mutation-report.json");
 }
 
 using var document = JsonDocument.Parse(File.ReadAllText(reportPath));

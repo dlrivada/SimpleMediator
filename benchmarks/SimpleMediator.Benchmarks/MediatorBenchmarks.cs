@@ -1,4 +1,6 @@
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 using LanguageExt;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,9 +12,32 @@ public static class Program
 {
     public static void Main(string[] args)
     {
+        var config = DefaultConfig.Instance
+            .WithArtifactsPath(Path.Combine(
+                FindRepositoryRoot(),
+                "artifacts",
+                "performance"));
+
         // Run both benchmark suites
-        BenchmarkRunner.Run<MediatorBenchmarks>();
-        BenchmarkRunner.Run<DelegateInvocationBenchmarks>();
+        BenchmarkRunner.Run<MediatorBenchmarks>(config);
+        BenchmarkRunner.Run<DelegateInvocationBenchmarks>(config);
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        var directory = new DirectoryInfo(Environment.CurrentDirectory);
+        while (directory is not null)
+        {
+            var candidate = Path.Combine(directory.FullName, "SimpleMediator.slnx");
+            if (File.Exists(candidate))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new InvalidOperationException("Could not locate repository root containing SimpleMediator.slnx.");
     }
 }
 
