@@ -647,7 +647,7 @@ services.AddSimpleMediatorPolly(options =>
 - `SimpleMediator.Dapper.PostgreSQL` - PostgreSQL (COMPLETED 2025-12-18)
 - `SimpleMediator.Dapper.MySQL` - MySQL/MariaDB (COMPLETED 2025-12-18)
 - `SimpleMediator.Dapper.Sqlite` - SQLite (COMPLETED 2025-12-18)
-- `SimpleMediator.Dapper.Oracle` - Oracle Database (PLANNED)
+- `SimpleMediator.Dapper.Oracle` - Oracle Database (COMPLETED 2025-12-18)
 
 ---
 
@@ -679,7 +679,7 @@ services.AddSimpleMediatorPolly(options =>
 - `SimpleMediator.ADO.PostgreSQL` - PostgreSQL (COMPLETED 2025-12-18)
 - `SimpleMediator.ADO.MySQL` - MySQL/MariaDB (COMPLETED 2025-12-18)
 - `SimpleMediator.ADO.Sqlite` - SQLite (COMPLETED 2025-12-18)
-- `SimpleMediator.ADO.Oracle` - Oracle Database (PLANNED)
+- `SimpleMediator.ADO.Oracle` - Oracle Database (COMPLETED 2025-12-18)
 
 ---
 
@@ -798,7 +798,7 @@ await _scheduler.ScheduleRequest<ProcessPaymentCommand, Receipt>(
 - ✅ PostgreSQL implementations completed (Dapper.PostgreSQL, ADO.PostgreSQL) - 2025-12-18
 - ✅ MySQL/MariaDB implementations completed (Dapper.MySQL, ADO.MySQL) - 2025-12-18
 - ✅ SQLite implementations completed (Dapper.Sqlite, ADO.Sqlite) - 2025-12-18
-- ⏳ Oracle implementation (PLANNED - enterprise database coverage)
+- ✅ Oracle implementations completed (Dapper.Oracle, ADO.Oracle) - 2025-12-18
 
 **Problem Statement**:
 
@@ -918,6 +918,7 @@ SimpleMediator.Cassandra/          # Distributed event log
 | **PostgreSQL** | SimpleMediator.Dapper.PostgreSQL | SimpleMediator.ADO.PostgreSQL | NOW() AT TIME ZONE 'UTC', LIMIT N, UUID |
 | **MySQL/MariaDB** | SimpleMediator.Dapper.MySQL | SimpleMediator.ADO.MySQL | UTC_TIMESTAMP(), LIMIT N, CHAR(36) |
 | **SQLite** | SimpleMediator.Dapper.Sqlite | SimpleMediator.ADO.Sqlite | datetime('now'), LIMIT N, TEXT (GUID as string) |
+| **Oracle** | SimpleMediator.Dapper.Oracle | SimpleMediator.ADO.Oracle | SYS_EXTRACT_UTC(SYSTIMESTAMP), FETCH FIRST N ROWS ONLY, RAW(16) |
 
 All providers support:
 - ✅ Outbox Pattern (reliable event publishing)
@@ -929,21 +930,23 @@ All providers support:
 
 **SQL Dialect Translation Matrix**:
 
-| Feature | SQL Server | PostgreSQL | MySQL/MariaDB | SQLite |
-|---------|-----------|------------|---------------|--------|
-| UTC Timestamp | `GETUTCDATE()` | `NOW() AT TIME ZONE 'UTC'` | `UTC_TIMESTAMP()` | `datetime('now')` |
-| Result Limit | `TOP N` | `LIMIT N` | `LIMIT N` | `LIMIT N` |
-| GUID Type | `UNIQUEIDENTIFIER` | `UUID` | `CHAR(36)` | `TEXT` |
-| Large Text | `NVARCHAR(MAX)` | `TEXT` | `TEXT` | `TEXT` |
-| DateTime | `DATETIME2(7)` | `TIMESTAMP` | `DATETIME(6)` | `TEXT (ISO8601)` |
+| Feature | SQL Server | PostgreSQL | MySQL/MariaDB | SQLite | Oracle |
+|---------|-----------|------------|---------------|--------|--------|
+| UTC Timestamp | `GETUTCDATE()` | `NOW() AT TIME ZONE 'UTC'` | `UTC_TIMESTAMP()` | `datetime('now')` | `SYS_EXTRACT_UTC(SYSTIMESTAMP)` |
+| Result Limit | `TOP N` | `LIMIT N` | `LIMIT N` | `LIMIT N` | `FETCH FIRST N ROWS ONLY` |
+| GUID Type | `UNIQUEIDENTIFIER` | `UUID` | `CHAR(36)` | `TEXT` | `RAW(16)` or `VARCHAR2(36)` |
+| Large Text | `NVARCHAR(MAX)` | `TEXT` | `TEXT` | `TEXT` | `CLOB` |
+| DateTime | `DATETIME2(7)` | `TIMESTAMP` | `DATETIME(6)` | `TEXT (ISO8601)` | `TIMESTAMP` |
+| Parameters | `@ParameterName` | `@ParameterName` | `@ParameterName` | `@ParameterName` | `:ParameterName` |
 
 **Package Dependencies**:
 - SQL Server: `Microsoft.Data.SqlClient 6.0.2`
 - PostgreSQL: `Npgsql 9.0.2`
 - MySQL: `MySqlConnector 2.4.0`
 - SQLite: `Microsoft.Data.Sqlite 10.0.1`
+- Oracle: `Oracle.ManagedDataAccess.Core 23.7.0`
 
-**Status**: ✅ **All major relational databases supported!** Oracle remains as optional enterprise coverage.
+**Status**: ✅ **COMPLETE!** All major relational + enterprise databases fully supported!
 
 ---
 
