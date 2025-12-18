@@ -1,7 +1,7 @@
+using System.Text.Json;
 using LanguageExt;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 namespace SimpleMediator.EntityFrameworkCore.Outbox;
 

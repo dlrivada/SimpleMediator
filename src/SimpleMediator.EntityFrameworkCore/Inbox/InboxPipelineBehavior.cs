@@ -1,8 +1,8 @@
+using System.Text.Json;
 using LanguageExt;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SimpleMediator.Messaging.Inbox;
-using System.Text.Json;
 using static LanguageExt.Prelude;
 
 namespace SimpleMediator.EntityFrameworkCore.Inbox;

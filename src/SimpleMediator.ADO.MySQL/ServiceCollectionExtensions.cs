@@ -1,7 +1,7 @@
 using System.Data;
-using MySqlConnector;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using MySqlConnector;
 using SimpleMediator.ADO.MySQL.Inbox;
 using SimpleMediator.ADO.MySQL.Outbox;
 using SimpleMediator.Messaging;

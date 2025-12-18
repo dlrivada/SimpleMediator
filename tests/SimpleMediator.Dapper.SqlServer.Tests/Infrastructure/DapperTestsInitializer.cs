@@ -1,5 +1,5 @@
-using Dapper;
 using System.Runtime.CompilerServices;
+using Dapper;
 
 namespace SimpleMediator.Dapper.SqlServer.Tests.Infrastructure;
 

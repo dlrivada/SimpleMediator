@@ -2,8 +2,8 @@ using System.Diagnostics;
 using LanguageExt;
 using Shouldly;
 using SimpleMediator.Tests.Fixtures;
-using static LanguageExt.Prelude;
 using Xunit;
+using static LanguageExt.Prelude;
 
 namespace SimpleMediator.Tests;
 

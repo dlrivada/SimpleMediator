@@ -1,8 +1,8 @@
+using System.Security.Claims;
 using FluentAssertions;
 using LanguageExt;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using System.Security.Claims;
 using Xunit;
 using static LanguageExt.Prelude;
 

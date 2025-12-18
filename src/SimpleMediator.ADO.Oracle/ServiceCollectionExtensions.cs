@@ -1,7 +1,7 @@
 using System.Data;
-using Oracle.ManagedDataAccess.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Oracle.ManagedDataAccess.Client;
 using SimpleMediator.ADO.Oracle.Inbox;
 using SimpleMediator.ADO.Oracle.Outbox;
 using SimpleMediator.Messaging;

@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -7,8 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Net;
-using System.Text.Json;
 using Xunit;
 
 namespace SimpleMediator.AspNetCore.Tests;

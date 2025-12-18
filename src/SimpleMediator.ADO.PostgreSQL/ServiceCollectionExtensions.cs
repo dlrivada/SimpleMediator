@@ -1,7 +1,7 @@
 using System.Data;
-using Npgsql;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Npgsql;
 using SimpleMediator.ADO.PostgreSQL.Inbox;
 using SimpleMediator.ADO.PostgreSQL.Outbox;
 using SimpleMediator.Messaging;

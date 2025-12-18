@@ -1,6 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using System.ComponentModel.DataAnnotations;
 
 namespace SimpleMediator.MiniValidator.Tests;
 
