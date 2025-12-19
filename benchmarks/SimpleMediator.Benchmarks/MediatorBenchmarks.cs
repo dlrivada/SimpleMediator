@@ -28,6 +28,9 @@ public static class Program
         // Validation benchmarks (FluentValidation vs DataAnnotations vs MiniValidator vs GuardClauses)
         BenchmarkRunner.Run<ValidationBenchmarks>(config);
 
+        // Job Scheduling benchmarks (Hangfire vs Quartz)
+        BenchmarkRunner.Run<JobSchedulingBenchmarks>(config);
+
         // OpenTelemetry benchmarks
         BenchmarkRunner.Run<OpenTelemetryBenchmarks>(config);
 

@@ -18,6 +18,7 @@
     <ProjectReference Include="..\..\src\SimpleMediator.DataAnnotations\SimpleMediator.DataAnnotations.csproj" />
     <ProjectReference Include="..\..\src\SimpleMediator.MiniValidator\SimpleMediator.MiniValidator.csproj" />
     <ProjectReference Include="..\..\src\SimpleMediator.GuardClauses\SimpleMediator.GuardClauses.csproj" />
+    <ProjectReference Include="..\..\src\SimpleMediator.Quartz\SimpleMediator.Quartz.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,6 +30,7 @@
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="MiniValidation" />
     <PackageReference Include="Ardalis.GuardClauses" />
+    <PackageReference Include="Quartz" />
   </ItemGroup>
 
 </Project>
