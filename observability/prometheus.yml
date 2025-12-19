@@ -1,0 +1,26 @@
+# Prometheus Configuration
+# Scrapes metrics from OpenTelemetry Collector
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'simplemediator-dev'
+
+scrape_configs:
+  # Scrape OpenTelemetry Collector's Prometheus exporter
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8889']
+        labels:
+          service: 'simplemediator'
+
+  # Scrape Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Scrape Grafana
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
