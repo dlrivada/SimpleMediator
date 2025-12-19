@@ -28,6 +28,7 @@
     <Project Path="src/SimpleMediator.EntityFrameworkCore/SimpleMediator.EntityFrameworkCore.csproj" />
     <Project Path="src/SimpleMediator.Extensions.Resilience/SimpleMediator.Extensions.Resilience.csproj" />
     <Project Path="src/SimpleMediator.FluentValidation/SimpleMediator.FluentValidation.csproj" />
+    <Project Path="src/SimpleMediator.GuardClauses/SimpleMediator.GuardClauses.csproj" />
     <Project Path="src/SimpleMediator.Hangfire/SimpleMediator.Hangfire.csproj" />
     <Project Path="src/SimpleMediator.Messaging/SimpleMediator.Messaging.csproj" />
     <Project Path="src/SimpleMediator.MiniValidator/SimpleMediator.MiniValidator.csproj" />
@@ -56,6 +57,10 @@
     <Project Path="tests/SimpleMediator.FluentValidation.LoadTests/SimpleMediator.FluentValidation.LoadTests.csproj" />
     <Project Path="tests/SimpleMediator.FluentValidation.PropertyTests/SimpleMediator.FluentValidation.PropertyTests.csproj" />
     <Project Path="tests/SimpleMediator.FluentValidation.Tests/SimpleMediator.FluentValidation.Tests.csproj" />
+    <Project Path="tests/SimpleMediator.GuardClauses.ContractTests/SimpleMediator.GuardClauses.ContractTests.csproj" />
+    <Project Path="tests/SimpleMediator.GuardClauses.IntegrationTests/SimpleMediator.GuardClauses.IntegrationTests.csproj" />
+    <Project Path="tests/SimpleMediator.GuardClauses.LoadTests/SimpleMediator.GuardClauses.LoadTests.csproj" />
+    <Project Path="tests/SimpleMediator.GuardClauses.PropertyTests/SimpleMediator.GuardClauses.PropertyTests.csproj" />
     <Project Path="tests/SimpleMediator.Hangfire.Tests/SimpleMediator.Hangfire.Tests.csproj" />
     <Project Path="tests/SimpleMediator.MiniValidator.ContractTests/SimpleMediator.MiniValidator.ContractTests.csproj" />
     <Project Path="tests/SimpleMediator.MiniValidator.IntegrationTests/SimpleMediator.MiniValidator.IntegrationTests.csproj" />

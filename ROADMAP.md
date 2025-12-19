@@ -863,7 +863,7 @@ For each provider, implement:
 | FluentValidation | 18 | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | 68 | ✅ 95% |
 | DataAnnotations | 7 | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | 56 | ✅ 95% |
 | MiniValidator | 10 | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | 59 | ✅ 95% |
-| GuardClauses | 262 | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | 262 | 🟡 50% |
+| GuardClauses | 262 | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | 292 | ✅ 95% |
 | **Messaging** | | | | | | | | | |
 | EntityFrameworkCore | 33 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 33 | 🔴 20% |
 | **Database Providers** | | | | | | | | | |
