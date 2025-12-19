@@ -4,7 +4,7 @@ using Quartz;
 using SimpleMediator.Quartz;
 using static LanguageExt.Prelude;
 
-namespace SimpleMediator.Quartz.Tests.Contracts;
+namespace SimpleMediator.Quartz.ContractTests;
 
 /// <summary>
 /// Contract tests for QuartzNotificationJob.

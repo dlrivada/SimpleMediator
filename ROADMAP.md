@@ -55,11 +55,11 @@ SimpleMediator (future: **Encina Framework**) aspires to be the functional media
 | Tests | 3,436 | ~5,000+ | 69% 🟡 |
 | Documentation | 80% | 100% | 80% 🟡 |
 
-### Test Status: 3,436 Tests Created (257 Core + 3,179 Database Providers)
+### Test Status: 3,444 Tests Created (265 Core + 3,179 Database Providers)
 
 **CRITICAL CHANGE**: New MANDATORY 100% coverage policy enacted (2025-12-18)
 
-**Core Tests**: 257/257 passing (10 skipped for Pure ROP)
+**Core Tests**: 265/265 passing (10 skipped for Pure ROP)
 
 - SimpleMediator.Tests: 194 tests (Unit, Guard)
 - AspNetCore.Tests: 49 tests (Unit, Integration)
@@ -69,8 +69,8 @@ SimpleMediator (future: **Encina Framework**) aspires to be the functional media
 - EntityFrameworkCore.Tests: 33 tests (Unit - in-memory DB only)
 - ContractTests: 18 tests (Contract)
 - PropertyTests: 12 tests (Property)
-- Hangfire.Tests: 15 tests (Unit)
-- Quartz.Tests: 18 tests (Unit)
+- Hangfire.Tests: 18 tests (Unit, Guard, Contract)
+- Quartz.Tests: 23 tests (Unit, Guard, Contract)
 
 **Database Provider Tests**: 1,763/1,763 passing (10 providers complete) ⭐ ALL COMPLETE!
 
@@ -878,8 +878,8 @@ For each provider, implement:
 | ADO.Sqlite | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 0 | 🔴 0% |
 | ADO.Oracle | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 0 | 🔴 0% |
 | **Job Scheduling** | | | | | | | | | |
-| Hangfire | 15 | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | 15 | 🟡 60% |
-| Quartz | 18 | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | 18 | 🟡 60% |
+| Hangfire | 15 | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | 18 | 🟡 67% |
+| Quartz | 18 | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | 23 | 🟡 67% |
 | **Observability** | | | | | | | | | |
 | OpenTelemetry | 57 | ✅ | ✅ | 8 | 6 | 2 (skip) | ✅ | 71 | ✅ 100% |
 | **Stream Requests** | | | | | | | | | |

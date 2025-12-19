@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using SimpleMediator.Hangfire;
 using static LanguageExt.Prelude;
 
-namespace SimpleMediator.Hangfire.Tests.Contracts;
+namespace SimpleMediator.Hangfire.ContractTests;
 
 /// <summary>
 /// Contract tests for HangfireRequestJobAdapter.
