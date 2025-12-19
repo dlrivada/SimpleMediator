@@ -45,6 +45,10 @@
     <Project Path="tests/SimpleMediator.Dapper.Sqlite.PropertyTests/SimpleMediator.Dapper.Sqlite.PropertyTests.csproj" />
     <Project Path="tests/SimpleMediator.Dapper.SqlServer.Tests/SimpleMediator.Dapper.SqlServer.Tests.csproj" />
     <Project Path="tests/SimpleMediator.Dapper.Tests/SimpleMediator.Dapper.Tests.csproj" />
+    <Project Path="tests/SimpleMediator.DataAnnotations.ContractTests/SimpleMediator.DataAnnotations.ContractTests.csproj" />
+    <Project Path="tests/SimpleMediator.DataAnnotations.IntegrationTests/SimpleMediator.DataAnnotations.IntegrationTests.csproj" />
+    <Project Path="tests/SimpleMediator.DataAnnotations.LoadTests/SimpleMediator.DataAnnotations.LoadTests.csproj" />
+    <Project Path="tests/SimpleMediator.DataAnnotations.PropertyTests/SimpleMediator.DataAnnotations.PropertyTests.csproj" />
     <Project Path="tests/SimpleMediator.DataAnnotations.Tests/SimpleMediator.DataAnnotations.Tests.csproj" />
     <Project Path="tests/SimpleMediator.EntityFrameworkCore.Tests/SimpleMediator.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/SimpleMediator.FluentValidation.ContractTests/SimpleMediator.FluentValidation.ContractTests.csproj" />
