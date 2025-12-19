@@ -883,7 +883,7 @@ For each provider, implement:
 | **Observability** | | | | | | | | | |
 | OpenTelemetry | 57 | ✅ | ✅ | 8 | 6 | 2 (skip) | ✅ | 71 | ✅ 100% |
 | **Stream Requests** | | | | | | | | | |
-| SimpleMediator (Stream) | 11 | 15 | 16 | 38 | 10 | 8 | ❌ | 87 | ✅ 95% |
+| SimpleMediator (Stream) | 11 | 15 | 16 | 38 | 10 | 8 | ✅ | 98 | ✅ 100% |
 
 **Legend**:
 

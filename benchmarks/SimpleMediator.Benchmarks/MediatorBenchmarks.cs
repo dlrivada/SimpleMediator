@@ -23,6 +23,7 @@ public static class Program
         // Run all benchmark suites
         BenchmarkRunner.Run<MediatorBenchmarks>(config);
         BenchmarkRunner.Run<DelegateInvocationBenchmarks>(config);
+        BenchmarkRunner.Run<StreamRequestBenchmarks>(config);
 
         // OpenTelemetry benchmarks
         BenchmarkRunner.Run<OpenTelemetryBenchmarks>(config);
