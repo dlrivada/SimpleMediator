@@ -860,10 +860,10 @@ For each provider, implement:
 | SimpleMediator | 194 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 194 | ✅ 100% |
 | AspNetCore | 49 | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | 49 | 🟡 60% |
 | **Validation** | | | | | | | | | |
-| FluentValidation | 18 | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | 68 | ✅ 95% |
-| DataAnnotations | 7 | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | 56 | ✅ 95% |
-| MiniValidator | 10 | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | 59 | ✅ 95% |
-| GuardClauses | 262 | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | 292 | ✅ 95% |
+| FluentValidation | 18 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 68 | ✅ 100% |
+| DataAnnotations | 7 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 56 | ✅ 100% |
+| MiniValidator | 10 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 59 | ✅ 100% |
+| GuardClauses | 262 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 292 | ✅ 100% |
 | **Messaging** | | | | | | | | | |
 | EntityFrameworkCore | 33 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 33 | 🔴 20% |
 | **Database Providers** | | | | | | | | | |

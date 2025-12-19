@@ -25,6 +25,9 @@ public static class Program
         BenchmarkRunner.Run<DelegateInvocationBenchmarks>(config);
         BenchmarkRunner.Run<StreamRequestBenchmarks>(config);
 
+        // Validation benchmarks (FluentValidation vs DataAnnotations vs MiniValidator vs GuardClauses)
+        BenchmarkRunner.Run<ValidationBenchmarks>(config);
+
         // OpenTelemetry benchmarks
         BenchmarkRunner.Run<OpenTelemetryBenchmarks>(config);
 

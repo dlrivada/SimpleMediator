@@ -14,6 +14,10 @@
     <ProjectReference Include="..\..\src\SimpleMediator.EntityFrameworkCore\SimpleMediator.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\..\src\SimpleMediator.Messaging\SimpleMediator.Messaging.csproj" />
     <ProjectReference Include="..\..\src\SimpleMediator.OpenTelemetry\SimpleMediator.OpenTelemetry.csproj" />
+    <ProjectReference Include="..\..\src\SimpleMediator.FluentValidation\SimpleMediator.FluentValidation.csproj" />
+    <ProjectReference Include="..\..\src\SimpleMediator.DataAnnotations\SimpleMediator.DataAnnotations.csproj" />
+    <ProjectReference Include="..\..\src\SimpleMediator.MiniValidator\SimpleMediator.MiniValidator.csproj" />
+    <ProjectReference Include="..\..\src\SimpleMediator.GuardClauses\SimpleMediator.GuardClauses.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,6 +26,9 @@
     <PackageReference Include="Dapper" />
     <PackageReference Include="OpenTelemetry" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="MiniValidation" />
+    <PackageReference Include="Ardalis.GuardClauses" />
   </ItemGroup>
 
 </Project>
