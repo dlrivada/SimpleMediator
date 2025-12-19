@@ -10,6 +10,18 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SimpleMediator\SimpleMediator.csproj" />
+    <ProjectReference Include="..\..\src\SimpleMediator.Dapper.Sqlite\SimpleMediator.Dapper.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\SimpleMediator.EntityFrameworkCore\SimpleMediator.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\..\src\SimpleMediator.Messaging\SimpleMediator.Messaging.csproj" />
+    <ProjectReference Include="..\..\src\SimpleMediator.OpenTelemetry\SimpleMediator.OpenTelemetry.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" />
   </ItemGroup>
 
 </Project>

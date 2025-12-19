@@ -4,6 +4,8 @@ using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 using LanguageExt;
 using Microsoft.Extensions.DependencyInjection;
+using SimpleMediator.Benchmarks.Outbox;
+using SimpleMediator.Benchmarks.Inbox;
 using static LanguageExt.Prelude;
 
 namespace SimpleMediator.Benchmarks;
@@ -18,9 +20,20 @@ public static class Program
                 "artifacts",
                 "performance"));
 
-        // Run both benchmark suites
+        // Run all benchmark suites
         BenchmarkRunner.Run<MediatorBenchmarks>(config);
         BenchmarkRunner.Run<DelegateInvocationBenchmarks>(config);
+
+        // OpenTelemetry benchmarks
+        BenchmarkRunner.Run<OpenTelemetryBenchmarks>(config);
+
+        // Outbox benchmarks (Dapper vs EF Core)
+        BenchmarkRunner.Run<OutboxDapperBenchmarks>(config);
+        BenchmarkRunner.Run<OutboxEfCoreBenchmarks>(config);
+
+        // Inbox benchmarks (Dapper vs EF Core)
+        BenchmarkRunner.Run<InboxDapperBenchmarks>(config);
+        BenchmarkRunner.Run<InboxEfCoreBenchmarks>(config);
     }
 
     private static string FindRepositoryRoot()
