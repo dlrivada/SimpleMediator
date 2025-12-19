@@ -860,8 +860,8 @@ For each provider, implement:
 | SimpleMediator | 194 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 194 | ✅ 100% |
 | AspNetCore | 49 | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | 49 | 🟡 60% |
 | **Validation** | | | | | | | | | |
-| FluentValidation | 18 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 18 | 🟡 40% |
-| DataAnnotations | 10 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 10 | 🟡 40% |
+| FluentValidation | 18 | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | 68 | ✅ 95% |
+| DataAnnotations | 7 | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | 56 | ✅ 95% |
 | MiniValidator | 10 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 10 | 🟡 40% |
 | GuardClauses | 262 | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | 262 | 🟡 50% |
 | **Messaging** | | | | | | | | | |
