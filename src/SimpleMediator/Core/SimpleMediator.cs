@@ -26,8 +26,8 @@ public sealed partial class SimpleMediator(IServiceScopeFactory scopeFactory, IL
     private static readonly ConcurrentDictionary<(Type Request, Type Response), RequestHandlerBase> RequestHandlerCache = new();
     private static readonly ConcurrentDictionary<(Type Handler, Type Notification), Func<object, object?, CancellationToken, Task<Either<MediatorError, Unit>>>> NotificationHandlerInvokerCache = new();
 
-    private readonly IServiceScopeFactory _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
-    private readonly ILogger<SimpleMediator> _logger = logger ?? NullLogger<SimpleMediator>.Instance;
+    internal readonly IServiceScopeFactory _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
+    internal readonly ILogger<SimpleMediator> _logger = logger ?? NullLogger<SimpleMediator>.Instance;
 
     /// <inheritdoc />
     public ValueTask<Either<MediatorError, TResponse>> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
@@ -166,7 +166,7 @@ public sealed partial class SimpleMediator(IServiceScopeFactory scopeFactory, IL
         return errorCode.Contains("cancelled", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static partial class Log
+    internal static partial class Log
     {
         [LoggerMessage(EventId = 1, Level = LogLevel.Error, Message = "The request cannot be null.")]
         public static partial void NullRequest(ILogger logger);

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using LanguageExt;
 
 namespace SimpleMediator;
@@ -45,4 +46,39 @@ public interface IMediator
     /// <param name="cancellationToken">Optional token to cancel the dispatch.</param>
     ValueTask<Either<MediatorError, Unit>> Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
         where TNotification : INotification;
+
+    /// <summary>
+    /// Sends a streaming request that produces a sequence of items asynchronously.
+    /// </summary>
+    /// <typeparam name="TItem">Type of each item yielded by the stream.</typeparam>
+    /// <param name="request">Stream request to process.</param>
+    /// <param name="cancellationToken">Optional token to cancel the stream iteration.</param>
+    /// <returns>
+    /// Async enumerable of <c>Either&lt;MediatorError, TItem&gt;</c>, where each element
+    /// represents either an error (Left) or a successful item (Right).
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// Stream requests enable efficient processing of large datasets, real-time feeds,
+    /// and batch operations without loading all data into memory at once.
+    /// </para>
+    /// <para>
+    /// The returned stream flows through all registered <see cref="IStreamPipelineBehavior{TRequest, TItem}"/>
+    /// instances before reaching the handler. Each behavior can transform, filter, or enrich items.
+    /// </para>
+    /// <para>
+    /// Use <c>await foreach</c> to consume the stream. Dispose or break early to trigger cancellation.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// await foreach (var result in mediator.Stream(new StreamProductsQuery(), cancellationToken))
+    /// {
+    ///     result.Match(
+    ///         Left: error => _logger.LogError("Failed to fetch product: {Error}", error.Message),
+    ///         Right: product => Console.WriteLine($"Product: {product.Name}"));
+    /// }
+    /// </code>
+    /// </example>
+    IAsyncEnumerable<Either<MediatorError, TItem>> Stream<TItem>(IStreamRequest<TItem> request, CancellationToken cancellationToken = default);
 }

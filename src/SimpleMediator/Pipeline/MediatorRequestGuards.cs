@@ -112,4 +112,24 @@ internal static class MediatorRequestGuards
         error = Left<MediatorError, TResponse>(MediatorErrors.Create(MediatorErrorCodes.RequestHandlerTypeMismatch, message, details: metadata));
         return false;
     }
+
+    /// <summary>
+    /// Validates that a stream request is not null and returns a functional error if it is.
+    /// </summary>
+    /// <typeparam name="TItem">The item type yielded by the stream.</typeparam>
+    /// <param name="request">The stream request instance to validate.</param>
+    /// <param name="error">The error to return if validation fails.</param>
+    /// <returns>True if the stream request is valid; otherwise, false.</returns>
+    public static bool TryValidateStreamRequest<TItem>(object? request, out Either<MediatorError, TItem> error)
+    {
+        if (request is not null)
+        {
+            error = default;
+            return true;
+        }
+
+        const string message = "The stream request cannot be null.";
+        error = Left<MediatorError, TItem>(MediatorErrors.Create(MediatorErrorCodes.RequestNull, message));
+        return false;
+    }
 }

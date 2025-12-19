@@ -39,4 +39,24 @@ internal static class MediatorDiagnostics
         activity.SetStatus(isSuccess ? ActivityStatusCode.Ok : ActivityStatusCode.Error, errorMessage);
         activity.Dispose();
     }
+
+    internal static Activity? StartStreamActivity(Type requestType, Type itemType)
+    {
+        if (!ActivitySource.HasListeners())
+        {
+            return null;
+        }
+
+        var activity = ActivitySource.StartActivity("SimpleMediator.Stream", ActivityKind.Internal);
+        activity?.SetTag("mediator.request_type", requestType.FullName);
+        activity?.SetTag("mediator.request_name", requestType.Name);
+        activity?.SetTag("mediator.item_type", itemType.FullName);
+        activity?.SetTag("mediator.item_name", itemType.Name);
+        return activity;
+    }
+
+    internal static void RecordStreamItemCount(Activity? activity, int itemCount)
+    {
+        activity?.SetTag("mediator.stream_item_count", itemCount);
+    }
 }

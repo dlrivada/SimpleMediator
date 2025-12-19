@@ -43,6 +43,7 @@ SimpleMediator.IFunctionalFailureDetector.TryGetErrorMessage(object? capturedFai
 SimpleMediator.IMediator
 SimpleMediator.IMediator.Publish<TNotification>(TNotification notification, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, LanguageExt.Unit>>
 SimpleMediator.IMediator.Send<TResponse>(SimpleMediator.IRequest<TResponse>! request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>
+SimpleMediator.IMediator.Stream<TItem>(SimpleMediator.IStreamRequest<TItem>! request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<LanguageExt.Either<SimpleMediator.MediatorError, TItem>>!
 SimpleMediator.IMediatorMetrics
 SimpleMediator.IMediatorMetrics.TrackFailure(string! requestKind, string! requestName, System.TimeSpan duration, string! reason) -> void
 SimpleMediator.IMediatorMetrics.TrackSuccess(string! requestKind, string! requestName, System.TimeSpan duration) -> void
@@ -75,6 +76,11 @@ SimpleMediator.IRequestPostProcessor<TRequest, TResponse>
 SimpleMediator.IRequestPostProcessor<TRequest, TResponse>.Process(TRequest request, SimpleMediator.IRequestContext! context, LanguageExt.Either<SimpleMediator.MediatorError, TResponse> response, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 SimpleMediator.IRequestPreProcessor<TRequest>
 SimpleMediator.IRequestPreProcessor<TRequest>.Process(TRequest request, SimpleMediator.IRequestContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SimpleMediator.IStreamPipelineBehavior<TRequest, TItem>
+SimpleMediator.IStreamPipelineBehavior<TRequest, TItem>.Handle(TRequest request, SimpleMediator.IRequestContext! context, SimpleMediator.StreamHandlerCallback<TItem>! nextStep, System.Threading.CancellationToken cancellationToken) -> System.Collections.Generic.IAsyncEnumerable<LanguageExt.Either<SimpleMediator.MediatorError, TItem>>!
+SimpleMediator.IStreamRequest<TItem>
+SimpleMediator.IStreamRequestHandler<TRequest, TItem>
+SimpleMediator.IStreamRequestHandler<TRequest, TItem>.Handle(TRequest request, System.Threading.CancellationToken cancellationToken) -> System.Collections.Generic.IAsyncEnumerable<LanguageExt.Either<SimpleMediator.MediatorError, TItem>>!
 SimpleMediator.MediatorError
 SimpleMediator.MediatorError.Exception.get -> LanguageExt.Option<System.Exception!>
 SimpleMediator.MediatorError.MediatorError() -> void
@@ -117,6 +123,8 @@ SimpleMediator.SimpleMediator
 SimpleMediator.SimpleMediator.Publish<TNotification>(TNotification notification, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, LanguageExt.Unit>>
 SimpleMediator.SimpleMediator.Send<TResponse>(SimpleMediator.IRequest<TResponse>! request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<LanguageExt.Either<SimpleMediator.MediatorError, TResponse>>
 SimpleMediator.SimpleMediator.SimpleMediator(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopeFactory, Microsoft.Extensions.Logging.ILogger<SimpleMediator.SimpleMediator!>? logger = null) -> void
+SimpleMediator.SimpleMediator.Stream<TItem>(SimpleMediator.IStreamRequest<TItem>! request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<LanguageExt.Either<SimpleMediator.MediatorError, TItem>>!
+SimpleMediator.StreamHandlerCallback<TItem>
 SimpleMediator.SimpleMediatorConfiguration
 SimpleMediator.SimpleMediatorConfiguration.AddPipelineBehavior(System.Type! pipelineBehaviorType) -> SimpleMediator.SimpleMediatorConfiguration!
 SimpleMediator.SimpleMediatorConfiguration.AddPipelineBehavior<TBehavior>() -> SimpleMediator.SimpleMediatorConfiguration!
