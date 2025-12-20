@@ -47,7 +47,7 @@ public sealed class InboxStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
     }
 
     [Fact]
-    public async Task ExistsAsync_WithExistingMessage_ShouldReturnTrue()
+    public async Task GetMessageAsync_WithExistingMessage_ShouldReturnMessage()
     {
         // Arrange
         using var context = _fixture.CreateDbContext();
@@ -66,72 +66,72 @@ public sealed class InboxStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
         await context.SaveChangesAsync();
 
         // Act
-        var exists = await store.ExistsAsync(message.MessageId);
+        var retrieved = await store.GetMessageAsync(message.MessageId);
 
         // Assert
-        exists.Should().BeTrue();
+        retrieved.Should().NotBeNull();
+        retrieved!.MessageId.Should().Be("existing-message");
     }
 
     [Fact]
-    public async Task ExistsAsync_WithNonExistentMessage_ShouldReturnFalse()
+    public async Task GetMessageAsync_WithNonExistentMessage_ShouldReturnNull()
     {
         // Arrange
         using var context = _fixture.CreateDbContext();
         var store = new InboxStoreEF(context);
 
         // Act
-        var exists = await store.ExistsAsync("non-existent-message");
+        var retrieved = await store.GetMessageAsync("non-existent-message");
 
         // Assert
-        exists.Should().BeFalse();
+        retrieved.Should().BeNull();
     }
 
     [Fact]
-    public async Task GetPendingMessagesAsync_ShouldReturnUnprocessedMessages()
+    public async Task GetExpiredMessagesAsync_ShouldReturnExpiredMessages()
     {
         // Arrange
         using var context = _fixture.CreateDbContext();
         var store = new InboxStoreEF(context);
 
-        var pending1 = new InboxMessage
+        var expired1 = new InboxMessage
         {
-            MessageId = "pending-1",
+            MessageId = "expired-1",
             RequestType = "TestRequest",
-            ReceivedAtUtc = DateTime.UtcNow.AddMinutes(-10),
+            ReceivedAtUtc = DateTime.UtcNow.AddDays(-10),
+            ExpiresAtUtc = DateTime.UtcNow.AddMinutes(-10),
+            RetryCount = 0
+        };
+
+        var expired2 = new InboxMessage
+        {
+            MessageId = "expired-2",
+            RequestType = "TestRequest",
+            ReceivedAtUtc = DateTime.UtcNow.AddDays(-5),
+            ExpiresAtUtc = DateTime.UtcNow.AddMinutes(-5),
+            RetryCount = 0
+        };
+
+        var valid = new InboxMessage
+        {
+            MessageId = "valid-1",
+            RequestType = "TestRequest",
+            ReceivedAtUtc = DateTime.UtcNow,
             ExpiresAtUtc = DateTime.UtcNow.AddDays(7),
             RetryCount = 0
         };
 
-        var pending2 = new InboxMessage
-        {
-            MessageId = "pending-2",
-            RequestType = "TestRequest",
-            ReceivedAtUtc = DateTime.UtcNow.AddMinutes(-5),
-            ExpiresAtUtc = DateTime.UtcNow.AddDays(7),
-            RetryCount = 0
-        };
-
-        var processed = new InboxMessage
-        {
-            MessageId = "processed-1",
-            RequestType = "TestRequest",
-            ReceivedAtUtc = DateTime.UtcNow.AddMinutes(-15),
-            ProcessedAtUtc = DateTime.UtcNow,
-            ExpiresAtUtc = DateTime.UtcNow.AddDays(7),
-            RetryCount = 0
-        };
-
-        context.InboxMessages.AddRange(pending1, pending2, processed);
+        context.InboxMessages.AddRange(expired1, expired2, valid);
         await context.SaveChangesAsync();
 
         // Act
-        var messages = await store.GetPendingMessagesAsync(batchSize: 10, maxRetries: 3);
+        var messages = await store.GetExpiredMessagesAsync(batchSize: 10);
 
         // Assert
         var messageList = messages.ToList();
         messageList.Should().HaveCount(2);
-        messageList.Should().Contain(m => m.MessageId == pending1.MessageId);
-        messageList.Should().Contain(m => m.MessageId == pending2.MessageId);
+        messageList.Should().Contain(m => m.MessageId == expired1.MessageId);
+        messageList.Should().Contain(m => m.MessageId == expired2.MessageId);
     }
 
     [Fact]
@@ -198,7 +198,7 @@ public sealed class InboxStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
     }
 
     [Fact]
-    public async Task DeleteExpiredMessagesAsync_ShouldRemoveExpiredMessages()
+    public async Task RemoveExpiredMessagesAsync_ShouldDeleteExpiredMessages()
     {
         // Arrange
         using var context = _fixture.CreateDbContext();
@@ -226,12 +226,10 @@ public sealed class InboxStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
         await context.SaveChangesAsync();
 
         // Act
-        var deletedCount = await store.DeleteExpiredMessagesAsync();
+        await store.RemoveExpiredMessagesAsync(new[] { expired.MessageId });
         await store.SaveChangesAsync();
 
         // Assert
-        deletedCount.Should().Be(1);
-
         using var verifyContext = _fixture.CreateDbContext();
         var remaining = await verifyContext.InboxMessages.FindAsync(valid.MessageId);
         remaining.Should().NotBeNull();

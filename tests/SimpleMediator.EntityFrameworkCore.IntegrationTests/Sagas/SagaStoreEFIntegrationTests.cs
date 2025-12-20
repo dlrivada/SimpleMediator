@@ -31,7 +31,7 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
         {
             SagaId = Guid.NewGuid(),
             SagaType = "TestSaga",
-            CurrentStep = "Step1",
+            CurrentStep = 0,
             Status = SagaStatus.Running,
             Data = "{\"test\":\"data\"}",
             StartedAtUtc = DateTime.UtcNow,
@@ -47,11 +47,11 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
         var stored = await verifyContext.SagaStates.FindAsync(saga.SagaId);
         stored.Should().NotBeNull();
         stored!.SagaType.Should().Be("TestSaga");
-        stored.CurrentStep.Should().Be("Step1");
+        stored.CurrentStep.Should().Be(0);
     }
 
     [Fact]
-    public async Task GetByIdAsync_WithExistingSaga_ShouldReturnSaga()
+    public async Task GetAsync_WithExistingSaga_ShouldReturnSaga()
     {
         // Arrange
         using var context = _fixture.CreateDbContext();
@@ -61,7 +61,7 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
         {
             SagaId = Guid.NewGuid(),
             SagaType = "TestSaga",
-            CurrentStep = "Step1",
+            CurrentStep = 0,
             Status = SagaStatus.Running,
             Data = "{}",
             StartedAtUtc = DateTime.UtcNow,
@@ -72,7 +72,7 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
         await context.SaveChangesAsync();
 
         // Act
-        var retrieved = await store.GetByIdAsync(saga.SagaId);
+        var retrieved = await store.GetAsync(saga.SagaId);
 
         // Assert
         retrieved.Should().NotBeNull();
@@ -80,14 +80,14 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
     }
 
     [Fact]
-    public async Task GetByIdAsync_WithNonExistentSaga_ShouldReturnNull()
+    public async Task GetAsync_WithNonExistentSaga_ShouldReturnNull()
     {
         // Arrange
         using var context = _fixture.CreateDbContext();
         var store = new SagaStoreEF(context);
 
         // Act
-        var retrieved = await store.GetByIdAsync(Guid.NewGuid());
+        var retrieved = await store.GetAsync(Guid.NewGuid());
 
         // Assert
         retrieved.Should().BeNull();
@@ -104,7 +104,7 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
         {
             SagaId = Guid.NewGuid(),
             SagaType = "TestSaga",
-            CurrentStep = "Step1",
+            CurrentStep = 0,
             Status = SagaStatus.Running,
             Data = "{\"counter\":1}",
             StartedAtUtc = DateTime.UtcNow,
@@ -115,7 +115,7 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
         await context.SaveChangesAsync();
 
         // Act
-        saga.CurrentStep = "Step2";
+        saga.CurrentStep = 1;
         saga.Data = "{\"counter\":2}";
         saga.LastUpdatedAtUtc = DateTime.UtcNow;
         await store.UpdateAsync(saga);
@@ -124,12 +124,12 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
         // Assert
         using var verifyContext = _fixture.CreateDbContext();
         var updated = await verifyContext.SagaStates.FindAsync(saga.SagaId);
-        updated!.CurrentStep.Should().Be("Step2");
+        updated!.CurrentStep.Should().Be(1);
         updated.Data.Should().Be("{\"counter\":2}");
     }
 
     [Fact]
-    public async Task MarkAsCompletedAsync_ShouldSetCompletionTimestamp()
+    public async Task UpdateAsync_ToCompleted_ShouldSetCompletionTimestamp()
     {
         // Arrange
         using var context = _fixture.CreateDbContext();
@@ -139,7 +139,7 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
         {
             SagaId = Guid.NewGuid(),
             SagaType = "TestSaga",
-            CurrentStep = "FinalStep",
+            CurrentStep = 2,
             Status = SagaStatus.Running,
             Data = "{}",
             StartedAtUtc = DateTime.UtcNow,
@@ -150,7 +150,9 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
         await context.SaveChangesAsync();
 
         // Act
-        await store.MarkAsCompletedAsync(saga.SagaId);
+        saga.Status = SagaStatus.Completed;
+        saga.CompletedAtUtc = DateTime.UtcNow;
+        await store.UpdateAsync(saga);
         await store.SaveChangesAsync();
 
         // Assert
@@ -161,7 +163,7 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
     }
 
     [Fact]
-    public async Task MarkAsFailedAsync_ShouldSetErrorInfo()
+    public async Task UpdateAsync_ToFailed_ShouldSetErrorInfo()
     {
         // Arrange
         using var context = _fixture.CreateDbContext();
@@ -171,7 +173,7 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
         {
             SagaId = Guid.NewGuid(),
             SagaType = "TestSaga",
-            CurrentStep = "FailedStep",
+            CurrentStep = 1,
             Status = SagaStatus.Running,
             Data = "{}",
             StartedAtUtc = DateTime.UtcNow,
@@ -182,7 +184,9 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
         await context.SaveChangesAsync();
 
         // Act
-        await store.MarkAsFailedAsync(saga.SagaId, "Test error occurred");
+        saga.Status = SagaStatus.Failed;
+        saga.ErrorMessage = "Test error occurred";
+        await store.UpdateAsync(saga);
         await store.SaveChangesAsync();
 
         // Assert
@@ -193,39 +197,39 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
     }
 
     [Fact]
-    public async Task GetActiveSagasAsync_ShouldReturnRunningSagas()
+    public async Task GetStuckSagasAsync_ShouldReturnOldRunningSagas()
     {
         // Arrange
         using var context = _fixture.CreateDbContext();
         var store = new SagaStoreEF(context);
 
-        var running1 = new SagaState
+        var stuck1 = new SagaState
         {
             SagaId = Guid.NewGuid(),
             SagaType = "TestSaga",
-            CurrentStep = "Step1",
+            CurrentStep = 0,
             Status = SagaStatus.Running,
             Data = "{}",
-            StartedAtUtc = DateTime.UtcNow,
-            LastUpdatedAtUtc = DateTime.UtcNow
+            StartedAtUtc = DateTime.UtcNow.AddHours(-2),
+            LastUpdatedAtUtc = DateTime.UtcNow.AddHours(-2)
         };
 
-        var running2 = new SagaState
+        var stuck2 = new SagaState
         {
             SagaId = Guid.NewGuid(),
             SagaType = "TestSaga",
-            CurrentStep = "Step2",
+            CurrentStep = 1,
             Status = SagaStatus.Running,
             Data = "{}",
-            StartedAtUtc = DateTime.UtcNow,
-            LastUpdatedAtUtc = DateTime.UtcNow
+            StartedAtUtc = DateTime.UtcNow.AddHours(-3),
+            LastUpdatedAtUtc = DateTime.UtcNow.AddHours(-3)
         };
 
         var completed = new SagaState
         {
             SagaId = Guid.NewGuid(),
             SagaType = "TestSaga",
-            CurrentStep = "FinalStep",
+            CurrentStep = 2,
             Status = SagaStatus.Completed,
             Data = "{}",
             StartedAtUtc = DateTime.UtcNow,
@@ -233,17 +237,17 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
             CompletedAtUtc = DateTime.UtcNow
         };
 
-        context.SagaStates.AddRange(running1, running2, completed);
+        context.SagaStates.AddRange(stuck1, stuck2, completed);
         await context.SaveChangesAsync();
 
         // Act
-        var activeSagas = await store.GetActiveSagasAsync(batchSize: 10);
+        var stuckSagas = await store.GetStuckSagasAsync(olderThan: TimeSpan.FromHours(1), batchSize: 10);
 
         // Assert
-        var sagaList = activeSagas.ToList();
+        var sagaList = stuckSagas.ToList();
         sagaList.Should().HaveCount(2);
-        sagaList.Should().Contain(s => s.SagaId == running1.SagaId);
-        sagaList.Should().Contain(s => s.SagaId == running2.SagaId);
+        sagaList.Should().Contain(s => s.SagaId == stuck1.SagaId);
+        sagaList.Should().Contain(s => s.SagaId == stuck2.SagaId);
     }
 
     [Fact]
@@ -259,7 +263,7 @@ public sealed class SagaStoreEFIntegrationTests : IClassFixture<EFCoreFixture>
             {
                 SagaId = Guid.NewGuid(),
                 SagaType = $"ConcurrentSaga{i}",
-                CurrentStep = "Step1",
+                CurrentStep = 0,
                 Status = SagaStatus.Running,
                 Data = $"{{\"index\":{i}}}",
                 StartedAtUtc = DateTime.UtcNow,

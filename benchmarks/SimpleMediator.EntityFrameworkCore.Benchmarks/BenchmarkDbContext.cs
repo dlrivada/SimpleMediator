@@ -1,26 +1,38 @@
 using Microsoft.EntityFrameworkCore;
-using SimpleMediator.EntityFrameworkCore.Inbox;
 using SimpleMediator.EntityFrameworkCore.Outbox;
+using SimpleMediator.EntityFrameworkCore.Inbox;
 using SimpleMediator.EntityFrameworkCore.Sagas;
 using SimpleMediator.EntityFrameworkCore.Scheduling;
 
-namespace SimpleMediator.EntityFrameworkCore.IntegrationTests;
+namespace SimpleMediator.EntityFrameworkCore.Benchmarks;
 
 /// <summary>
-/// Test DbContext for EF Core integration tests with real SQL Server.
+/// Shared DbContext for EntityFrameworkCore benchmarks.
+/// Configures all messaging entities (Outbox, Inbox, Saga, Scheduling).
 /// </summary>
-public sealed class TestEFDbContext : DbContext
+public sealed class BenchmarkDbContext(DbContextOptions<BenchmarkDbContext> options) : DbContext(options)
 {
-    public TestEFDbContext(DbContextOptions<TestEFDbContext> options)
-        : base(options)
-    {
-    }
-
+    /// <summary>
+    /// Gets the DbSet for outbox messages.
+    /// </summary>
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
+    /// <summary>
+    /// Gets the DbSet for inbox messages.
+    /// </summary>
     public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
+
+    /// <summary>
+    /// Gets the DbSet for saga states.
+    /// </summary>
     public DbSet<SagaState> SagaStates => Set<SagaState>();
+
+    /// <summary>
+    /// Gets the DbSet for scheduled messages.
+    /// </summary>
     public DbSet<ScheduledMessage> ScheduledMessages => Set<ScheduledMessage>();
 
+    /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Outbox configuration
@@ -28,11 +40,10 @@ public sealed class TestEFDbContext : DbContext
         {
             entity.ToTable("OutboxMessages");
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.NotificationType).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.NotificationType).IsRequired();
             entity.Property(e => e.Content).IsRequired();
             entity.Property(e => e.CreatedAtUtc).IsRequired();
-            entity.Property(e => e.RetryCount).IsRequired();
-            entity.HasIndex(e => new { e.ProcessedAtUtc, e.NextRetryAtUtc });
+            entity.Property(e => e.RetryCount).HasDefaultValue(0);
         });
 
         // Inbox configuration
@@ -40,12 +51,10 @@ public sealed class TestEFDbContext : DbContext
         {
             entity.ToTable("InboxMessages");
             entity.HasKey(e => e.MessageId);
-            entity.Property(e => e.MessageId).HasMaxLength(256).IsRequired();
-            entity.Property(e => e.RequestType).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.RequestType).IsRequired();
             entity.Property(e => e.ReceivedAtUtc).IsRequired();
             entity.Property(e => e.ExpiresAtUtc).IsRequired();
-            entity.Property(e => e.RetryCount).IsRequired();
-            entity.HasIndex(e => e.ExpiresAtUtc);
+            entity.Property(e => e.RetryCount).HasDefaultValue(0);
         });
 
         // Saga configuration
@@ -53,27 +62,25 @@ public sealed class TestEFDbContext : DbContext
         {
             entity.ToTable("SagaStates");
             entity.HasKey(e => e.SagaId);
-            entity.Property(e => e.SagaType).HasMaxLength(500).IsRequired();
-            entity.Property(e => e.CurrentStep).IsRequired();
-            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.SagaType).IsRequired();
             entity.Property(e => e.Data).IsRequired();
+            entity.Property(e => e.CurrentStep).HasDefaultValue(0);
+            entity.Property(e => e.Status).IsRequired();
             entity.Property(e => e.StartedAtUtc).IsRequired();
             entity.Property(e => e.LastUpdatedAtUtc).IsRequired();
-            entity.HasIndex(e => new { e.Status, e.LastUpdatedAtUtc });
         });
 
-        // Scheduling configuration
+        // Scheduled Message configuration
         modelBuilder.Entity<ScheduledMessage>(entity =>
         {
             entity.ToTable("ScheduledMessages");
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.RequestType).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.RequestType).IsRequired();
             entity.Property(e => e.Content).IsRequired();
             entity.Property(e => e.ScheduledAtUtc).IsRequired();
-            entity.Property(e => e.RetryCount).IsRequired();
-            entity.Property(e => e.CronExpression).HasMaxLength(200);
-            entity.Property(e => e.IsRecurring).IsRequired();
-            entity.HasIndex(e => new { e.ScheduledAtUtc, e.ProcessedAtUtc });
+            entity.Property(e => e.CreatedAtUtc).IsRequired();
+            entity.Property(e => e.RetryCount).HasDefaultValue(0);
+            entity.Property(e => e.IsRecurring).HasDefaultValue(false);
         });
     }
 }

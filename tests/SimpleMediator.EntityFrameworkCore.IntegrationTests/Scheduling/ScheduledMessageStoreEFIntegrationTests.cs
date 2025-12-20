@@ -185,7 +185,7 @@ public sealed class ScheduledMessageStoreEFIntegrationTests : IClassFixture<EFCo
     }
 
     [Fact]
-    public async Task GetRecurringMessagesAsync_ShouldReturnMessagesWithPattern()
+    public async Task RescheduleRecurringMessageAsync_ShouldUpdateScheduledTime()
     {
         // Arrange
         using var context = _fixture.CreateDbContext();
@@ -196,31 +196,28 @@ public sealed class ScheduledMessageStoreEFIntegrationTests : IClassFixture<EFCo
             Id = Guid.NewGuid(),
             RequestType = "RecurringTask",
             Content = "{}",
-            ScheduledAtUtc = DateTime.UtcNow,
-            RecurrencePattern = "0 0 * * *", // Daily
+            ScheduledAtUtc = DateTime.UtcNow.AddMinutes(-5),
+            ProcessedAtUtc = DateTime.UtcNow,
+            IsRecurring = true,
+            CronExpression = "0 0 * * *", // Daily
             RetryCount = 0
         };
 
-        var oneTime = new ScheduledMessage
-        {
-            Id = Guid.NewGuid(),
-            RequestType = "OneTime",
-            Content = "{}",
-            ScheduledAtUtc = DateTime.UtcNow,
-            RecurrencePattern = null,
-            RetryCount = 0
-        };
-
-        context.ScheduledMessages.AddRange(recurring, oneTime);
+        context.ScheduledMessages.Add(recurring);
         await context.SaveChangesAsync();
 
+        var nextScheduledTime = DateTime.UtcNow.AddDays(1);
+
         // Act
-        var messages = await store.GetRecurringMessagesAsync(batchSize: 10);
+        await store.RescheduleRecurringMessageAsync(recurring.Id, nextScheduledTime);
+        await store.SaveChangesAsync();
 
         // Assert
-        var messageList = messages.ToList();
-        messageList.Should().ContainSingle();
-        messageList[0].Id.Should().Be(recurring.Id);
+        using var verifyContext = _fixture.CreateDbContext();
+        var updated = await verifyContext.ScheduledMessages.FindAsync(recurring.Id);
+        updated!.ScheduledAtUtc.Should().BeCloseTo(nextScheduledTime, TimeSpan.FromSeconds(1));
+        updated.ProcessedAtUtc.Should().BeNull();
+        updated.RetryCount.Should().Be(0);
     }
 
     [Fact]

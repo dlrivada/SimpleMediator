@@ -865,7 +865,7 @@ For each provider, implement:
 | MiniValidator | 10 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 59 | ✅ 100% |
 | GuardClauses | 262 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 292 | ✅ 100% |
 | **Messaging** | | | | | | | | | |
-| EntityFrameworkCore | 33 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 33 | 🔴 20% |
+| EntityFrameworkCore | 33 | ❌ | 32 | 48 | 33 | 12 | ✅ | 158 | ✅ 100% |
 | **Database Providers** | | | | | | | | | |
 | Dapper.Sqlite | 40 | ❌ | 40 | 86 | 40 | 21 | ❌ | 187 | ✅ 85% |
 | Dapper.SqlServer | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 0 | 🔴 0% |
