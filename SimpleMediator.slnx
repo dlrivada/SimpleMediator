@@ -5,6 +5,7 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/SimpleMediator.AspNetCore.Benchmarks/SimpleMediator.AspNetCore.Benchmarks.csproj" />
     <Project Path="benchmarks/SimpleMediator.Benchmarks/SimpleMediator.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/load/">
@@ -38,6 +39,9 @@
     <Project Path="src/SimpleMediator.Refit/SimpleMediator.Refit.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/SimpleMediator.AspNetCore.ContractTests/SimpleMediator.AspNetCore.ContractTests.csproj" />
+    <Project Path="tests/SimpleMediator.AspNetCore.LoadTests/SimpleMediator.AspNetCore.LoadTests.csproj" />
+    <Project Path="tests/SimpleMediator.AspNetCore.PropertyTests/SimpleMediator.AspNetCore.PropertyTests.csproj" />
     <Project Path="tests/SimpleMediator.AspNetCore.Tests/SimpleMediator.AspNetCore.Tests.csproj" />
     <Project Path="tests/SimpleMediator.ContractTests/SimpleMediator.ContractTests.csproj" />
     <Project Path="tests/SimpleMediator.Dapper.Sqlite.ContractTests/SimpleMediator.Dapper.Sqlite.ContractTests.csproj" />
