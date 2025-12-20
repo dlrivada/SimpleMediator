@@ -17,7 +17,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SimpleMediator.ADO.Sqlite\SimpleMediator.ADO.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\SimpleMediator.Messaging\SimpleMediator.Messaging.csproj" />
     <ProjectReference Include="..\SimpleMediator.TestInfrastructure\SimpleMediator.TestInfrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
   </ItemGroup>
 
 </Project>
