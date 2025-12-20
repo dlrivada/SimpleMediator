@@ -31,6 +31,9 @@ public sealed class OutboxPostProcessor<TRequest, TResponse> : IRequestPostProce
         IOutboxStore outboxStore,
         ILogger<OutboxPostProcessor<TRequest, TResponse>> logger)
     {
+        ArgumentNullException.ThrowIfNull(outboxStore);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _outboxStore = outboxStore;
         _logger = logger;
     }

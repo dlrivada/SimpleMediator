@@ -27,10 +27,14 @@ public sealed class OutboxPostProcessor<TRequest, TResponse> : IRequestPostProce
     /// </summary>
     /// <param name="outboxStore">The outbox store for persisting notifications.</param>
     /// <param name="logger">The logger.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="outboxStore"/> or <paramref name="logger"/> is null.</exception>
     public OutboxPostProcessor(
         IOutboxStore outboxStore,
         ILogger<OutboxPostProcessor<TRequest, TResponse>> logger)
     {
+        ArgumentNullException.ThrowIfNull(outboxStore);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _outboxStore = outboxStore;
         _logger = logger;
     }

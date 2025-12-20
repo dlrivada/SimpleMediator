@@ -34,6 +34,10 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
         InboxOptions options,
         ILogger<InboxPipelineBehavior<TRequest, TResponse>> logger)
     {
+        ArgumentNullException.ThrowIfNull(inboxStore);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _inboxStore = inboxStore;
         _options = options;
         _logger = logger;

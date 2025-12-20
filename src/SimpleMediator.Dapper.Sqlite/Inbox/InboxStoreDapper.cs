@@ -111,6 +111,8 @@ public sealed class InboxStoreDapper : IInboxStore
         int batchSize,
         CancellationToken cancellationToken = default)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(batchSize, 0);
+            
         ArgumentOutOfRangeException.ThrowIfLessThan(batchSize, 1);
 
         var sql = $@"
@@ -131,6 +133,9 @@ public sealed class InboxStoreDapper : IInboxStore
         IEnumerable<string> messageIds,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(messageIds);
+        if (!messageIds.Any())
+            throw new ArgumentException("Collection cannot be empty.", nameof(messageIds));
         ArgumentNullException.ThrowIfNull(messageIds);
 
         var sql = $@"

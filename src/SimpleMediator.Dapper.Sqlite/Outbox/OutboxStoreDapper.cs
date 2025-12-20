@@ -51,6 +51,10 @@ public sealed class OutboxStoreDapper : IOutboxStore
         int maxRetries,
         CancellationToken cancellationToken = default)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(batchSize, 0);
+            
+        ArgumentOutOfRangeException.ThrowIfNegative(maxRetries);
+            
         ArgumentOutOfRangeException.ThrowIfLessThan(batchSize, 1);
         ArgumentOutOfRangeException.ThrowIfNegative(maxRetries);
 

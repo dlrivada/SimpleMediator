@@ -31,6 +31,9 @@ public sealed class OutboxPostProcessor<TRequest, TResponse> : IRequestPostProce
         IOutboxStore outboxStore,
         ILogger<OutboxPostProcessor<TRequest, TResponse>> logger)
     {
+        ArgumentNullException.ThrowIfNull(outboxStore);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _outboxStore = outboxStore;
         _logger = logger;
     }
@@ -42,6 +45,9 @@ public sealed class OutboxPostProcessor<TRequest, TResponse> : IRequestPostProce
         Either<MediatorError, TResponse> result,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(context);
+
         // Only process if request has notifications
         if (request is not IHasNotifications hasNotifications)
             return;

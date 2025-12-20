@@ -18,8 +18,11 @@ public sealed class TransactionPipelineBehavior<TRequest, TResponse> : IPipeline
     /// Initializes a new instance of the <see cref="TransactionPipelineBehavior{TRequest, TResponse}"/> class.
     /// </summary>
     /// <param name="connection">The database connection.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> is null.</exception>
     public TransactionPipelineBehavior(IDbConnection connection)
     {
+        ArgumentNullException.ThrowIfNull(connection);
+
         _connection = connection;
     }
 

@@ -45,11 +45,16 @@ public sealed class OutboxProcessor : BackgroundService
     /// <param name="serviceProvider">The service provider for creating scopes.</param>
     /// <param name="options">The outbox options.</param>
     /// <param name="logger">The logger.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="serviceProvider"/>, <paramref name="options"/>, or <paramref name="logger"/> is null.</exception>
     public OutboxProcessor(
         IServiceProvider serviceProvider,
         OutboxOptions options,
         ILogger<OutboxProcessor> logger)
     {
+        ArgumentNullException.ThrowIfNull(serviceProvider);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _serviceProvider = serviceProvider;
         _options = options;
         _logger = logger;

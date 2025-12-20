@@ -20,8 +20,10 @@ public sealed class SagaStoreEF : ISagaStore
     /// Initializes a new instance of the <see cref="SagaStoreEF"/> class.
     /// </summary>
     /// <param name="dbContext">The database context.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="dbContext"/> is null.</exception>
     public SagaStoreEF(DbContext dbContext)
     {
+        ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;
     }
 
@@ -35,6 +37,8 @@ public sealed class SagaStoreEF : ISagaStore
     /// <inheritdoc/>
     public async Task AddAsync(ISagaState saga, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(saga);
+
         if (saga is not SagaState efSaga)
         {
             throw new InvalidOperationException(
@@ -48,6 +52,8 @@ public sealed class SagaStoreEF : ISagaStore
     /// <inheritdoc/>
     public Task UpdateAsync(ISagaState saga, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(saga);
+
         if (saga is not SagaState efSaga)
         {
             throw new InvalidOperationException(

@@ -20,14 +20,18 @@ public sealed class ScheduledMessageStoreEF : IScheduledMessageStore
     /// Initializes a new instance of the <see cref="ScheduledMessageStoreEF"/> class.
     /// </summary>
     /// <param name="dbContext">The database context.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="dbContext"/> is null.</exception>
     public ScheduledMessageStoreEF(DbContext dbContext)
     {
+        ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;
     }
 
     /// <inheritdoc/>
     public async Task AddAsync(IScheduledMessage message, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(message);
+
         if (message is not ScheduledMessage efMessage)
         {
             throw new InvalidOperationException(
@@ -80,6 +84,8 @@ public sealed class ScheduledMessageStoreEF : IScheduledMessageStore
         DateTime? nextRetryAt,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(errorMessage);
+
         var message = await _dbContext.Set<ScheduledMessage>()
             .FirstOrDefaultAsync(m => m.Id == messageId, cancellationToken);
 

@@ -51,12 +51,17 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
     /// <param name="options">The inbox options.</param>
     /// <param name="logger">The logger.</param>
     /// <param name="tableName">The inbox table name (default: InboxMessages).</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/>, <paramref name="options"/>, or <paramref name="logger"/> is null.</exception>
     public InboxPipelineBehavior(
         IDbConnection connection,
         InboxOptions options,
         ILogger<InboxPipelineBehavior<TRequest, TResponse>> logger,
         string tableName = "InboxMessages")
     {
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _connection = connection;
         _options = options;
         _logger = logger;

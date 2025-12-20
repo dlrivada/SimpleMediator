@@ -20,14 +20,17 @@ public sealed class InboxStoreEF : IInboxStore
     /// Initializes a new instance of the <see cref="InboxStoreEF"/> class.
     /// </summary>
     /// <param name="dbContext">The database context.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="dbContext"/> is null.</exception>
     public InboxStoreEF(DbContext dbContext)
     {
+        ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;
     }
 
     /// <inheritdoc/>
     public async Task<IInboxMessage?> GetMessageAsync(string messageId, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(messageId);
         return await _dbContext.Set<InboxMessage>()
             .FirstOrDefaultAsync(m => m.MessageId == messageId, cancellationToken);
     }
@@ -35,6 +38,8 @@ public sealed class InboxStoreEF : IInboxStore
     /// <inheritdoc/>
     public async Task AddAsync(IInboxMessage message, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(message);
+
         if (message is not InboxMessage efMessage)
         {
             throw new InvalidOperationException(
@@ -48,6 +53,9 @@ public sealed class InboxStoreEF : IInboxStore
     /// <inheritdoc/>
     public async Task MarkAsProcessedAsync(string messageId, string response, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(messageId);
+        ArgumentNullException.ThrowIfNull(response);
+
         var message = await _dbContext.Set<InboxMessage>()
             .FirstOrDefaultAsync(m => m.MessageId == messageId, cancellationToken);
 
@@ -66,6 +74,9 @@ public sealed class InboxStoreEF : IInboxStore
         DateTime? nextRetryAt,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(messageId);
+        ArgumentNullException.ThrowIfNull(errorMessage);
+
         var message = await _dbContext.Set<InboxMessage>()
             .FirstOrDefaultAsync(m => m.MessageId == messageId, cancellationToken);
 
@@ -98,6 +109,8 @@ public sealed class InboxStoreEF : IInboxStore
         IEnumerable<string> messageIds,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(messageIds);
+
         var messages = await _dbContext.Set<InboxMessage>()
             .Where(m => messageIds.Contains(m.MessageId))
             .ToListAsync(cancellationToken);

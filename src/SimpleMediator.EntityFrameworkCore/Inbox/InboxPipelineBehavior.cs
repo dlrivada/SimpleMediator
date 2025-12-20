@@ -81,11 +81,16 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
     /// <param name="dbContext">The database context.</param>
     /// <param name="options">The inbox options.</param>
     /// <param name="logger">The logger.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="dbContext"/>, <paramref name="options"/>, or <paramref name="logger"/> is null.</exception>
     public InboxPipelineBehavior(
         DbContext dbContext,
         InboxOptions options,
         ILogger<InboxPipelineBehavior<TRequest, TResponse>> logger)
     {
+        ArgumentNullException.ThrowIfNull(dbContext);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _dbContext = dbContext;
         _options = options;
         _logger = logger;
@@ -98,6 +103,10 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
         RequestHandlerCallback<TResponse> nextStep,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(nextStep);
+
         // Only process if request is idempotent
         if (request is not IIdempotentRequest)
             return await nextStep();

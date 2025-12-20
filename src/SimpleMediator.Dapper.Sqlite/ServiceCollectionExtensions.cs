@@ -26,10 +26,14 @@ public static class ServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="configure">Configuration action for messaging patterns.</param>
     /// <returns>The service collection for chaining.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> or <paramref name="configure"/> is null.</exception>
     public static IServiceCollection AddSimpleMediatorDapper(
         this IServiceCollection services,
         Action<MessagingConfiguration> configure)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configure);
+
         var config = new MessagingConfiguration();
         configure(config);
 
@@ -77,11 +81,16 @@ public static class ServiceCollectionExtensions
     /// <param name="connectionFactory">Factory function to create database connections.</param>
     /// <param name="configure">Configuration action for messaging patterns.</param>
     /// <returns>The service collection for chaining.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/>, <paramref name="connectionFactory"/>, or <paramref name="configure"/> is null.</exception>
     public static IServiceCollection AddSimpleMediatorDapper(
         this IServiceCollection services,
         Func<IServiceProvider, IDbConnection> connectionFactory,
         Action<MessagingConfiguration> configure)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(connectionFactory);
+        ArgumentNullException.ThrowIfNull(configure);
+
         // Register connection factory
         services.AddScoped(connectionFactory);
 
@@ -97,11 +106,16 @@ public static class ServiceCollectionExtensions
     /// <param name="connectionString">The database connection string (e.g., "Data Source=app.db").</param>
     /// <param name="configure">Configuration action for messaging patterns.</param>
     /// <returns>The service collection for chaining.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/>, <paramref name="connectionString"/>, or <paramref name="configure"/> is null.</exception>
     public static IServiceCollection AddSimpleMediatorDapper(
         this IServiceCollection services,
         string connectionString,
         Action<MessagingConfiguration> configure)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(connectionString);
+        ArgumentNullException.ThrowIfNull(configure);
+
         return services.AddSimpleMediatorDapper(
             sp => new SqliteConnection(connectionString),
             configure);

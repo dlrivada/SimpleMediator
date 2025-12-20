@@ -20,6 +20,9 @@ public sealed class InboxStoreDapper : IInboxStore
     /// <param name="tableName">The inbox table name (default: InboxMessages).</param>
     public InboxStoreDapper(IDbConnection connection, string tableName = "InboxMessages")
     {
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
+
         _connection = connection;
         _tableName = tableName;
     }
@@ -27,6 +30,7 @@ public sealed class InboxStoreDapper : IInboxStore
     /// <inheritdoc />
     public async Task<IInboxMessage?> GetMessageAsync(string messageId, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
         var sql = $@"
             SELECT *
             FROM {_tableName}
@@ -38,6 +42,7 @@ public sealed class InboxStoreDapper : IInboxStore
     /// <inheritdoc />
     public async Task AddAsync(IInboxMessage message, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(message);
         var sql = $@"
             INSERT INTO {_tableName}
             (MessageId, RequestType, ReceivedAtUtc, ProcessedAtUtc, ExpiresAtUtc, Response, ErrorMessage, RetryCount, NextRetryAtUtc, Metadata)
@@ -53,6 +58,8 @@ public sealed class InboxStoreDapper : IInboxStore
         string? response,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
+
         var sql = $@"
             UPDATE {_tableName}
             SET ProcessedAtUtc = SYS_EXTRACT_UTC(SYSTIMESTAMP),
@@ -70,6 +77,8 @@ public sealed class InboxStoreDapper : IInboxStore
         DateTime? nextRetryAtUtc,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(errorMessage);
         var sql = $@"
             UPDATE {_tableName}
             SET ErrorMessage = :ErrorMessage,
@@ -92,6 +101,8 @@ public sealed class InboxStoreDapper : IInboxStore
         int batchSize,
         CancellationToken cancellationToken = default)
     {
+        if (batchSize <= 0)
+            throw new ArgumentException("Batch size must be greater than zero.", nameof(batchSize));
         var sql = $@"
             SELECT *
             FROM {_tableName}
@@ -109,6 +120,9 @@ public sealed class InboxStoreDapper : IInboxStore
         IEnumerable<string> messageIds,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(messageIds);
+        if (!messageIds.Any())
+            throw new ArgumentException("Collection cannot be empty.", nameof(messageIds));
         var sql = $@"
             DELETE FROM {_tableName}
             WHERE MessageId IN :MessageIds";

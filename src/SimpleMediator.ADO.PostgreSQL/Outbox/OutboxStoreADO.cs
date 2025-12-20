@@ -20,6 +20,8 @@ public sealed class OutboxStoreADO : IOutboxStore
     /// <param name="tableName">The outbox table name (default: OutboxMessages).</param>
     public OutboxStoreADO(IDbConnection connection, string tableName = "OutboxMessages")
     {
+        ArgumentNullException.ThrowIfNull(connection);
+
         _connection = connection;
         _tableName = tableName;
     }
@@ -30,6 +32,13 @@ public sealed class OutboxStoreADO : IOutboxStore
         int maxRetries,
         CancellationToken cancellationToken = default)
     {
+        if (batchSize <= 0)
+            throw new ArgumentException("Batch size must be greater than zero.", nameof(batchSize));
+        if (maxRetries < 0)
+            throw new ArgumentException("Max retries cannot be negative.", nameof(maxRetries));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(batchSize);
+        ArgumentOutOfRangeException.ThrowIfNegative(maxRetries);
+
         var sql = $@"
             SELECT *
             FROM {_tableName}
@@ -77,6 +86,8 @@ public sealed class OutboxStoreADO : IOutboxStore
     /// <inheritdoc />
     public async Task AddAsync(IOutboxMessage message, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(message);
+
         var sql = $@"
             INSERT INTO {_tableName}
             (Id, NotificationType, Content, CreatedAtUtc, ProcessedAtUtc, ErrorMessage, RetryCount, NextRetryAtUtc)
@@ -103,6 +114,8 @@ public sealed class OutboxStoreADO : IOutboxStore
     /// <inheritdoc />
     public async Task MarkAsProcessedAsync(Guid messageId, CancellationToken cancellationToken = default)
     {
+        if (messageId == Guid.Empty)
+            throw new ArgumentException("Message ID cannot be empty.", nameof(messageId));
         var sql = $@"
             UPDATE {_tableName}
             SET ProcessedAtUtc = NOW() AT TIME ZONE 'UTC',
@@ -126,6 +139,10 @@ public sealed class OutboxStoreADO : IOutboxStore
         DateTime? nextRetryAt,
         CancellationToken cancellationToken = default)
     {
+        if (messageId == Guid.Empty)
+            throw new ArgumentException("Message ID cannot be empty.", nameof(messageId));
+        ArgumentException.ThrowIfNullOrWhiteSpace(errorMessage);
+
         var sql = $@"
             UPDATE {_tableName}
             SET ErrorMessage = @ErrorMessage,

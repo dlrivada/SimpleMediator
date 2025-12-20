@@ -25,14 +25,18 @@ public sealed class OutboxStoreEF : IOutboxStore
     /// Initializes a new instance of the <see cref="OutboxStoreEF"/> class.
     /// </summary>
     /// <param name="dbContext">The database context.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="dbContext"/> is null.</exception>
     public OutboxStoreEF(DbContext dbContext)
     {
+        ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;
     }
 
     /// <inheritdoc/>
     public async Task AddAsync(IOutboxMessage message, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(message);
+
         // Cast to concrete type for EF Core
         if (message is not OutboxMessage efMessage)
         {
@@ -84,6 +88,8 @@ public sealed class OutboxStoreEF : IOutboxStore
         DateTime? nextRetryAt,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(errorMessage);
+
         var message = await _dbContext.Set<OutboxMessage>()
             .FirstOrDefaultAsync(m => m.Id == messageId, cancellationToken);
 

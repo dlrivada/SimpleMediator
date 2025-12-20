@@ -30,6 +30,9 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         Action<MessagingConfiguration> configure)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configure);
+
         var config = new MessagingConfiguration();
         configure(config);
 
@@ -82,6 +85,10 @@ public static class ServiceCollectionExtensions
         Func<IServiceProvider, IDbConnection> connectionFactory,
         Action<MessagingConfiguration> configure)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(connectionFactory);
+        ArgumentNullException.ThrowIfNull(configure);
+
         // Register connection factory
         services.AddScoped(connectionFactory);
 
@@ -102,6 +109,10 @@ public static class ServiceCollectionExtensions
         string connectionString,
         Action<MessagingConfiguration> configure)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(connectionString);
+        ArgumentNullException.ThrowIfNull(configure);
+
         return services.AddSimpleMediatorDapper(
             sp => new MySqlConnection(connectionString),
             configure);

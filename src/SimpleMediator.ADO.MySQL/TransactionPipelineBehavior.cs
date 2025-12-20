@@ -20,6 +20,8 @@ public sealed class TransactionPipelineBehavior<TRequest, TResponse> : IPipeline
     /// <param name="connection">The database connection.</param>
     public TransactionPipelineBehavior(IDbConnection connection)
     {
+        ArgumentNullException.ThrowIfNull(connection);
+
         _connection = connection;
     }
 

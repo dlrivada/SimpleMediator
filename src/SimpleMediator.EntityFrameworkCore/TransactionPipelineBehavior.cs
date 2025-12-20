@@ -56,10 +56,14 @@ public sealed class TransactionPipelineBehavior<TRequest, TResponse> : IPipeline
     /// </summary>
     /// <param name="dbContext">The database context.</param>
     /// <param name="logger">The logger.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="dbContext"/> or <paramref name="logger"/> is null.</exception>
     public TransactionPipelineBehavior(
         DbContext dbContext,
         ILogger<TransactionPipelineBehavior<TRequest, TResponse>> logger)
     {
+        ArgumentNullException.ThrowIfNull(dbContext);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _dbContext = dbContext;
         _logger = logger;
     }
@@ -71,6 +75,10 @@ public sealed class TransactionPipelineBehavior<TRequest, TResponse> : IPipeline
         RequestHandlerCallback<TResponse> nextStep,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(nextStep);
+
         // Check if request requires transaction
         if (!RequiresTransaction(request))
             return await nextStep();

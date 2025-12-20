@@ -25,6 +25,9 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         Action<MessagingConfiguration> configure)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configure);
+
         var config = new MessagingConfiguration();
         configure(config);
 
@@ -45,6 +48,11 @@ public static class ServiceCollectionExtensions
         string connectionString,
         Action<MessagingConfiguration> configure)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(connectionString);
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+        ArgumentNullException.ThrowIfNull(configure);
+
         services.TryAddScoped<IDbConnection>(_ => new NpgsqlConnection(connectionString));
 
         return services.AddSimpleMediatorADO(configure);
@@ -62,6 +70,10 @@ public static class ServiceCollectionExtensions
         Func<IServiceProvider, IDbConnection> connectionFactory,
         Action<MessagingConfiguration> configure)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(connectionFactory);
+        ArgumentNullException.ThrowIfNull(configure);
+
         services.TryAddScoped(connectionFactory);
 
         return services.AddSimpleMediatorADO(configure);

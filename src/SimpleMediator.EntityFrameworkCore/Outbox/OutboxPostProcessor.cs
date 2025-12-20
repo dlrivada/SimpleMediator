@@ -46,10 +46,14 @@ public sealed class OutboxPostProcessor<TRequest, TResponse> : IRequestPostProce
     /// </summary>
     /// <param name="dbContext">The database context.</param>
     /// <param name="logger">The logger.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="dbContext"/> or <paramref name="logger"/> is null.</exception>
     public OutboxPostProcessor(
         DbContext dbContext,
         ILogger<OutboxPostProcessor<TRequest, TResponse>> logger)
     {
+        ArgumentNullException.ThrowIfNull(dbContext);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _dbContext = dbContext;
         _logger = logger;
     }
@@ -61,6 +65,9 @@ public sealed class OutboxPostProcessor<TRequest, TResponse> : IRequestPostProce
         Either<MediatorError, TResponse> response,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(context);
+
         // Only process if request has notifications and result is successful
         if (request is not IHasNotifications hasNotifications)
             return;

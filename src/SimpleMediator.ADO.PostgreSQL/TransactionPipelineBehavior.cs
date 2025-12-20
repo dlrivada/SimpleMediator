@@ -20,6 +20,8 @@ public sealed class TransactionPipelineBehavior<TRequest, TResponse> : IPipeline
     /// <param name="connection">The database connection.</param>
     public TransactionPipelineBehavior(IDbConnection connection)
     {
+        ArgumentNullException.ThrowIfNull(connection);
+
         _connection = connection;
     }
 
@@ -30,6 +32,10 @@ public sealed class TransactionPipelineBehavior<TRequest, TResponse> : IPipeline
         RequestHandlerCallback<TResponse> next,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
         // Open connection if needed
         if (_connection.State != ConnectionState.Open)
             _connection.Open();

@@ -18,8 +18,13 @@ public sealed class SagaStoreDapper : ISagaStore
     /// </summary>
     /// <param name="connection">The database connection.</param>
     /// <param name="tableName">The saga state table name (default: SagaStates).</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="tableName"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="tableName"/> is empty or whitespace.</exception>
     public SagaStoreDapper(IDbConnection connection, string tableName = "SagaStates")
     {
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
+
         _connection = connection;
         _tableName = tableName;
     }
@@ -27,6 +32,9 @@ public sealed class SagaStoreDapper : ISagaStore
     /// <inheritdoc />
     public async Task<ISagaState?> GetAsync(Guid sagaId, CancellationToken cancellationToken = default)
     {
+        if (sagaId == Guid.Empty)
+            throw new ArgumentException("Saga ID cannot be empty.", nameof(sagaId));
+
         var sql = $@"
             SELECT *
             FROM {_tableName}
@@ -38,6 +46,8 @@ public sealed class SagaStoreDapper : ISagaStore
     /// <inheritdoc />
     public async Task AddAsync(ISagaState sagaState, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(sagaState);
+
         var sql = $@"
             INSERT INTO {_tableName}
             (SagaId, SagaType, Data, Status, StartedAtUtc, LastUpdatedAtUtc, CompletedAtUtc, ErrorMessage, CurrentStep)
@@ -50,6 +60,8 @@ public sealed class SagaStoreDapper : ISagaStore
     /// <inheritdoc />
     public async Task UpdateAsync(ISagaState sagaState, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(sagaState);
+
         var sql = $@"
             UPDATE {_tableName}
             SET SagaType = @SagaType,
@@ -70,6 +82,11 @@ public sealed class SagaStoreDapper : ISagaStore
         int batchSize,
         CancellationToken cancellationToken = default)
     {
+        if (olderThan <= TimeSpan.Zero)
+            throw new ArgumentException("OlderThan must be greater than zero.", nameof(olderThan));
+        if (batchSize <= 0)
+            throw new ArgumentException("Batch size must be greater than zero.", nameof(batchSize));
+
         var thresholdUtc = DateTime.UtcNow.Subtract(olderThan);
 
         var sql = $@"

@@ -57,6 +57,11 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
         ILogger<InboxPipelineBehavior<TRequest, TResponse>> logger,
         string tableName = "InboxMessages")
     {
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(tableName);
+
         _connection = connection;
         _options = options;
         _logger = logger;
