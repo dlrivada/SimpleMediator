@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SimpleMediator\SimpleMediator.csproj" />
     <ProjectReference Include="..\..\src\SimpleMediator.Dapper.Sqlite\SimpleMediator.Dapper.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\SimpleMediator.ADO.Sqlite\SimpleMediator.ADO.Sqlite.csproj" />
     <ProjectReference Include="..\..\src\SimpleMediator.EntityFrameworkCore\SimpleMediator.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\..\src\SimpleMediator.Messaging\SimpleMediator.Messaging.csproj" />
     <ProjectReference Include="..\..\src\SimpleMediator.OpenTelemetry\SimpleMediator.OpenTelemetry.csproj" />
