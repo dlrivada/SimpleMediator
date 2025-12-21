@@ -175,7 +175,6 @@ Restructuring all test projects to use Testcontainers for real database integrat
 - [ ] Update all namespaces
 - [ ] Register new NuGet packages
 - [ ] Update documentation
-- [ ] Migration guide for users
 
 **Timeline**: Complete before 1.0 release
 
