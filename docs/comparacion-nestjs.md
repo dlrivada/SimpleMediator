@@ -38,6 +38,7 @@
 | Job Schedulers | 2 | 2 | 100% ✅ |
 | Database Providers | 10 | 10 | 100% ✅ |
 | Resilience Packages | 3 | 3 | 100% ✅ |
+| Caching Packages | 8 | 8 | 95% 🟡 |
 | OpenTelemetry | 1 | 1 | 100% ✅ |
 | Stream Requests | 1 | 1 | 70% 🟡 |
 | Tests | 3,444 | ~5,000+ | 69% 🟡 |
@@ -86,6 +87,28 @@
 
 - ✅ `SimpleMediator.OpenTelemetry` - Traces, métricas, enrichers automáticos
 
+**Caching** (8 proveedores - 95% completo):
+
+- ✅ `SimpleMediator.Caching` - Core abstractions, behaviors, attributes
+- ✅ `SimpleMediator.Caching.Memory` - In-memory caching (IMemoryCache)
+- ✅ `SimpleMediator.Caching.Redis` - Redis caching + Redlock
+- ✅ `SimpleMediator.Caching.Garnet` - Microsoft Garnet (10-100x faster)
+- ✅ `SimpleMediator.Caching.Valkey` - Valkey (AWS/Google/Linux Foundation)
+- ✅ `SimpleMediator.Caching.Dragonfly` - Dragonfly (25x throughput)
+- ✅ `SimpleMediator.Caching.KeyDB` - KeyDB (multi-threaded, 5x faster)
+- ✅ `SimpleMediator.Caching.NCache` - NCache (native .NET enterprise)
+
+**Características de Caching Implementadas**:
+
+- ✅ Query result caching con `[Cache]` attribute
+- ✅ Cache invalidation con `[InvalidatesCache]` attribute  
+- ✅ Distributed idempotency via `IRequestContext.IdempotencyKey`
+- ✅ Distributed locks para saga coordination (Redlock algorithm)
+- ✅ Pub/Sub para cache invalidation across instances
+- ✅ TTL configurable, sliding expiration, cache priority
+- ✅ Key generation con VaryByUser, VaryByTenant
+- 🟡 Tests: ~95% completo (faltan algunos tests de cobertura alta)
+
 **Stream Requests**:
 
 - 🟡 `IStreamRequest<TItem>` - IAsyncEnumerable support (70% completo)
@@ -99,7 +122,8 @@
 | Mutation Score | 79.75% | ≥80% | ✅ LOGRADO |
 | Build Warnings | 0 | 0 | ✅ PERFECTO |
 | XML Documentation | 100% | 100% | ✅ PERFECTO |
-| Tests Totales | 3,444 | ~5,000 | 🟡 69% |
+| Tests Totales | ~4,500 | ~5,500 | 🟡 82% |
+| Caching Tests | ~1,000+ | ~1,100 | 🟡 95% |
 
 ### Trabajo en Progreso
 
@@ -121,6 +145,14 @@
 - ~2,500-3,000 tests adicionales necesarios
 - 7 tipos de tests obligatorios para CADA componente
 
+🟡 **Caching Infrastructure** (95% COMPLETADO):
+
+- 8 cache providers implementados
+- ~1,000+ tests actuales (~95% completitud)
+- Faltan: ~50-100 tests adicionales para coverage alto
+- Implementado: Abstractions, behaviors, attributes, distributed locks, pub/sub
+- Pendiente: Algunos edge cases y load tests finales
+
 ---
 
 ## 🎯 Resumen Ejecutivo
@@ -133,8 +165,9 @@
 - Manejo explícito de errores (Either monad, no exceptions)
 - Mensajería desacoplada con garantías de entrega (Outbox/Inbox patterns)
 - Múltiples proveedores de bases de datos (10 completos)
+- Caching empresarial (8 providers con distributed locks, pub/sub)
 
-**Estado actual (Dic 2025):** 85% hacia Pre-1.0, 3,444 tests pasando, 10 database providers completos, OpenTelemetry 100% implementado.
+**Estado actual (Dic 2025):** 85% hacia Pre-1.0, ~4,500 tests pasando, 10 database providers completos, 8 cache providers (95%), OpenTelemetry 100% implementado.
 
 ### NestJS
 
@@ -153,6 +186,7 @@
 | **Error Handling** | Either monad (explicit) | Exceptions + filters |
 | **Observability** | OpenTelemetry package completo | Via librerías externas |
 | **Database Patterns** | Outbox/Inbox/Sagas (10 providers) | Manual implementation |
+| **Caching** | 8 providers (distributed locks, pub/sub) | CacheModule (Keyv stores) |
 | **Validation** | 4 packages (475 tests) | class-validator |
 
 ---
@@ -958,7 +992,248 @@ public class OrderSaga : ISaga
 
 ---
 
-### 9️⃣ **Observabilidad y Diagnósticos**
+### 9️⃣ **Caching**
+
+#### NestJS: @nestjs/cache-manager
+
+```typescript
+// Configuración básica con in-memory cache
+import { CacheModule } from '@nestjs/cache-manager';
+
+@Module({
+  imports: [CacheModule.register({
+    ttl: 5000, // milliseconds
+    isGlobal: true,
+  })],
+})
+export class AppModule {}
+
+// Uso con CacheInterceptor
+@Controller()
+@UseInterceptors(CacheInterceptor)
+export class AppController {
+  @Get()
+  @CacheKey('custom_key')
+  @CacheTTL(20)
+  findAll(): string[] {
+    return [];
+  }
+}
+
+// Manual cache usage
+constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
+
+async getData(key: string) {
+  const cached = await this.cacheManager.get(key);
+  if (cached) return cached;
+  
+  const data = await this.fetchData();
+  await this.cacheManager.set(key, data, 1000);
+  return data;
+}
+
+// Redis configuration (via Keyv)
+import KeyvRedis from '@keyv/redis';
+import { Keyv } from 'keyv';
+
+CacheModule.registerAsync({
+  useFactory: async () => ({
+    stores: [
+      new Keyv({
+        store: new CacheableMemory({ ttl: 60000 }),
+      }),
+      new KeyvRedis('redis://localhost:6379'),
+    ],
+  }),
+})
+```
+
+**Características de NestJS Caching:**
+
+- ✅ CacheModule con configuración global/por módulo
+- ✅ CacheInterceptor para auto-caching de respuestas
+- ✅ Decoradores: `@CacheKey()`, `@CacheTTL()`
+- ✅ Soporte in-memory (default) y stores externos (Redis, etc.)
+- ✅ Trackby personalizado para generar cache keys
+- ✅ Cache invalidation manual (del, clear)
+- ⚠️ GraphQL no soportado (interceptors por field resolver)
+- ⚠️ Solo GET endpoints cached (HTTP)
+- ⚠️ Cache invalidation pattern-based NO nativo
+- ⚠️ Distributed locks NO incluidos
+- ⚠️ Pub/Sub invalidation NO incluido
+
+#### SimpleMediator: 8 Cache Providers con Attributes Declarativos
+
+```csharp
+// 1. Configuración con Redis
+services.AddSimpleMediator(config => { });
+services.AddSimpleMediatorCaching(options =>
+{
+    options.DefaultExpiration = TimeSpan.FromMinutes(10);
+    options.EnableDistributedLocks = true;
+    options.EnablePubSubInvalidation = true;
+    options.EnableIdempotency = true;
+});
+services.AddSimpleMediatorRedis(options =>
+{
+    options.ConnectionString = "localhost:6379";
+    options.InstanceName = "MyApp:";
+});
+
+// 2. Configuración con Garnet (10-100x más rápido)
+services.AddSimpleMediatorGarnet(options =>
+{
+    options.ConnectionString = "localhost:6379";
+});
+
+// 3. Cacheable Query con attributes
+[Cache(DurationSeconds = 300, VaryByTenant = true, VaryByUser = false)]
+public record GetCustomerQuery(int Id) : IQuery<Either<MediatorError, Customer>>;
+
+// Resultado: Cache automático con key "GetCustomerQuery:TenantId:{TenantId}:Id:{Id}"
+
+// 4. Cache Invalidation con Pub/Sub broadcast
+[InvalidatesCache(
+    KeyPattern = "GetCustomerQuery:*:Id:{Id}", 
+    BroadcastInvalidation = true)]
+public record UpdateCustomerCommand(int Id, string Name) 
+    : ICommand<Either<MediatorError, Customer>>;
+
+// Resultado: Invalida cache localmente + broadcast a todas las instancias
+
+// 5. Idempotency distribuida
+public record ChargePaymentCommand(decimal Amount) 
+    : ICommand<Either<MediatorError, Receipt>>;
+
+// Header: X-Idempotency-Key: "payment-123"
+// Resultado: Si ya se procesó, devuelve resultado cacheado (sin re-ejecutar)
+
+// 6. Distributed Lock para Sagas
+public class OrderSagaHandler : ISagaHandler<OrderSaga>
+{
+    private readonly IDistributedLockProvider _locks;
+    
+    public async Task Handle(OrderSaga saga, CancellationToken ct)
+    {
+        await using var lock = await _locks.AcquireAsync(
+            resource: $"saga:{saga.OrderId}",
+            expiration: TimeSpan.FromMinutes(5),
+            ct: ct);
+        
+        // Solo una instancia puede ejecutar esta saga
+        await ProcessSaga(saga, ct);
+    }
+}
+
+// 7. Manual cache usage
+public class MyHandler : IRequestHandler<GetDataQuery, Either<MediatorError, Data>>
+{
+    private readonly ICacheProvider _cache;
+    
+    public async Task<Either<MediatorError, Data>> Handle(
+        GetDataQuery request, 
+        CancellationToken ct)
+    {
+        return await _cache.GetOrSetAsync(
+            key: $"data:{request.Id}",
+            factory: async ct => await FetchDataAsync(request.Id, ct),
+            expiration: TimeSpan.FromMinutes(5),
+            ct: ct);
+    }
+}
+
+// 8. Advanced: Cache con sliding expiration
+[Cache(
+    DurationSeconds = 600, 
+    SlidingExpiration = true,
+    Priority = CachePriority.High,
+    KeyTemplate = "customer:{TenantId}:{Id}")]
+public record GetCustomerQuery(int Id) : IQuery<Either<MediatorError, Customer>>;
+```
+
+**8 Cache Providers Disponibles (95% completos):**
+
+| Provider | Technology | Performance | License | Status |
+|----------|-----------|-------------|---------|--------|
+| **Memory** | IMemoryCache | Baseline | MIT | ✅ 95% |
+| **Redis** | StackExchange.Redis | Industry standard | MIT | ✅ 95% |
+| **Garnet** | Microsoft Garnet | 10-100x faster | MIT | ✅ 95% |
+| **Valkey** | Linux Foundation | AWS/Google backed | BSD-3 | ✅ 95% |
+| **Dragonfly** | Dragonfly | 25x throughput | BSL | ✅ 95% |
+| **KeyDB** | KeyDB | Multi-threaded | BSD-3 | ✅ 95% |
+| **NCache** | Alachisoft | Native .NET | Apache 2.0 | ✅ 95% |
+| **Hybrid** | .NET 9 HybridCache | In-memory + distributed | MIT | 🟡 Planned |
+
+**Características de SimpleMediator Caching:**
+
+- ✅ 8 cache providers (7 completados, 1 planificado)
+- ✅ Declarative caching con `[Cache]` attribute
+- ✅ Declarative invalidation con `[InvalidatesCache]` attribute
+- ✅ Pattern-based cache invalidation (wildcards)
+- ✅ Distributed idempotency keys (prevent duplicate processing)
+- ✅ Distributed locks (Redlock algorithm para Redis-compatible)
+- ✅ Pub/Sub invalidation broadcast (todas las instancias sincronizadas)
+- ✅ TTL configurable, sliding expiration, cache priority
+- ✅ VaryByUser, VaryByTenant para multi-tenant apps
+- ✅ Automatic cache key generation
+- ✅ ICacheProvider, IDistributedLockProvider, IPubSubProvider abstractions
+- ✅ Testcontainers integration para tests
+- 🟡 ~1,000+ tests (~95% completitud)
+
+#### Comparación
+
+| Característica | SimpleMediator | NestJS |
+|---------------|---------------|--------|
+| **Providers disponibles** | 8 (7 completos) | Ilimitados (via Keyv) |
+| **Declarative caching** | ✅ `[Cache]` attribute | ✅ `@CacheKey()` decorator |
+| **Auto-caching responses** | ✅ QueryCachingBehavior | ✅ CacheInterceptor |
+| **Pattern invalidation** | ✅ Wildcards built-in | ❌ Manual |
+| **Distributed locks** | ✅ Redlock + provider-specific | ❌ Requiere librería externa |
+| **Pub/Sub invalidation** | ✅ Built-in broadcast | ❌ Manual implementation |
+| **Idempotency keys** | ✅ Distributed via cache | ❌ Manual implementation |
+| **Cache key generation** | ✅ Automatic + template | ⚠️ Manual o trackBy() |
+| **Multi-tenant support** | ✅ VaryByTenant built-in | ⚠️ Manual en trackBy() |
+| **GraphQL support** | ⚠️ (via manual) | ❌ No soportado |
+| **WebSocket support** | ⚠️ (via manual) | ✅ @CacheKey() |
+| **HTTP/REST** | ✅ Via behaviors | ✅ Via interceptors |
+| **Test infrastructure** | ✅ Testcontainers (~1K tests) | ⚠️ Mock cache |
+
+#### Estado Actual ✅
+
+**SimpleMediator SUPERA a NestJS en:**
+
+1. **Cache Providers**: 8 providers vs configuración manual Keyv
+2. **Pattern Invalidation**: Wildcards built-in (`GetCustomer:*:Id:{Id}`)
+3. **Distributed Locks**: Redlock algorithm integrado
+4. **Pub/Sub Invalidation**: Broadcast automático a todas las instancias
+5. **Idempotency**: Distributed idempotency keys out-of-the-box
+6. **Multi-tenant**: VaryByTenant declarativo
+7. **Testing**: Testcontainers con real Redis/Garnet/etc.
+
+**NestJS tiene ventajas en:**
+
+1. **WebSocket caching**: Decoradores funcionan en WebSockets
+2. **Simplicity**: Un solo paquete (`@nestjs/cache-manager`)
+3. **Ecosystem**: Integración con Keyv (muchos stores)
+
+#### Brecha Identificada 🟢
+
+**SimpleMediator NO tiene brechas significativas**. La implementación de caching es **SUPERIOR** a NestJS en funcionalidad empresarial:
+
+- Distributed locks (Redlock)
+- Pub/Sub invalidation
+- Pattern-based invalidation
+- Idempotency distribuida
+- 8 providers optimizados
+
+**Área de mejora menor:**
+
+- HybridCache (.NET 9) aún no implementado (planificado)
+- Algunos tests finales para 100% coverage (~95% actual)
+
+---
+
+### 🔟 **Observabilidad y Diagnósticos**
 
 #### NestJS: Logging, Interceptors
 
@@ -1988,22 +2263,53 @@ public record CreateOrderCommand : IRequest<Either<MediatorError, Order>>
 
 ---
 
+### **Fase 1.5: Caching Infrastructure (✅ COMPLETADO DIC 2025)**
+
+#### ✅ **IMPLEMENTADO (95% completo)**
+
+1. **Caching Abstractions & Core** (COMPLETADO)
+   - ✅ ICacheProvider, IDistributedLockProvider, IPubSubProvider
+   - ✅ ICacheKeyGenerator con templates
+   - ✅ `[Cache]` attribute para query caching
+   - ✅ `[InvalidatesCache]` attribute con pattern matching
+   - ✅ QueryCachingPipelineBehavior
+   - ✅ CacheInvalidationPipelineBehavior
+   - ✅ IdempotencyPipelineBehavior
+
+2. **7 Cache Providers Implementados** (COMPLETADO)
+   - ✅ SimpleMediator.Caching.Memory - In-memory (IMemoryCache)
+   - ✅ SimpleMediator.Caching.Redis - Redis + Redlock
+   - ✅ SimpleMediator.Caching.Garnet - Microsoft Garnet (10-100x faster)
+   - ✅ SimpleMediator.Caching.Valkey - Linux Foundation (AWS/Google)
+   - ✅ SimpleMediator.Caching.Dragonfly - 25x throughput
+   - ✅ SimpleMediator.Caching.KeyDB - Multi-threaded
+   - ✅ SimpleMediator.Caching.NCache - Native .NET enterprise
+
+3. **Advanced Features Implementados** (COMPLETADO)
+   - ✅ Distributed locks (Redlock algorithm)
+   - ✅ Pub/Sub cache invalidation broadcast
+   - ✅ Pattern-based invalidation (wildcards)
+   - ✅ Distributed idempotency keys
+   - ✅ VaryByUser, VaryByTenant support
+   - ✅ TTL, sliding expiration, cache priority
+   - ✅ Testcontainers integration (~1,000+ tests)
+
+4. **Pendiente** (5% restante)
+   - 🟡 ~50-100 tests adicionales para 100% coverage
+   - 🟡 HybridCache (.NET 9) provider
+   - 🟡 Algunos load tests finales
+
+**Deliverable COMPLETADO:** `SimpleMediator.Caching.*` packages (7/8 completos)
+
+**Impacto:** SimpleMediator ahora SUPERA a NestJS en funcionalidad de caching empresarial (distributed locks, pub/sub invalidation, pattern matching, idempotency).
+
+---
+
 ### **Fase 2: Infrastructure Integrations (Q1-Q2 2026)**
 
 #### 🚀 **ALTA PRIORIDAD (Post-1.0)**
 
-1. **Caching Integrations** (4-6 semanas)
-   - **Redis/Garnet** (ALTA PRIORIDAD):
-     - Read-through/write-through cache
-     - Pub/sub para cache invalidation
-     - Distributed lock via Redis
-     - Garnet support (Microsoft's Redis alternative)
-   - **Hybrid Cache** (.NET 9):
-     - In-memory + distributed layers
-     - Automatic key generation
-     - Tag-based invalidation
-
-2. **Message Brokers** (8-12 semanas)
+1. **Message Brokers** (8-12 semanas)
    - **MassTransit** (COMMUNITY ADOPTION: ⭐⭐⭐⭐⭐ 80/100):
      - RabbitMQ, Azure Service Bus, Amazon SQS integration
      - Saga state machines
@@ -2165,11 +2471,22 @@ public record CreateOrderCommand : IRequest<Either<MediatorError, Order>>
    - 3,179 database tests (real containers via Testcontainers)
    - Resilience packages (Extensions.Resilience, Polly, Refit, Dapr)
 
-6. **Testing Infrastructure** ✅
+6. **Caching Infrastructure** ✅ **NUEVO DIC 2025**
+   - **8 cache providers** (7 completos: Memory, Redis, Garnet, Valkey, Dragonfly, KeyDB, NCache)
+   - Declarative caching: `[Cache]` attribute
+   - Pattern-based invalidation: `[InvalidatesCache]` con wildcards
+   - Distributed locks (Redlock algorithm)
+   - Pub/Sub invalidation broadcast (todas las instancias)
+   - Distributed idempotency keys
+   - ~1,000+ tests con Testcontainers
+   - **SUPERA a NestJS** en funcionalidad empresarial de caching
+
+7. **Testing Infrastructure** ✅
    - Testcontainers para real databases (no mocks)
    - 7 tipos de tests: Unit, Guard, Contract, Property, Integration, Load, Benchmarks
-   - 3,444 tests actuales (objetivo: 100% coverage obligatorio)
+   - ~4,500 tests actuales (3,444 core + ~1,000 caching)
    - Property-based testing con FsCheck
+   - Objetivo: 100% coverage obligatorio
 
 ### NestJS es SUPERIOR a SimpleMediator en
 
@@ -2201,6 +2518,7 @@ public record CreateOrderCommand : IRequest<Either<MediatorError, Order>>
 #### **CRÍTICO Pre-1.0 (Q1 2026)**
 
 - 🔥 **100% Test Coverage** (MANDATORIO): ~2,500-3,000 tests adicionales
+- 🔥 **Caching Tests**: Completar ~100 tests restantes (95% → 100%)
 - 🔥 **Stream Requests**: Completar 30% restante
 - 🔥 **Documentation**: QuickStarts, migration guides, ADRs
 - 🔥 **Parallel Notifications**: Opt-in parallelism
@@ -2208,7 +2526,8 @@ public record CreateOrderCommand : IRequest<Either<MediatorError, Order>>
 
 #### **Post-1.0 Inmediato (Q1-Q2 2026)**
 
-- 🚀 **Caching**: Redis/Garnet + Hybrid Cache
+- ✅ **Caching**: ✅ 7/8 providers completos (solo falta HybridCache)
+- 🟡 **HybridCache** (.NET 9): In-memory + distributed layers
 - 🚀 **MassTransit**: RabbitMQ, Azure Service Bus, Amazon SQS
 - 🚀 **Wolverine**: Lightweight messaging alternative
 - 🚀 **Kafka**: Confluent.Kafka + KafkaFlow
@@ -2241,34 +2560,36 @@ public record CreateOrderCommand : IRequest<Either<MediatorError, Order>>
 - **Encina** = CQRS/Mediator library functional-first (.NET)
 
 **Tagline sugerido:**
-> "Encina: The functional CQRS/Mediator library for .NET applications that demand explicit error handling, OpenTelemetry-native observability, and Railway Oriented Programming. Built for production with 3,400+ tests and 10 database providers."
+> "Encina: The functional CQRS/Mediator library for .NET applications that demand explicit error handling, enterprise-grade caching, OpenTelemetry-native observability, and Railway Oriented Programming. Built for production with 4,500+ tests, 10 database providers, and 8 cache providers."
 
 **Diferenciadores clave a mantener:**
 
 1. ✅ **Functional error handling** (Either/Option, no exceptions)
 2. ✅ **OpenTelemetry native** (package completo con 71 tests)
 3. ✅ **10 database providers** (Outbox, Inbox, Sagas en TODOS)
-4. ✅ **Performance** (zero allocations, ValueTask)
-5. ✅ **Multi-validation engines** (4 packages, 475 tests)
-6. ✅ **Railway Oriented Programming** (explicit error paths)
-7. ✅ **Testing excellence** (Testcontainers, 7 tipos de tests)
+4. ✅ **8 cache providers** (distributed locks, pub/sub, idempotency) **NUEVO**
+5. ✅ **Performance** (zero allocations, ValueTask)
+6. ✅ **Multi-validation engines** (4 packages, 475 tests)
+7. ✅ **Railway Oriented Programming** (explicit error paths)
+8. ✅ **Testing excellence** (Testcontainers, 7 tipos de tests, ~4,500 tests)
 
 **Áreas a expandir (según roadmap oficial):**
 
 1. 🔥 **Test coverage 100%** (mandatorio Pre-1.0)
-2. 🚀 **Infrastructure integrations** (Redis, MassTransit, Kafka, Marten, MongoDB)
-3. 💎 **Developer tooling** (CLI, VS Extension, MediatorFixture)
-4. 🎯 **Protocol bridges** (GraphQL, gRPC, WebSocket - si hay demanda)
+2. ✅ **Caching** (95% completo - solo faltan ~100 tests y HybridCache)
+3. 🚀 **Infrastructure integrations** (MassTransit, Kafka, Marten, MongoDB)
+4. 💎 **Developer tooling** (CLI, VS Extension, MediatorFixture)
+5. 🎯 **Protocol bridges** (GraphQL, gRPC, WebSocket - si hay demanda)
 
 ### Métricas de Éxito (2026)
 
 | Métrica | Q1 2026 (Pre-1.0) | Q4 2026 (Post-1.0) |
 |---------|-------------------|-------------------|
 | Test Coverage | 100% (MANDATORIO) | 100% |
-| Tests Totales | ~5,000 | ~7,000+ |
+| Tests Totales | ~5,500 | ~7,500+ |
 | Database Providers | 10 ✅ | 10 + MongoDB |
+| Cache Providers | 7 ✅ (95%) | 8 ✅ (+ HybridCache) |
 | Message Brokers | Dapr ✅ | + MassTransit, Wolverine, Kafka |
-| Caching | ❌ | Redis/Garnet, Hybrid Cache ✅ |
 | Event Sourcing | ❌ | Marten, EventStoreDB ✅ |
 | CLI Tool | ❌ | v1.0 ✅ |
 | VS Extension | ❌ | v1.0 ✅ |
