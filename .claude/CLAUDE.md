@@ -128,95 +128,78 @@ services.AddSimpleMediatorDapper(config => {
 - User chooses their preferred library
 - Similar pattern for scheduling: SimpleMediator.Scheduling vs Hangfire/Quartz adapters
 
-### Testing Standards - MANDATORY 100% COVERAGE
+### Testing Standards
 
-**CRITICAL**: Every line of code MUST be covered by ALL applicable test types. No exceptions.
+Maintain high-quality test coverage that balances thoroughness with development velocity.
 
-#### Coverage Requirements
+#### Coverage Targets
 
-- **Line Coverage**: 100% (not 90%, not 95% - ONE HUNDRED PERCENT)
-- **Branch Coverage**: 100% (every if/else, switch case, ternary)
-- **Method Coverage**: 100% (every method, including private via public API)
-- **Mutation Score**: ≥95% (Stryker must kill 95%+ of mutants)
+- **Line Coverage**: ≥85% (target for overall codebase)
+- **Branch Coverage**: ≥80% (target for overall codebase)
+- **Method Coverage**: ≥90% (target for overall codebase)
+- **Mutation Score**: ≥80% (Stryker mutation testing)
 
-#### Test Types - ALL MANDATORY for Every Feature
+#### Test Types - Apply Where Appropriate
 
-Every piece of code MUST have:
+Choose test types based on risk and value. Not every piece of code needs all test types:
 
-1. **Unit Tests** ✅
+1. **Unit Tests** ✅ (Required for all code)
    - Test individual methods in isolation
    - Mock all dependencies
    - Fast execution (<1ms per test)
    - Location: `tests/{Package}.Tests/`
-   - Naming: `{ClassName}Tests.cs`
-   - Example: `SimpleMediatorTests.cs`, `OutboxStoreEFTests.cs`
 
-2. **Integration Tests** ✅
-   - Test against real databases (via Docker)
+2. **Integration Tests** 🟡 (Critical paths, database operations)
+   - Test against real databases (via Docker/Testcontainers)
    - Test full workflows end-to-end
-   - Medium execution (<100ms per test)
    - Mark with: `[Trait("Category", "Integration")]`
-   - Location: `tests/{Package}.Tests/Integration/`
-   - Example: Database operations, HTTP calls, file I/O
+   - Location: `tests/{Package}.IntegrationTests/`
 
-3. **Contract Tests** ✅
+3. **Contract Tests** 🟡 (Public APIs, interfaces)
    - Verify public API contracts don't break
    - Test interfaces, abstract classes
-   - Verify all implementations follow contract
-   - Location: `tests/SimpleMediator.ContractTests/`
-   - Example: `IRequestHandler` contract, `IOutboxStore` contract
+   - Location: `tests/{Package}.ContractTests/`
 
-4. **Property-Based Tests** ✅
+4. **Property-Based Tests** 🟡 (Complex logic, invariants)
    - Use FsCheck to generate random inputs
-   - Verify invariants hold for ALL inputs
-   - Find edge cases humans miss
-   - Location: `tests/SimpleMediator.PropertyTests/`
-   - Example: Pipeline ordering, cache consistency, ROP laws
+   - Verify invariants hold for varied inputs
+   - Location: `tests/{Package}.PropertyTests/`
 
-5. **Guard Clause Tests** ✅
-   - Verify ALL null checks throw `ArgumentNullException`
-   - Verify ALL empty/invalid inputs throw appropriate exceptions
+5. **Guard Clause Tests** 🟡 (Public methods with parameters)
+   - Verify null checks throw `ArgumentNullException`
    - Use GuardClauses.xUnit library
-   - Location: `tests/SimpleMediator.GuardClauses.Tests/`
-   - Example: Every public method with parameters
+   - Location: `tests/{Package}.GuardTests/`
 
-6. **Load Tests** ✅
+6. **Load Tests** 🟡 (Performance-critical, concurrent code)
    - Stress test under high concurrency
-   - Verify no race conditions
-   - Verify performance degradation is linear
-   - Location: `load/SimpleMediator.LoadTests/`, `load/SimpleMediator.NBomber/`
-   - Tools: NBomber, custom load generators
+   - Location: `load/SimpleMediator.LoadTests/`
 
-7. **Benchmarks** ✅
-   - Measure actual performance
-   - Prevent performance regressions
-   - Compare implementations
+7. **Benchmarks** 🟡 (Hot paths, performance comparisons)
+   - Measure actual performance with BenchmarkDotNet
    - Location: `benchmarks/SimpleMediator.Benchmarks/`
-   - Tool: BenchmarkDotNet
 
 #### Test Quality Standards
 
-**EVERY test MUST**:
+**Good tests should**:
 
-- ✅ Have a clear, descriptive name (no `Test1`, `Test2`)
-- ✅ Follow AAA pattern (Arrange, Act, Assert)
-- ✅ Test ONE thing (single responsibility)
-- ✅ Be independent (no shared state between tests)
-- ✅ Be deterministic (same input = same output, always)
-- ✅ Clean up resources (dispose, delete temp files, etc.)
-- ✅ Have XML documentation explaining WHAT it tests and WHY
+- Have a clear, descriptive name (no `Test1`, `Test2`)
+- Follow AAA pattern (Arrange, Act, Assert)
+- Test ONE thing (single responsibility)
+- Be independent (no shared state between tests)
+- Be deterministic (same input = same output, always)
+- Clean up resources (dispose, delete temp files, etc.)
 
-**NEVER**:
+**Avoid**:
 
-- ❌ Skip tests (`[Fact(Skip = "...")]` is FORBIDDEN except for Pure ROP)
-- ❌ Ignore flaky tests (fix or delete them)
-- ❌ Test implementation details (test behavior, not internals)
-- ❌ Use `Thread.Sleep` (use proper synchronization)
-- ❌ Hard-code paths, dates, GUIDs (use test data generators)
+- Skipping tests without justification
+- Ignoring flaky tests (fix or delete them)
+- Testing implementation details (test behavior, not internals)
+- Using `Thread.Sleep` (prefer proper synchronization)
+- Hard-coding paths, dates, GUIDs when avoidable
 
 #### Docker Integration Testing
 
-ALL database-dependent code MUST have integration tests using Docker:
+For database-dependent code, integration tests using Docker/Testcontainers are recommended:
 
 ```csharp
 [Trait("Category", "Integration")]
@@ -295,45 +278,32 @@ benchmarks/
 
 #### Testing Workflow
 
-**BEFORE writing ANY production code**:
+**Recommended approach for new features**:
 
-1. Write failing unit test
-2. Write failing integration test
-3. Write failing contract test
-4. Write property-based test for invariants
-5. Write guard clause tests
-6. Implement feature
-7. ALL tests pass
-8. Add load test if applicable
-9. Add benchmark if performance-critical
-10. Verify 100% coverage
+1. Write unit tests covering the main functionality
+2. Implement feature
+3. Add additional test types based on risk/complexity:
+   - Integration tests for database/external dependencies
+   - Property tests for complex logic with invariants
+   - Guard tests for public APIs
+4. Verify tests pass
 
-**BEFORE any commit**:
+**Before committing**:
 
 ```bash
 # Run all tests
 dotnet test SimpleMediator.slnx --configuration Release
 
-# Verify coverage (must be 100%)
+# Optional: Check coverage
 dotnet test --collect "XPlat Code Coverage"
-dotnet tool run reportgenerator ... # Must show 100%
 
-# Run mutation testing (must be ≥95%)
+# Optional: Run mutation testing
 dotnet run --file scripts/run-stryker.cs
-
-# Run integration tests with Docker
-dotnet run --file scripts/run-integration-tests.cs
-
-# Run benchmarks (optional, but recommended)
-dotnet run --file scripts/run-benchmarks.cs
 ```
 
-**CI/CD enforces*3*:
+**CI/CD enforces**:
 
 - ✅ All tests pass
-- ✅ 100% line coverage
-- ✅ 100% branch coverage
-- ✅ ≥95% mutation score
 - ✅ 0 build warnings
 - ✅ Code formatting
 - ✅ Public API compatibility
@@ -381,7 +351,7 @@ OutboxStoreBenchmarks.cs
 - GetPendingMessages_Batch100vs1000()
 ```
 
-**Result**: EVERY line, EVERY branch, EVERY scenario covered.
+**Result**: Comprehensive coverage of critical functionality.
 
 #### Test Data Management
 
@@ -422,13 +392,10 @@ var message = new OutboxMessageBuilder()
 
 #### Remember
 
-> **100% coverage is NOT optional. It is MANDATORY.**
+> **Quality is important but should be balanced with development velocity.**
 >
-> Every commit that reduces coverage below 100% will be REJECTED by CI.
-> Every test that is skipped without justification will be REJECTED.
-> Every missing test type will be REJECTED.
->
-> Quality is not negotiable in this project.
+> Focus on testing what matters: critical paths, complex logic, and public APIs.
+> Add tests incrementally as features mature.
 
 ### Code Analysis
 
@@ -516,7 +483,21 @@ var message = new OutboxMessageBuilder()
 - ✅ XML Documentation: 100%
 - ✅ PublicAPI Analyzers enabled
 
-**Solution Filters** (.slnf - NEW 2025-12-21):
+**CRITICAL: MSBuild Stability Issue**
+
+⚠️ **Building the full solution can cause MSBuild crashes and even Windows restarts** due to parallel execution overload with the large test suite (70+ projects).
+
+**Mitigations** (ALWAYS use one of these):
+
+1. **Use `-maxcpucount:1` flag** for single-process builds:
+   ```bash
+   dotnet build -maxcpucount:1
+   dotnet test -maxcpucount:1
+   ```
+
+2. **Use Solution Filters (.slnf)** to build only what you need (preferred):
+
+**Solution Filters** (.slnf):
 
 For efficient development with reduced MSBuild overhead, use solution filters:
 

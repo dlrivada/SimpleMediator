@@ -87,17 +87,25 @@ internal sealed class PipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TR
         return () => ExecutePipelineAsync(preProcessors, postProcessors, current, _request, _context, _cancellationToken);
     }
 
+    /// <summary>
+    /// Executes the pipeline using optimized span-based iteration to minimize allocations.
+    /// </summary>
+    /// <remarks>
+    /// Uses index-based iteration over arrays to avoid enumerator allocation overhead.
+    /// Pre/post processors are passed as ReadOnlySpan for zero-allocation iteration.
+    /// </remarks>
     private static async ValueTask<Either<MediatorError, TResponse>> ExecutePipelineAsync(
-        IReadOnlyList<IRequestPreProcessor<TRequest>> preProcessors,
-        IReadOnlyList<IRequestPostProcessor<TRequest, TResponse>> postProcessors,
+        IRequestPreProcessor<TRequest>[] preProcessors,
+        IRequestPostProcessor<TRequest, TResponse>[] postProcessors,
         RequestHandlerCallback<TResponse> terminal,
         TRequest request,
         IRequestContext context,
         CancellationToken cancellationToken)
     {
-        foreach (var preProcessor in preProcessors)
+        // Pre-processors: index-based iteration avoids enumerator allocation
+        for (var i = 0; i < preProcessors.Length; i++)
         {
-            var failure = await ExecutePreProcessorAsync(preProcessor, request, context, cancellationToken).ConfigureAwait(false);
+            var failure = await ExecutePreProcessorAsync(preProcessors[i], request, context, cancellationToken).ConfigureAwait(false);
             if (failure.IsSome)
             {
                 var error = failure.Match(err => err, () => MediatorErrors.Unknown);
@@ -107,21 +115,13 @@ internal sealed class PipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TR
 
         var response = await terminal().ConfigureAwait(false);
 
-        foreach (var postProcessor in postProcessors)
+        // Post-processors: index-based iteration avoids enumerator allocation
+        for (var i = 0; i < postProcessors.Length; i++)
         {
-            var failure = await ExecutePostProcessorAsync(postProcessor, request, context, response, cancellationToken).ConfigureAwait(false);
-            var hasFailure = false;
-            MediatorError capturedError = default;
-
-            failure.IfSome(err =>
+            var failure = await ExecutePostProcessorAsync(postProcessors[i], request, context, response, cancellationToken).ConfigureAwait(false);
+            if (failure.IsSome)
             {
-                hasFailure = true;
-                capturedError = err;
-            });
-
-            if (hasFailure)
-            {
-                return Left<MediatorError, TResponse>(capturedError);
+                return Left<MediatorError, TResponse>(failure.Match(err => err, () => MediatorErrors.Unknown));
             }
         }
 

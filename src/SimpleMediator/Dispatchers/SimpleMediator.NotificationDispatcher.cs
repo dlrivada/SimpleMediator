@@ -57,11 +57,11 @@ public sealed partial class SimpleMediator
             // Resolve ALL handlers registered for this notification type
             // Multiple handlers can be registered for the same notification (observer pattern)
             var handlerType = typeof(INotificationHandler<>).MakeGenericType(notificationType);
-            var handlers = serviceProvider.GetServices(handlerType).ToList();
-            activity?.SetTag("mediator.handler_count", handlers.Count);
+            var handlersList = serviceProvider.GetServices(handlerType).ToList();
+            activity?.SetTag("mediator.handler_count", handlersList.Count);
 
             // Zero handlers is not an error - notifications are fire-and-forget
-            if (handlers.Count == 0)
+            if (handlersList.Count == 0)
             {
                 Log.NoNotificationHandlers(mediator._logger, notificationType.Name);
                 activity?.SetStatus(ActivityStatusCode.Ok);
@@ -69,10 +69,11 @@ public sealed partial class SimpleMediator
             }
 
             // --- EXECUTION PHASE ---
-            // Invoke each handler sequentially
-            // TODO: Consider parallel execution for truly independent handlers
-            foreach (var handler in handlers)
+            // Use index-based iteration to avoid enumerator allocation overhead
+            // Note: Span cannot be used here due to await boundaries
+            for (var i = 0; i < handlersList.Count; i++)
             {
+                var handler = handlersList[i];
                 if (handler is null)
                 {
                     continue; // Skip null handlers (defensive - shouldn't happen in well-configured DI)
