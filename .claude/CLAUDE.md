@@ -470,6 +470,22 @@ var message = new OutboxMessageBuilder()
 - **Tests**: 367 tests passing (49 core + 109 memory + 56 hybrid + 43 guard + 78 contract + 32 property)
 - **Benchmarks**: SimpleMediator.Caching.Benchmarks with provider comparisons
 
+**Messaging Transports** (12 packages completed - NEW 2025-12-21):
+
+- ✅ SimpleMediator.Wolverine - WolverineFx 5.7.1 integration
+- ✅ SimpleMediator.NServiceBus - NServiceBus 9.2.8 integration
+- ✅ SimpleMediator.RabbitMQ - RabbitMQ.Client 7.2.0 integration
+- ✅ SimpleMediator.AzureServiceBus - Azure Service Bus 7.20.1 integration
+- ✅ SimpleMediator.AmazonSQS - AWS SQS/SNS 4.0.2.3 integration
+- ✅ SimpleMediator.Kafka - Confluent.Kafka 2.12.0 integration
+- ✅ SimpleMediator.Redis.PubSub - StackExchange.Redis pub/sub
+- ✅ SimpleMediator.InMemory - System.Threading.Channels message bus
+- ✅ SimpleMediator.NATS - NATS.Net 2.6.11 with JetStream support
+- ✅ SimpleMediator.MQTT - MQTTnet 5.0.1 integration
+- ✅ SimpleMediator.gRPC - Grpc.AspNetCore 2.71.0 mediator service
+- ✅ SimpleMediator.GraphQL - HotChocolate 15.1.11 bridge
+- **Note**: All packages use `#pragma warning disable CA1848` for logging (LoggerMessage delegates pending)
+
 **Job Scheduling**:
 
 - ✅ Hangfire adapter (15 tests)

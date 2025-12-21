@@ -49,6 +49,7 @@ SimpleMediator (future: **Encina Framework**) aspires to be the functional media
 | Validation Packages | 4 | 4 | 100% ✅ |
 | Web Integration | 1 | 1 | 100% ✅ |
 | Messaging Packages | 3 | 3 | 100% ✅ |
+| **Messaging Transports** | 12 | 12 | 100% ✅ |
 | Job Schedulers | 2 | 2 | 100% ✅ |
 | Database Providers | 10 | 10 | 100% ✅ |
 | Resilience Packages | 3 | 3 | 100% ✅ |
@@ -616,6 +617,72 @@ public record GetCustomerQuery(int Id) : IQuery<Customer>;
 - Memory: `Microsoft.Extensions.Caching.Memory 10.0.1`
 - Hybrid: `Microsoft.Extensions.Caching.Hybrid 10.1.0`
 - Redis: `Microsoft.Extensions.Caching.StackExchangeRedis 10.0.1`, `StackExchange.Redis 2.8.41`
+
+---
+
+### ✅ Phase 7: Messaging Transports (COMPLETED)
+
+**Status**: ✅ All 12 Messaging Transport Packages Complete (2025-12-21)
+
+Comprehensive messaging transport support enabling users to choose their preferred message bus, queue system, or communication protocol.
+
+#### Messaging Transport Packages Completed
+
+| Package | Technology | Version | Key Features |
+|---------|------------|---------|--------------|
+| **SimpleMediator.Wolverine** | WolverineFx | 5.7.1 | Modern .NET messaging, request handlers, notifications |
+| **SimpleMediator.NServiceBus** | NServiceBus | 9.2.8 | Enterprise messaging, saga support, delayed delivery |
+| **SimpleMediator.RabbitMQ** | RabbitMQ.Client | 7.2.0 | AMQP messaging, exchanges, queues, pub/sub |
+| **SimpleMediator.AzureServiceBus** | Azure.Messaging.ServiceBus | 7.20.1 | Azure cloud messaging, queues, topics, sessions |
+| **SimpleMediator.AmazonSQS** | AWSSDK.SQS + SNS | 4.0.2.3 | AWS messaging, SQS queues, SNS topics, FIFO |
+| **SimpleMediator.Kafka** | Confluent.Kafka | 2.12.0 | High-throughput streaming, batch production |
+| **SimpleMediator.Redis.PubSub** | StackExchange.Redis | 2.8.41 | Lightweight pub/sub, pattern subscriptions |
+| **SimpleMediator.InMemory** | System.Threading.Channels | Built-in | Testing, development, local scenarios |
+| **SimpleMediator.NATS** | NATS.Net | 2.6.11 | Cloud-native messaging, JetStream persistence |
+| **SimpleMediator.MQTT** | MQTTnet | 5.0.1 | IoT messaging, QoS levels, topic patterns |
+| **SimpleMediator.gRPC** | Grpc.AspNetCore | 2.71.0 | RPC-style messaging, dynamic dispatch |
+| **SimpleMediator.GraphQL** | HotChocolate | 15.1.11 | GraphQL queries/mutations bridge |
+
+**Key Features**:
+
+- ✅ Railway Oriented Programming with `Either<MediatorError, T>` across all transports
+- ✅ Consistent API pattern: `IXxxMessagePublisher` interfaces
+- ✅ `IServiceCollection` extension methods for easy DI setup
+- ✅ Options pattern for configuration (`SimpleMediatorXxxOptions`)
+- ✅ Subscription support with `IAsyncDisposable` for cleanup
+- ✅ Pattern-based subscriptions where supported (MQTT wildcards, Redis patterns)
+
+**Implementation Example**:
+
+```csharp
+// RabbitMQ
+services.AddSimpleMediatorRabbitMQ(options =>
+{
+    options.HostName = "localhost";
+    options.ExchangeName = "mediator.events";
+});
+
+// Azure Service Bus
+services.AddSimpleMediatorAzureServiceBus(options =>
+{
+    options.ConnectionString = "Endpoint=sb://...";
+    options.DefaultQueueName = "commands";
+});
+
+// Kafka
+services.AddSimpleMediatorKafka(options =>
+{
+    options.BootstrapServers = "localhost:9092";
+    options.DefaultTopic = "mediator-events";
+});
+
+// In-Memory (for testing)
+services.AddSimpleMediatorInMemory();
+```
+
+**Technical Notes**:
+
+- ⚠️ **Pending: LoggerMessage Delegates** - All packages use `#pragma warning disable CA1848` suppressions for logging. A future optimization pass will replace `ILogger.LogXxx()` calls with high-performance `LoggerMessage` delegates (see section 6.1 in Core Improvements).
 
 ---
 
@@ -1224,6 +1291,7 @@ public record GetCustomerQuery(int Id) : IQuery<Customer>;
 **Status**: ✅ **SimpleMediator.MassTransit COMPLETE** (2025-12-21)
 
 ✅ Completed Features:
+
 - `MassTransitRequestConsumer<TRequest, TResponse>` - Bridges MassTransit messages to SimpleMediator requests
 - `MassTransitNotificationConsumer<TNotification>` - Bridges MassTransit messages to SimpleMediator notifications
 - `MassTransitMessagePublisher` - Publishes domain events via MassTransit bus
@@ -1376,6 +1444,7 @@ await mediator.Publish(new OrderPlacedEvent(orderId, total)); // Goes to Kafka
 **Status**: ✅ **SimpleMediator.Marten COMPLETE** (2025-12-21)
 
 ✅ Completed Features:
+
 - `IAggregate` / `AggregateBase` - Event sourcing aggregate abstractions
 - `IAggregateRepository<TAggregate>` - Repository pattern for aggregates
 - `MartenAggregateRepository<TAggregate>` - Marten implementation with optimistic concurrency
@@ -1525,18 +1594,18 @@ public class OutboxStoreMongoDB : IOutboxStore
 |------------|-------------|----------|--------|-------------------|
 | **Redis/Garnet** | SimpleMediator.Redis.StackExchange<br>SimpleMediator.Redis.Garnet | ⭐⭐⭐⭐⭐ Critical | ⏳ Planned | ⭐⭐⭐⭐⭐ Standard |
 | **MassTransit** | SimpleMediator.MassTransit | ⭐⭐⭐⭐⭐ Critical | ✅ Complete | ⭐⭐⭐⭐⭐ Industry Standard |
-| **Wolverine** | SimpleMediator.Wolverine | ⭐⭐⭐⭐⭐ Critical | ⏳ In Progress | ⭐⭐⭐⭐ Growing |
-| **NServiceBus** | SimpleMediator.NServiceBus | ⭐⭐⭐⭐ High | ⏳ In Progress | ⭐⭐⭐⭐⭐ Enterprise |
-| **RabbitMQ** | SimpleMediator.RabbitMQ | ⭐⭐⭐⭐⭐ Critical | ⏳ In Progress | ⭐⭐⭐⭐⭐ Standard |
-| **Azure Service Bus** | SimpleMediator.AzureServiceBus | ⭐⭐⭐⭐⭐ Critical | ⏳ In Progress | ⭐⭐⭐⭐⭐ Enterprise |
-| **Amazon SQS/SNS** | SimpleMediator.AmazonSQS | ⭐⭐⭐⭐⭐ Critical | ⏳ In Progress | ⭐⭐⭐⭐⭐ Enterprise |
-| **Kafka (Confluent)** | SimpleMediator.Kafka | ⭐⭐⭐⭐⭐ Critical | ⏳ In Progress | ⭐⭐⭐⭐⭐ Official |
-| **Redis Pub/Sub** | SimpleMediator.Redis.PubSub | ⭐⭐⭐⭐ High | ⏳ In Progress | ⭐⭐⭐⭐⭐ Standard |
-| **In-Memory** | SimpleMediator.InMemory | ⭐⭐⭐⭐ High | ⏳ In Progress | ⭐⭐⭐⭐⭐ Dev/Test |
-| **NATS** | SimpleMediator.NATS | ⭐⭐⭐⭐ High | ⏳ In Progress | ⭐⭐⭐⭐ Growing |
-| **MQTT** | SimpleMediator.MQTT | ⭐⭐⭐⭐ High | ⏳ In Progress | ⭐⭐⭐⭐ IoT Standard |
-| **gRPC** | SimpleMediator.gRPC | ⭐⭐⭐⭐⭐ Critical | ⏳ In Progress | ⭐⭐⭐⭐⭐ Standard |
-| **GraphQL** | SimpleMediator.GraphQL | ⭐⭐⭐⭐ High | ⏳ In Progress | ⭐⭐⭐⭐ Growing |
+| **Wolverine** | SimpleMediator.Wolverine | ⭐⭐⭐⭐⭐ Critical | ✅ Complete | ⭐⭐⭐⭐ Growing |
+| **NServiceBus** | SimpleMediator.NServiceBus | ⭐⭐⭐⭐ High | ✅ Complete | ⭐⭐⭐⭐⭐ Enterprise |
+| **RabbitMQ** | SimpleMediator.RabbitMQ | ⭐⭐⭐⭐⭐ Critical | ✅ Complete | ⭐⭐⭐⭐⭐ Standard |
+| **Azure Service Bus** | SimpleMediator.AzureServiceBus | ⭐⭐⭐⭐⭐ Critical | ✅ Complete | ⭐⭐⭐⭐⭐ Enterprise |
+| **Amazon SQS/SNS** | SimpleMediator.AmazonSQS | ⭐⭐⭐⭐⭐ Critical | ✅ Complete | ⭐⭐⭐⭐⭐ Enterprise |
+| **Kafka (Confluent)** | SimpleMediator.Kafka | ⭐⭐⭐⭐⭐ Critical | ✅ Complete | ⭐⭐⭐⭐⭐ Official |
+| **Redis Pub/Sub** | SimpleMediator.Redis.PubSub | ⭐⭐⭐⭐ High | ✅ Complete | ⭐⭐⭐⭐⭐ Standard |
+| **In-Memory** | SimpleMediator.InMemory | ⭐⭐⭐⭐ High | ✅ Complete | ⭐⭐⭐⭐⭐ Dev/Test |
+| **NATS** | SimpleMediator.NATS | ⭐⭐⭐⭐ High | ✅ Complete | ⭐⭐⭐⭐ Growing |
+| **MQTT** | SimpleMediator.MQTT | ⭐⭐⭐⭐ High | ✅ Complete | ⭐⭐⭐⭐ IoT Standard |
+| **gRPC** | SimpleMediator.gRPC | ⭐⭐⭐⭐⭐ Critical | ✅ Complete | ⭐⭐⭐⭐⭐ Standard |
+| **GraphQL** | SimpleMediator.GraphQL | ⭐⭐⭐⭐ High | ✅ Complete | ⭐⭐⭐⭐ Growing |
 | **Marten** | SimpleMediator.Marten | ⭐⭐⭐⭐⭐ Critical | ✅ Complete | ⭐⭐⭐⭐⭐ Highly Regarded |
 | **EventStoreDB** | SimpleMediator.EventStoreDB | ⭐⭐⭐⭐ High | ⏳ Planned | ⭐⭐⭐⭐ Specialized |
 | **MongoDB** | SimpleMediator.MongoDB | ⭐⭐⭐⭐ High | ⏳ Planned | ⭐⭐⭐⭐⭐ Standard |
@@ -1767,6 +1836,7 @@ public record UpdateCustomerCommand(int Id, ...) : ICommand<Customer>;
 **Rationale**: Consistency across codebase, defensive programming.
 
 **Completed**:
+
 - ✅ `MediatorRequestGuards.TryValidateNotification()` already applied in Publish method
 - ✅ `MediatorNotificationGuards.TryValidateHandleMethod()` validates handler method signatures
 - ✅ Handler null checks handled inline (notifications can have zero handlers - not an error)
@@ -1789,10 +1859,64 @@ public record UpdateCustomerCommand(int Id, ...) : ICommand<Customer>;
 - Optimize expression tree compilation
 
 **Completed**:
+
 - ✅ `PipelineBuilder.ExecutePipelineAsync` - Changed from `IReadOnlyList<T>` to `T[]` with index-based iteration
 - ✅ `NotificationDispatcher.ExecuteAsync` - Replaced `foreach` with index-based `for` loop to avoid enumerator allocation
 - ✅ Avoided `CollectionsMarshal.AsSpan` in async methods (Span cannot cross await boundaries)
 - ✅ All 194 core tests pass
+
+---
+
+#### 6.1 LoggerMessage Delegates for Messaging Packages
+
+**Priority**: ⭐⭐⭐ (Medium - performance optimization)
+**Complexity**: ⭐⭐ (Low)
+**Status**: ⏳ Pending
+
+**Objective**: Replace `ILogger.LogXxx()` extension methods with high-performance `LoggerMessage` delegates (CA1848 compliance).
+
+**Current State**:
+All 12 messaging transport packages currently use `#pragma warning disable CA1848` suppressions:
+
+| Package | Files with CA1848 Suppression |
+|---------|-------------------------------|
+| SimpleMediator.Wolverine | WolverineMessagePublisher.cs, WolverineRequestHandler.cs |
+| SimpleMediator.NServiceBus | NServiceBusMessagePublisher.cs |
+| SimpleMediator.RabbitMQ | RabbitMQMessagePublisher.cs |
+| SimpleMediator.AzureServiceBus | AzureServiceBusMessagePublisher.cs |
+| SimpleMediator.AmazonSQS | AmazonSQSMessagePublisher.cs |
+| SimpleMediator.Kafka | KafkaMessagePublisher.cs |
+| SimpleMediator.Redis.PubSub | RedisPubSubMessagePublisher.cs |
+| SimpleMediator.InMemory | InMemoryMessageBus.cs |
+| SimpleMediator.NATS | NATSMessagePublisher.cs |
+| SimpleMediator.MQTT | MQTTMessagePublisher.cs |
+| SimpleMediator.gRPC | GrpcMediatorService.cs |
+| SimpleMediator.GraphQL | GraphQLMediatorBridge.cs |
+
+**Implementation Pattern**:
+
+```csharp
+// Before (current)
+_logger.LogDebug("Publishing message of type {MessageType}", typeof(TMessage).Name);
+
+// After (optimized)
+private static partial class Log
+{
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Publishing message of type {MessageType}")]
+    public static partial void PublishingMessage(ILogger logger, string messageType);
+}
+
+// Usage
+Log.PublishingMessage(_logger, typeof(TMessage).Name);
+```
+
+**Benefits**:
+- Zero-allocation logging in hot paths
+- Compile-time validation of log message parameters
+- Better performance under high throughput
+- CA1848 compliance without suppressions
+
+**Estimated Work**: ~2-4 hours per package (create LogMessages partial class, replace all logging calls)
 
 ---
 
