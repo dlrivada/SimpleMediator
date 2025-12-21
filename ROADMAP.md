@@ -1,6 +1,6 @@
 # SimpleMediator Roadmap
 
-**Last Updated**: 2025-12-21
+**Last Updated**: 2025-12-21 (Parallel Dispatch, EventStoreDB, Choreography Sagas added)
 **Version**: Pre-1.0 (active development, breaking changes allowed)
 **Future Name**: Encina Framework (to be renamed before 1.0 release)
 
@@ -1455,13 +1455,13 @@ await mediator.Publish(new OrderPlacedEvent(orderId, total)); // Goes to Kafka
 #### 4. Event Sourcing
 
 **SimpleMediator.Marten** ⭐⭐⭐⭐⭐ (CRITICAL - Primary) ✅ **COMPLETE**
-**SimpleMediator.EventStoreDB** ⭐⭐⭐⭐ (Alternative)
+**SimpleMediator.EventStoreDB** ⭐⭐⭐⭐ (Alternative) ✅ **COMPLETE**
 
 **Priority**: Critical - Event sourcing is a fundamental architectural pattern
 
-**Status**: ✅ **SimpleMediator.Marten COMPLETE** (2025-12-21)
+**Status**: ✅ **BOTH PACKAGES COMPLETE** (2025-12-21)
 
-✅ Completed Features:
+✅ Marten Completed Features:
 
 - `IAggregate` / `AggregateBase` - Event sourcing aggregate abstractions
 - `IAggregateRepository<TAggregate>` - Repository pattern for aggregates
@@ -1473,6 +1473,18 @@ await mediator.Publish(new OrderPlacedEvent(orderId, total)); // Goes to Kafka
 - Tests: 16 passing (Unit tests)
 - Uses Marten v8.0.0-beta-1 for .NET 10 compatibility
 
+✅ EventStoreDB Completed Features (NEW 2025-12-21):
+
+- `IAggregate` / `AggregateBase<TId>` - Event sourcing aggregate abstractions
+- `IAggregateRepository<TAggregate>` - Repository pattern with Load/Save/Create
+- `EventStoreDbAggregateRepository<TAggregate>` - EventStoreDB implementation with optimistic concurrency
+- `IEventSerializer` / `JsonEventSerializer` - Event serialization with JSON
+- `IEventTypeResolver` / `DefaultEventTypeResolver` - Type name resolution with assembly scanning
+- `EventStoreDbOptions` - Configuration (connection string, stream naming, concurrency)
+- `EventStoreDbErrorCodes` - Error codes for EventStoreDB operations
+- `ServiceCollectionExtensions` - DI registration helpers
+- Uses EventStore.Client.Grpc.Streams v23.3.9
+
 **Technology Options**:
 
 | Technology | Community Adoption | Pros | Cons | Recommendation |
@@ -1480,10 +1492,10 @@ await mediator.Publish(new OrderPlacedEvent(orderId, total)); // Goes to Kafka
 | **Marten** | ⭐⭐⭐⭐⭐ Highly Regarded | PostgreSQL-based, excellent tooling, document DB + event sourcing | Requires PostgreSQL | ✅ **Primary Option** |
 | **EventStoreDB** | ⭐⭐⭐⭐ Specialized | Purpose-built for event sourcing, proven, projections | Separate database, more infrastructure | ✅ **Alternative Option** |
 
-**Decision** (Dec 2025): Support **both**:
+**Decision** (Dec 2025): Support **both** ✅ **IMPLEMENTED**:
 
-- **SimpleMediator.Marten** - Primary, PostgreSQL-based, multi-purpose
-- **SimpleMediator.EventStoreDB** - Alternative, specialized event store
+- **SimpleMediator.Marten** - Primary, PostgreSQL-based, multi-purpose ✅
+- **SimpleMediator.EventStoreDB** - Alternative, specialized event store ✅
 
 **Community Insight**: The Critter Stack team (creators of Marten and Wolverine) describes Marten as "the most robust and productive tooling for CQRS with Event Sourcing in the entire .NET ecosystem" as of 2025. It's actively maintained and widely adopted.
 
@@ -1535,7 +1547,7 @@ public class PlaceOrderHandler : IRequestHandler<PlaceOrderCommand, Unit>
 }
 ```
 
-**Package Dependencies**: `Marten 7.33+`, `EventStore.Client.Grpc.Streams 24.2+`
+**Package Dependencies**: `Marten 8.0.0-beta-1`, `EventStore.Client.Grpc.Streams 23.3.9`
 
 ---
 
@@ -1625,7 +1637,7 @@ public class OutboxStoreMongoDB : IOutboxStore
 | **gRPC** | SimpleMediator.gRPC | ⭐⭐⭐⭐⭐ Critical | ✅ Complete | ⭐⭐⭐⭐⭐ Standard |
 | **GraphQL** | SimpleMediator.GraphQL | ⭐⭐⭐⭐ High | ✅ Complete | ⭐⭐⭐⭐ Growing |
 | **Marten** | SimpleMediator.Marten | ⭐⭐⭐⭐⭐ Critical | ✅ Complete | ⭐⭐⭐⭐⭐ Highly Regarded |
-| **EventStoreDB** | SimpleMediator.EventStoreDB | ⭐⭐⭐⭐ High | ⏳ Planned | ⭐⭐⭐⭐ Specialized |
+| **EventStoreDB** | SimpleMediator.EventStoreDB | ⭐⭐⭐⭐ High | ✅ Complete | ⭐⭐⭐⭐ Specialized |
 | **MongoDB** | SimpleMediator.MongoDB | ⭐⭐⭐⭐ High | ⏳ Planned | ⭐⭐⭐⭐⭐ Standard |
 
 **Implementation Order** (✅ Most Complete):
@@ -1636,7 +1648,7 @@ public class OutboxStoreMongoDB : IOutboxStore
 4. ✅ **SimpleMediator.Kafka** (High - streaming scenarios) - COMPLETE
 5. ⏳ **SimpleMediator.MongoDB** (High - document store) - Planned
 6. ✅ **SimpleMediator.Wolverine** (Alternative to MassTransit) - COMPLETE
-7. ⏳ **SimpleMediator.EventStoreDB** (Alternative to Marten) - Planned
+7. ✅ **SimpleMediator.EventStoreDB** (Alternative to Marten) - COMPLETE
 8. ✅ **SimpleMediator.Caching.Garnet** (Alternative to Redis) - COMPLETE
 
 ---
@@ -1929,6 +1941,7 @@ Log.PublishingMessage(_logger, typeof(TMessage).Name);
 ```
 
 **Benefits**:
+
 - Zero-allocation logging in hot paths
 - Compile-time validation of log message parameters
 - Better performance under high throughput
@@ -2033,63 +2046,134 @@ Log.PublishingMessage(_logger, typeof(TMessage).Name);
 
 **IMPORTANT**: These initiatives are essential for 1.0 but should be completed LAST, after all technical work above is done.
 
-### 🔥 Parallel Execution Support
+### 🔥 Parallel Execution Support ✅ **COMPLETE** (2025-12-21)
 
-**Current State**: All execution is sequential
+**Status**: ✅ **IMPLEMENTED** - Three notification dispatch strategies available
 
-- Request pipeline: PreProcessors → Behaviors → Handler → PostProcessors (sequential)
-- Notification handlers: Loop one by one (sequential)
-- Single request/notification stays on one thread unless handlers introduce parallelism
+✅ **Completed Features**:
 
-**Multicore Usage Today**:
+- `NotificationDispatchStrategy` enum (Sequential, Parallel, ParallelWhenAll)
+- `NotificationDispatchOptions` - Configuration for strategy and max parallelism
+- `INotificationDispatchStrategy` - Strategy interface
+- `SequentialDispatchStrategy` - Default, fail-fast on first error (singleton)
+- `ParallelDispatchStrategy` - Fail-fast with linked CancellationTokenSource, throttling via SemaphoreSlim
+- `ParallelWhenAllDispatchStrategy` - Waits for all handlers, aggregates errors
+- `UseParallelNotificationDispatch()` - Configuration method
+- 12 new tests in ParallelNotificationDispatchTests.cs
 
-- ✅ Multiple concurrent requests use multiple cores (via thread pool)
-- ❌ Single request/notification cannot use multiple cores (single-threaded execution)
+**Three Strategies Available**:
 
-**Proposed Enhancement**: Opt-in Parallel Notification Dispatch
+| Strategy | Behavior | Use Case |
+|----------|----------|----------|
+| **Sequential** (default) | Fail-fast on first error | Simple apps, ordering required |
+| **Parallel** | Fail-fast, cancels remaining on first error | High-throughput, error-sensitive |
+| **ParallelWhenAll** | Waits for all, aggregates multiple errors | Reliability, need all results |
+
+**Configuration**:
 
 ```csharp
-public enum PublishMode { Sequential, Parallel }
-
-public sealed record PublishOptions(
-    PublishMode Mode = PublishMode.Sequential,
-    int? DegreeOfParallelism = null
-);
-
-// In NotificationDispatcher.ExecuteAsync
-if (options.Mode == PublishMode.Parallel)
+services.AddSimpleMediator(config =>
 {
-    var dop = options.DegreeOfParallelism ?? Environment.ProcessorCount;
-    using var throttler = new SemaphoreSlim(dop);
+    // Option 1: Simple parallel dispatch
+    config.UseParallelNotificationDispatch(NotificationDispatchStrategy.Parallel);
 
-    var tasks = handlers.Select(async handler =>
-    {
-        await throttler.WaitAsync(cancellationToken);
-        try { return await InvokeNotificationHandler(handler, notification, cancellationToken); }
-        finally { throttler.Release(); }
-    });
+    // Option 2: With throttling
+    config.UseParallelNotificationDispatch(
+        NotificationDispatchStrategy.Parallel,
+        maxDegreeOfParallelism: 4);
 
-    var results = await Task.WhenAll(tasks);
-    return results.FirstOrDefault(r => r.IsLeft) ?? Right<MediatorError, Unit>(Unit.Default);
-}
-// Fallback: existing sequential loop
+    // Option 3: Wait for all handlers
+    config.UseParallelNotificationDispatch(NotificationDispatchStrategy.ParallelWhenAll);
+});
 ```
 
 **Benefits**:
 
 - 🚀 Faster notification broadcast (use all CPU cores)
 - 🎯 Useful for high-throughput scenarios (IoT, real-time systems)
-- 🔧 Opt-in: backward compatible, users choose when to parallelize
+- 🔧 Opt-in: backward compatible (Sequential is default)
+- ⚡ Throttling support via MaxDegreeOfParallelism
 
 **Safety Considerations**:
 
 - ⚠️ Scoped services must be thread-safe if reused across parallel handlers
 - ⚠️ Ordering guarantees become weaker (can be mitigated with partitioning by key)
-- ⚠️ Failure handling: fail-fast (first error stops) vs collect-all (gather all errors)
+- ✅ Failure handling: Both fail-fast and collect-all strategies available
 
-**Timeline**: Before 1.0 release (essential for high-throughput scenarios)
+---
 
-**Decision Document**: See `paralelism.md` for complete analysis
+### 🔥 Choreography-Based Sagas ✅ **COMPLETE** (2025-12-21)
+
+**Status**: ✅ **IMPLEMENTED** - Event-driven saga abstractions in SimpleMediator.Messaging
+
+Choreography sagas are event-driven distributed transactions where each participant listens to events and decides what to do next. This contrasts with orchestration sagas (already in SimpleMediator.EntityFrameworkCore) where a central coordinator controls the flow.
+
+✅ **Completed Features** (in SimpleMediator.Messaging.Choreography):
+
+- `IEventReaction<TEvent>` - Handle events and trigger next steps
+- `IEventHandlerScope` - Context with correlation ID and publish capability
+- `IChoreographyEventBus` - Start sagas, publish events, complete/compensate
+- `IChoreographySaga` / `IChoreographySaga<TState>` - Saga marker interfaces
+- `IChoreographyState` - Persisted saga state
+- `IChoreographyStateStore` - State persistence abstraction
+- `ChoreographyOptions` - Auto-compensation, timeout, retries configuration
+- `ChoreographyStatus` enum - Running, Completed, Compensating, Compensated, Failed
+- `ChoreographyErrorCodes` - Standard error codes
+
+**Key Differences: Orchestration vs Choreography**:
+
+| Aspect | Orchestration (existing) | Choreography (new) |
+|--------|--------------------------|-------------------|
+| **Coordination** | Central coordinator (Saga class) | Decentralized (event reactions) |
+| **Coupling** | Services know about saga | Services react to events |
+| **Flow Control** | Explicit step sequencing | Event-driven, implicit |
+| **Scalability** | Add steps to coordinator | Add event reactions |
+| **Complexity** | Easier to understand flow | Easier to add participants |
+
+**Example Flow** (Order Processing):
+
+```
+OrderCreated → InventoryReserved → PaymentProcessed → OrderShipped → OrderCompleted
+                                 ↘ (failure) → PaymentFailed → InventoryReleased → OrderCancelled
+```
+
+**Usage Example**:
+
+```csharp
+// 1. Define event reaction
+public class OrderCreatedReaction : IEventReaction<OrderCreatedEvent>
+{
+    private readonly IInventoryService _inventory;
+
+    public async Task ReactAsync(OrderCreatedEvent domainEvent, IEventHandlerScope scope, CancellationToken ct)
+    {
+        // Reserve inventory
+        var reservationId = await _inventory.ReserveAsync(domainEvent.Items, ct);
+
+        // Register compensation in case of later failure
+        scope.AddCompensation(async token => await _inventory.ReleaseAsync(reservationId, token));
+
+        // Publish next event in the chain
+        await scope.PublishAsync(new InventoryReservedEvent(
+            OrderId: domainEvent.OrderId,
+            ReservationId: reservationId
+        ), ct);
+    }
+}
+
+// 2. Start a saga
+var correlationId = await choreographyBus.StartSagaAsync(new OrderCreatedEvent(orderId, items));
+
+// 3. Complete or compensate
+await choreographyBus.CompleteSagaAsync(correlationId);
+// Or on failure:
+await choreographyBus.CompensateAsync(correlationId, "Payment failed");
+```
+
+**When to Use Each Pattern**:
+
+- **Orchestration**: Complex flows with explicit ordering, easier debugging
+- **Choreography**: Loosely coupled services, many participants, event-driven architectures
 
 ---
 
