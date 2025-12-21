@@ -491,6 +491,28 @@ var message = new OutboxMessageBuilder()
 - ✅ Hangfire adapter (15 tests)
 - ✅ Quartz adapter (18 tests)
 
+**Event Sourcing** (2 packages):
+
+- ✅ SimpleMediator.EventStoreDB - EventStoreDB integration with aggregate repository
+- ✅ SimpleMediator.Marten - Marten/PostgreSQL event store with projections support
+
+**Resilience** (4 packages):
+
+- ✅ SimpleMediator.Extensions.Resilience - Core resilience abstractions
+- ✅ SimpleMediator.Polly - Retry, circuit breaker, timeout policies
+- ✅ SimpleMediator.Refit - HTTP client integration with resilience
+- ✅ SimpleMediator.Dapr - Dapr sidecar integration
+
+**Real-time & Integration** (3 packages):
+
+- ✅ SimpleMediator.SignalR - Real-time notification broadcasting
+- ✅ SimpleMediator.MassTransit - MassTransit message bus integration
+- ✅ SimpleMediator.MongoDB - MongoDB persistence provider
+
+**Observability**:
+
+- ✅ SimpleMediator.OpenTelemetry - Distributed tracing and metrics
+
 **Quality Metrics**:
 
 - ✅ Line Coverage: 92.5% (target: ≥90%)
@@ -569,19 +591,28 @@ dotnet build SimpleMediator.Web.slnf
 - Cyclomatic complexity analysis (≤10/method)
 - Code duplication analysis (<3%)
 
-**Satellite Packages**:
+**EDA Enhancements** (Pre-1.0):
 
-- ⭐⭐⭐⭐⭐ SimpleMediator.OpenTelemetry (CRITICAL - observability)
-- ~~⭐⭐⭐⭐ SimpleMediator.Caching~~ ✅ COMPLETED
-- ⭐⭐⭐⭐ SimpleMediator.Polly (retry + circuit breaker)
-- ⭐⭐⭐⭐ Stream Requests (IAsyncEnumerable support)
-- ~~⭐⭐⭐⭐⭐ Redis provider~~ ✅ COMPLETED (SimpleMediator.Caching.Redis)
+- ⭐⭐⭐⭐ Projections/Read Models - Abstractions for CQRS read side
+- ⭐⭐⭐⭐ Event Versioning - Upcasting, schema evolution for EventStoreDB/Marten
+- ⭐⭐⭐ Snapshotting - For large aggregates in EventStoreDB/Marten
+- ⭐⭐⭐ Dead Letter Queue - Enhanced DLQ handling across messaging providers
+
+**Microservices Enhancements** (Pre-1.0):
+
+- ⭐⭐⭐ Health Check Abstractions - IHealthCheck integration for handler health
+- ⭐⭐⭐ Bulkhead Isolation - Parallel execution isolation via Polly
+- ⭐⭐ API Versioning Helpers - Contract evolution support
+- ⭐⭐ Distributed Lock Abstractions - IDistributedLock interface
+
+> Note: Service Discovery, Secret Management, and Configuration delegated to infrastructure (Dapr, Kubernetes, Azure)
+
+**Remaining Satellite Packages**:
+
 - ⭐⭐⭐ ODBC provider (legacy databases)
-- Event Sourcing package (EventStoreDB/Marten)
 
 **Strategic Initiatives** (to be done JUST BEFORE 1.0):
 
-- Parallel execution support (opt-in parallel notification dispatch)
 - Renaming to "Encina"
 
 **Security & Supply Chain**:

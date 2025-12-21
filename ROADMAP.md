@@ -25,14 +25,17 @@ SimpleMediator (future: **Encina**) is a functional mediation library for .NET t
 | Category | Packages | Status |
 |----------|----------|--------|
 | Core & Validation | 5 | ✅ Production |
-| Web Integration | 2 | ✅ Production |
-| Database Providers | 11 | ✅ Production |
-| Messaging Transports | 12 | ✅ Production |
+| Web Integration | 3 | ✅ Production |
+| Database Providers | 12 | ✅ Production |
+| Messaging Transports | 13 | ✅ Production |
 | Caching | 8 | ✅ Production |
 | Job Scheduling | 2 | ✅ Production |
-| Resilience | 3 | ✅ Production |
+| Resilience | 4 | ✅ Production |
 | Event Sourcing | 2 | ✅ Production |
+| Observability | 1 | ✅ Production |
 | **Developer Tooling** | 0/3 | 📋 Pending |
+| **EDA Enhancements** | 0/4 | 📋 Pending |
+| **Microservices Enhancements** | 0/4 | 📋 Pending |
 
 ### Quality Metrics
 
@@ -63,16 +66,18 @@ SimpleMediator (future: **Encina**) is a functional mediation library for .NET t
 - SimpleMediator Core - ROP, pipelines, CQRS
 - FluentValidation, DataAnnotations, MiniValidator, GuardClauses
 
-### Web (2 packages)
+### Web (3 packages)
 
 - AspNetCore - Middleware, authorization, Problem Details
 - SignalR - Real-time notifications
+- MassTransit - Message bus integration
 
-### Database (11 packages)
+### Database (12 packages)
 
 - EntityFrameworkCore, MongoDB
 - Dapper: SqlServer, PostgreSQL, MySQL, Sqlite, Oracle
 - ADO: SqlServer, PostgreSQL, MySQL, Sqlite, Oracle
+- Messaging abstractions (Outbox, Inbox, Sagas, Choreography)
 
 ### Messaging (12 packages)
 
@@ -86,21 +91,23 @@ SimpleMediator (future: **Encina**) is a functional mediation library for .NET t
 - Core, Memory, Hybrid
 - Redis, Valkey, KeyDB, Dragonfly, Garnet
 
-### Resilience (3 packages)
+### Resilience (4 packages)
 
-- Extensions.Resilience, Refit, Dapr
+- Extensions.Resilience, Polly, Refit, Dapr
 
 ### Event Sourcing (2 packages)
 
 - Marten, EventStoreDB
 
-### Other
+### Observability (1 package)
 
-- Hangfire, Quartz (job scheduling)
-- OpenTelemetry (observability)
+- OpenTelemetry - Distributed tracing and metrics
+
+### Other Features (in Core)
+
 - Stream Requests (IAsyncEnumerable)
-- Parallel Notification Dispatch
-- Choreography Sagas
+- Parallel Notification Dispatch strategies
+- Choreography Sagas abstractions (in Messaging)
 
 ---
 
@@ -152,11 +159,30 @@ Restructuring all test projects to use Testcontainers for real database integrat
 | Property-based tests | Partial | Complete |
 | Load tests | Partial | All providers |
 
+### Event-Driven Architecture Enhancements
+
+| Feature | Package | Priority | Notes |
+|---------|---------|----------|-------|
+| **Projections/Read Models** | SimpleMediator.Projections | ⭐⭐⭐⭐ | Abstractions for CQRS read side |
+| **Event Versioning** | EventStoreDB, Marten | ⭐⭐⭐⭐ | Upcasting, schema evolution |
+| **Snapshotting** | EventStoreDB, Marten | ⭐⭐⭐ | For large aggregates |
+| **Dead Letter Queue** | Messaging providers | ⭐⭐⭐ | Enhanced DLQ handling |
+
+### Microservices Enhancements
+
+| Feature | Package | Priority | Notes |
+|---------|---------|----------|-------|
+| **Health Check Abstractions** | Core / AspNetCore | ⭐⭐⭐ | IHealthCheck integration for handler health |
+| **Bulkhead Isolation** | Polly | ⭐⭐⭐ | Parallel execution isolation |
+| **API Versioning Helpers** | AspNetCore | ⭐⭐ | Contract evolution support |
+| **Distributed Lock Abstractions** | SimpleMediator.DistributedLock | ⭐⭐ | IDistributedLock interface |
+
+> **Note**: Service Discovery, Secret Management, and Configuration are delegated to infrastructure (Dapr, Kubernetes, Azure).
+
 ### Additional Providers
 
 | Package | Priority | Notes |
 |---------|----------|-------|
-| SimpleMediator.Polly | ⭐⭐⭐⭐ | Retry + circuit breaker |
 | SimpleMediator.ODBC | ⭐⭐⭐ | Legacy databases |
 
 ---
