@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - LoggerMessage source generators across all packages for CA1848 compliance (2025-12-21)
 - SignalR integration package with MediatorHub base class (2025-12-21)
 - MongoDB provider for messaging patterns (2025-12-21)
@@ -15,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Choreography-based saga abstractions (event-driven) (2025-12-21)
 
 ### Changed
+
 - All logging now uses high-performance `LoggerMessage` delegates instead of `ILogger.LogXxx()`
 
 ---
@@ -24,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Messaging Transports (12 packages)
+
 - SimpleMediator.Wolverine - WolverineFx 5.7.1 integration
 - SimpleMediator.NServiceBus - NServiceBus 9.2.8 integration
 - SimpleMediator.RabbitMQ - RabbitMQ.Client 7.2.0 integration
@@ -38,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SimpleMediator.GraphQL - HotChocolate 15.1.11 bridge
 
 #### Caching (8 packages)
+
 - SimpleMediator.Caching - Core abstractions (ICacheProvider, ICacheKeyGenerator)
 - SimpleMediator.Caching.Memory - IMemoryCache provider (109 tests)
 - SimpleMediator.Caching.Hybrid - Microsoft HybridCache provider (.NET 9+)
@@ -48,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SimpleMediator.Caching.KeyDB - KeyDB provider
 
 #### Resilience (3 packages)
+
 - SimpleMediator.Extensions.Resilience - Microsoft standard resilience patterns
 - SimpleMediator.Refit - Type-safe REST API clients integration
 - SimpleMediator.Dapr - Service mesh integration (invocation, pub/sub, state, bindings, secrets)
@@ -59,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Database Providers (10 packages)
+
 - SimpleMediator.Dapper.SqlServer - SQL Server optimized
 - SimpleMediator.Dapper.PostgreSQL - PostgreSQL with Npgsql
 - SimpleMediator.Dapper.MySQL - MySQL/MariaDB with MySqlConnector
@@ -71,6 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SimpleMediator.ADO.Oracle - Oracle optimized
 
 ### Changed
+
 - Established Testcontainers-based test architecture
 - Created SimpleMediator.TestInfrastructure for shared test fixtures
 
@@ -79,6 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.0] - 2025-12-18
 
 ### Added
+
 - SimpleMediator.Hangfire - Background job scheduling with Hangfire
 - SimpleMediator.Quartz - Enterprise CRON scheduling with Quartz.NET
 
@@ -87,6 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.0] - 2025-12-17
 
 ### Added
+
 - SimpleMediator.AspNetCore - Middleware, authorization, Problem Details
 - SimpleMediator.Messaging - Shared abstractions for Outbox, Inbox, Sagas
 - SimpleMediator.EntityFrameworkCore - EF Core implementation of messaging patterns
@@ -96,6 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.0] - 2025-12-15
 
 ### Added
+
 - SimpleMediator.GuardClauses - Defensive programming with Ardalis.GuardClauses
 
 ---
@@ -103,6 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2025-12-14
 
 ### Added
+
 - SimpleMediator.MiniValidator - Lightweight validation (~20KB)
 
 ---
@@ -110,6 +121,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2025-12-13
 
 ### Added
+
 - SimpleMediator.DataAnnotations - Zero-dependency validation with .NET attributes
 
 ---
@@ -117,6 +129,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2025-12-12
 
 ### Added
+
 - SimpleMediator.FluentValidation - FluentValidation integration
 
 ---
@@ -124,6 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2025-12-10
 
 ### Added
+
 - SimpleMediator Core - Pure Railway Oriented Programming with `Either<MediatorError, T>`
 - Request/Notification dispatch with Expression tree compilation
 - Pipeline pattern (Behaviors, PreProcessors, PostProcessors)

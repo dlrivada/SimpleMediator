@@ -19,7 +19,7 @@
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=dlrivada_SimpleMediator&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=dlrivada_SimpleMediator)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dlrivada_SimpleMediator&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=dlrivada_SimpleMediator)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=dlrivada_SimpleMediator&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=dlrivada_SimpleMediator)
-![Mutation](https://img.shields.io/badge/mutation-73.87%25-E4B51C.svg)
+![Mutation](https://img.shields.io/badge/mutation-79.75%25-4C934C.svg)
 
 SimpleMediator is a lightweight mediator abstraction for .NET applications that lean on functional programming principles. It keeps request and response contracts explicit, integrates naturally with [LanguageExt](https://github.com/louthy/language-ext), and embraces pipeline behaviors so cross-cutting concerns stay composable.
 
@@ -78,43 +78,22 @@ SimpleMediator takes cues from MediatR, Kommand, and Wolverine, but positions it
 - **Notification fan-out:** Publishes to zero or many handlers with per-handler error logging, cancellation awareness, and functional results instead of exceptions.
 - **Quality & reliability toolchain:** Benchmarks, load harnesses, mutation testing, and coverage guardrails are baked into the repo to keep regressions visible.
 
-## Satellite Packages
+## Satellite Packages (44 packages)
 
 SimpleMediator adopts a modular architecture where specialized functionality is distributed across focused satellite packages. This approach keeps the core library lightweight while providing rich integration options for common scenarios.
 
-| Package | Purpose | Status | Tests |
-| --- | --- | --- | --- |
-| **Core** |
-| `SimpleMediator` | Core mediator, contracts, and pipeline behaviors | ✅ Production | 204 tests |
-| **Validation** |
-| `SimpleMediator.DataAnnotations` | Validation using .NET DataAnnotations | ✅ Production | 10 tests |
-| `SimpleMediator.FluentValidation` | Validation using FluentValidation | ✅ Production | 18 tests |
-| `SimpleMediator.MiniValidator` | Lightweight validation using MiniValidator | ✅ Production | 10 tests |
-| `SimpleMediator.GuardClauses` | Defensive programming with guard clauses | ✅ Production | - |
-| **Caching** |
-| `SimpleMediator.Caching` | Core caching abstractions (ICacheProvider, CachingBehavior) | ✅ Production | 49 tests |
-| `SimpleMediator.Caching.Memory` | In-memory caching with IMemoryCache | ✅ Production | 109 tests |
-| `SimpleMediator.Caching.Hybrid` | Multi-tier L1+L2 caching with Microsoft HybridCache | ✅ Production | 56 tests |
-| `SimpleMediator.Caching.Redis` | Distributed caching with StackExchange.Redis | ✅ Production | - |
-| `SimpleMediator.Caching.Valkey` | Open-source Redis alternative | ✅ Production | - |
-| `SimpleMediator.Caching.KeyDB` | High-performance Redis fork | ✅ Production | - |
-| `SimpleMediator.Caching.Dragonfly` | Modern Redis-compatible cache | ✅ Production | - |
-| `SimpleMediator.Caching.Garnet` | Microsoft's Redis-compatible cache | ✅ Production | - |
-| **Persistence & Messaging** |
-| `SimpleMediator.EntityFrameworkCore` | Transaction management and EF Core integration | ✅ Production | 33 tests |
-| `SimpleMediator.Dapper.{Database}` | Outbox/Inbox/Sagas/Scheduling with Dapper (SqlServer, PostgreSQL, MySQL, Sqlite, Oracle) | ✅ Production | 1,537 tests |
-| `SimpleMediator.ADO.{Database}` | High-performance messaging with raw ADO.NET (SqlServer, PostgreSQL, MySQL, Sqlite, Oracle) | ✅ Production | 796 tests |
-| **Job Scheduling** |
-| `SimpleMediator.Hangfire` | Background job processing with Hangfire | ✅ Production | 15 tests |
-| `SimpleMediator.Quartz` | Enterprise job scheduling with Quartz.NET | ✅ Production | 18 tests |
-| **Planned** |
-| `SimpleMediator.EventStoreDB` | Event sourcing with EventStoreDB | 📋 Planned | - |
-| `SimpleMediator.Marten` | Event sourcing with Marten/PostgreSQL | 📋 Planned | - |
+| Category | Packages | Status |
+| --- | --- | --- |
+| **Core & Validation** | SimpleMediator, FluentValidation, DataAnnotations, MiniValidator, GuardClauses | ✅ Production |
+| **Web Integration** | AspNetCore, SignalR | ✅ Production |
+| **Database Providers** | EntityFrameworkCore, MongoDB, Dapper.{5 DBs}, ADO.{5 DBs} | ✅ Production |
+| **Messaging Transports** | Wolverine, NServiceBus, RabbitMQ, AzureServiceBus, AmazonSQS, Kafka, Redis.PubSub, InMemory, NATS, MQTT, gRPC, GraphQL | ✅ Production |
+| **Caching** | Caching, Caching.Memory, Caching.Hybrid, Caching.Redis, Caching.Valkey, Caching.KeyDB, Caching.Dragonfly, Caching.Garnet | ✅ Production |
+| **Job Scheduling** | Hangfire, Quartz | ✅ Production |
+| **Resilience** | Extensions.Resilience, Refit, Dapr | ✅ Production |
+| **Event Sourcing** | Marten, EventStoreDB | ✅ Production |
 
-**Key:**
-
-- ✅ Production: Fully implemented and tested
-- 📋 Planned: Roadmap item
+**Tests**: 3,000+ tests passing across all packages.
 
 **Solution Filters (.slnf)**: For focused development, use solution filter files:
 
@@ -125,7 +104,7 @@ dotnet test SimpleMediator.Database.slnf       # Database providers only
 dotnet build SimpleMediator.Validation.slnf    # Validation packages only
 ```
 
-See [FEATURES_ROADMAP.md](FEATURES_ROADMAP.md) for detailed status and implementation plans.
+See [CHANGELOG.md](CHANGELOG.md) for version history and [docs/history/](docs/history/) for detailed implementation records.
 
 ### Feature matrix
 
@@ -599,9 +578,11 @@ The living roadmap in `QUALITY_SECURITY_ROADMAP.md` complements this README with
 
 ## Future Work
 
-- Contravariant handler resolution to reduce duplication when commands share interfaces.
-- Additional first-party behaviors (idempotency, Polly-based retries) for common patterns.
-- Templates for publishing to internal feeds (GitHub Packages, Azure Artifacts) with automated semantic versioning.
+See [ROADMAP.md](ROADMAP.md) for the complete roadmap. Key pending items:
+
+- Developer Tooling (CLI, Testing helpers, OpenAPI generation)
+- Framework renaming to "Encina Framework" before 1.0
+- SLSA Level 2 compliance and supply chain security
 
 ## License
 
