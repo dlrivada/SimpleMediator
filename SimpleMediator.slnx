@@ -47,6 +47,7 @@
     <Project Path="src/SimpleMediator.Quartz/SimpleMediator.Quartz.csproj" />
     <Project Path="src/SimpleMediator.Refit/SimpleMediator.Refit.csproj" />
     <Project Path="src/SimpleMediator.MassTransit/SimpleMediator.MassTransit.csproj" />
+    <Project Path="src/SimpleMediator.Marten/SimpleMediator.Marten.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/SimpleMediator.Caching.Tests/SimpleMediator.Caching.Tests.csproj" />
@@ -105,6 +106,7 @@
     <Project Path="tests/SimpleMediator.TestInfrastructure/SimpleMediator.TestInfrastructure.csproj" />
     <Project Path="tests/SimpleMediator.Tests/SimpleMediator.Tests.csproj" />
     <Project Path="tests/SimpleMediator.MassTransit.Tests/SimpleMediator.MassTransit.Tests.csproj" />
+    <Project Path="tests/SimpleMediator.Marten.Tests/SimpleMediator.Marten.Tests.csproj" />
   </Folder>
   <Project Path="src/SimpleMediator/SimpleMediator.csproj" />
 </Solution>

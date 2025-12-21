@@ -1216,10 +1216,22 @@ public record GetCustomerQuery(int Id) : IQuery<Customer>;
 
 #### 2. Messaging & Message Brokers
 
-**SimpleMediator.MassTransit** ⭐⭐⭐⭐⭐ (CRITICAL - Primary)
+**SimpleMediator.MassTransit** ⭐⭐⭐⭐⭐ (CRITICAL - Primary) ✅ **COMPLETE**
 **SimpleMediator.Wolverine** ⭐⭐⭐⭐ (Alternative)
 
 **Priority**: Critical - Distributed messaging is essential for microservices
+
+**Status**: ✅ **SimpleMediator.MassTransit COMPLETE** (2025-12-21)
+
+✅ Completed Features:
+- `MassTransitRequestConsumer<TRequest, TResponse>` - Bridges MassTransit messages to SimpleMediator requests
+- `MassTransitNotificationConsumer<TNotification>` - Bridges MassTransit messages to SimpleMediator notifications
+- `MassTransitMessagePublisher` - Publishes domain events via MassTransit bus
+- `IMassTransitMessagePublisher` - Interface for message publishing
+- `MassTransitBusConfiguratorExtensions` - Auto-registers consumers by assembly scanning
+- `ServiceCollectionExtensions` - DI registration helpers
+- `SimpleMediatorMassTransitOptions` - Configuration options
+- Tests: 25 passing (Unit tests)
 
 **Technology Options**:
 
@@ -1356,10 +1368,23 @@ await mediator.Publish(new OrderPlacedEvent(orderId, total)); // Goes to Kafka
 
 #### 4. Event Sourcing
 
-**SimpleMediator.Marten** ⭐⭐⭐⭐⭐ (CRITICAL - Primary)
+**SimpleMediator.Marten** ⭐⭐⭐⭐⭐ (CRITICAL - Primary) ✅ **COMPLETE**
 **SimpleMediator.EventStoreDB** ⭐⭐⭐⭐ (Alternative)
 
 **Priority**: Critical - Event sourcing is a fundamental architectural pattern
+
+**Status**: ✅ **SimpleMediator.Marten COMPLETE** (2025-12-21)
+
+✅ Completed Features:
+- `IAggregate` / `AggregateBase` - Event sourcing aggregate abstractions
+- `IAggregateRepository<TAggregate>` - Repository pattern for aggregates
+- `MartenAggregateRepository<TAggregate>` - Marten implementation with optimistic concurrency
+- `EventPublishingPipelineBehavior<TRequest, TResponse>` - Auto-publishes domain events after commands
+- `SimpleMediatorMartenOptions` - Configuration options
+- `MartenErrorCodes` - Error codes for Marten operations
+- `ServiceCollectionExtensions` - DI registration helpers
+- Tests: 16 passing (Unit tests)
+- Uses Marten v8.0.0-beta-1 for .NET 10 compatibility
 
 **Technology Options**:
 
@@ -1499,11 +1524,11 @@ public class OutboxStoreMongoDB : IOutboxStore
 | Technology | Package Name | Priority | Status | Community Adoption |
 |------------|-------------|----------|--------|-------------------|
 | **Redis/Garnet** | SimpleMediator.Redis.StackExchange<br>SimpleMediator.Redis.Garnet | ⭐⭐⭐⭐⭐ Critical | ⏳ Planned | ⭐⭐⭐⭐⭐ Standard |
-| **MassTransit** | SimpleMediator.MassTransit | ⭐⭐⭐⭐⭐ Critical | ⏳ Planned | ⭐⭐⭐⭐⭐ Industry Standard |
+| **MassTransit** | SimpleMediator.MassTransit | ⭐⭐⭐⭐⭐ Critical | ✅ Complete | ⭐⭐⭐⭐⭐ Industry Standard |
 | **Wolverine** | SimpleMediator.Wolverine | ⭐⭐⭐⭐ High | ⏳ Planned | ⭐⭐⭐⭐ Growing |
 | **Kafka (Confluent)** | SimpleMediator.Kafka.Confluent | ⭐⭐⭐⭐ High | ⏳ Planned | ⭐⭐⭐⭐⭐ Official |
 | **KafkaFlow** | SimpleMediator.Kafka.Flow | ⭐⭐⭐⭐ High | ⏳ Planned | ⭐⭐⭐⭐ Popular |
-| **Marten** | SimpleMediator.Marten | ⭐⭐⭐⭐⭐ Critical | ⏳ Planned | ⭐⭐⭐⭐⭐ Highly Regarded |
+| **Marten** | SimpleMediator.Marten | ⭐⭐⭐⭐⭐ Critical | ✅ Complete | ⭐⭐⭐⭐⭐ Highly Regarded |
 | **EventStoreDB** | SimpleMediator.EventStoreDB | ⭐⭐⭐⭐ High | ⏳ Planned | ⭐⭐⭐⭐ Specialized |
 | **MongoDB** | SimpleMediator.MongoDB | ⭐⭐⭐⭐ High | ⏳ Planned | ⭐⭐⭐⭐⭐ Standard |
 
