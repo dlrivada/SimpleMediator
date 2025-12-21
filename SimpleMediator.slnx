@@ -48,6 +48,7 @@
     <Project Path="src/SimpleMediator.Refit/SimpleMediator.Refit.csproj" />
     <Project Path="src/SimpleMediator.MassTransit/SimpleMediator.MassTransit.csproj" />
     <Project Path="src/SimpleMediator.Marten/SimpleMediator.Marten.csproj" />
+    <Project Path="src/SimpleMediator.EventStoreDB/SimpleMediator.EventStoreDB.csproj" />
     <Project Path="src/SimpleMediator.Wolverine/SimpleMediator.Wolverine.csproj" />
     <Project Path="src/SimpleMediator.NServiceBus/SimpleMediator.NServiceBus.csproj" />
     <Project Path="src/SimpleMediator.RabbitMQ/SimpleMediator.RabbitMQ.csproj" />
