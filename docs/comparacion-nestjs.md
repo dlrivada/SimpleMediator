@@ -329,33 +329,64 @@ export class LoggingInterceptor implements NestInterceptor {
 5. **Interceptors (after)** - Logging, transformación post-handler
 6. **Exception Filters** - Manejo de excepciones
 
-#### SimpleMediator: Pre-processors → Behaviors → Handler → Post-processors
+#### SimpleMediator: Authorization → Validation → Behaviors → Handler ✅
 
 ```csharp
-// Pre-processor
-public class RequestLogger<TRequest> : IRequestPreProcessor<TRequest>
-{
-    public Task Process(TRequest request, CancellationToken ct)
-    {
-        _logger.LogInformation("Processing {Request}", typeof(TRequest).Name);
-        return Task.CompletedTask;
-    }
-}
+// 1. Authorization (equivalente a Guards)
+[Authorize(Roles = "Admin")]
+[Authorize(Policy = "RequireApproval")]
+public record DeleteOrderCommand(Guid OrderId) : ICommand<Unit>;
 
-// Behavior
+// AllowAnonymous para opt-out
+[AllowAnonymous]
+public record GetPublicDataQuery : IQuery<PublicData>;
+
+// 2. Validation Behavior (equivalente a Pipes)
 public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
 {
-    public async Task<TResponse> Handle(
-        TRequest request, 
-        RequestHandlerDelegate<TResponse> next, 
+    public async ValueTask<Either<MediatorError, TResponse>> Handle(
+        TRequest request,
+        IRequestContext context,
+        RequestHandlerCallback<TResponse> next,
         CancellationToken ct)
     {
         var validationResult = await _validator.ValidateAsync(request, ct);
-        return validationResult.IsValid 
-            ? await next() 
-            : ValidationError(validationResult);
+        return validationResult.IsValid
+            ? await next()
+            : Left<MediatorError, TResponse>(MediatorErrors.Validation(validationResult));
     }
 }
+
+// 3. Logging/Telemetry Behavior (equivalente a Interceptors)
+public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+{
+    public async ValueTask<Either<MediatorError, TResponse>> Handle(
+        TRequest request,
+        IRequestContext context,
+        RequestHandlerCallback<TResponse> next,
+        CancellationToken ct)
+    {
+        _logger.LogInformation("Processing {Request}", typeof(TRequest).Name);
+        var stopwatch = Stopwatch.StartNew();
+
+        var result = await next();
+
+        _logger.LogInformation("Processed {Request} in {Elapsed}ms",
+            typeof(TRequest).Name, stopwatch.ElapsedMilliseconds);
+        return result;
+    }
+}
+
+// 4. Exception handling via Railway Oriented Programming
+// No Exception Filters necesarios - los errores son valores, no excepciones
+```
+
+**Pipeline completo:**
+
+```
+Request → AuthorizationBehavior → ValidationBehavior → [Custom Behaviors] → Handler → Response
+              ↓ Error                  ↓ Error                                    ↓ Success/Error
+         Left(Unauthorized)      Left(ValidationError)                    Either<Error, Result>
 ```
 
 **Similitudes:**
@@ -363,31 +394,31 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
 - ✅ Ambos usan cadena de responsabilidad
 - ✅ Ambos permiten interceptar antes/después
 - ✅ Ambos soportan composición de comportamientos
+- ✅ Ambos tienen authorization declarativa
 
-**Diferencias:**
+**Comparación Actualizada:**
 
-| SimpleMediator | NestJS |
-|---------------|--------|
-| Pre/Post processors + Behaviors | Guards + Interceptors + Pipes |
-| Específico a requests | Aplicable a HTTP/WS/GraphQL |
-| Sin concepto de "parameter transformation" | Pipes transforman parámetros |
-| Sin authorization layer separado | Guards para autorización |
-
-#### Brecha Identificada 🔴
-
-**SimpleMediator NO tiene:**
-
-- **Guards**: Capa de autorización declarativa
-- **Pipes**: Transformación/validación de parámetros individuales
-- **Exception Filters**: Manejo centralizado de excepciones
+| Característica | SimpleMediator | NestJS |
+|----------------|---------------|--------|
+| Authorization | ✅ `[Authorize]` + AuthorizationBehavior | ✅ Guards |
+| Validation | ✅ ValidationBehavior (3 providers) | ✅ Pipes + class-validator |
+| Interceptors | ✅ IPipelineBehavior | ✅ NestInterceptor |
+| Error handling | ✅ Railway (Either<Error,T>) | ❌ Exceptions |
+| Resource-based auth | ✅ Request as resource | ⚠️ Manual |
+| Allow anonymous | ✅ `[AllowAnonymous]` | ✅ @Public |
 
 #### Estado Actual ✅
 
-**SimpleMediator YA tiene:**
+**SimpleMediator tiene PARIDAD con NestJS en lifecycle:**
 
-- Pipeline behaviors (equivalente a Interceptors)
-- Pre/Post processors (equivalente a middleware)
-- IFunctionalFailureDetector (detección de errores funcionales)
+- ✅ `AuthorizationPipelineBehavior` - Equivalente a Guards
+  - `[Authorize]`, `[Authorize(Roles)]`, `[Authorize(Policy)]`
+  - `[AllowAnonymous]` para opt-out
+  - Resource-based authorization (request as resource)
+- ✅ `ValidationBehavior` - Equivalente a Pipes (3 providers: FluentValidation, DataAnnotations, MiniValidator)
+- ✅ `IPipelineBehavior` - Equivalente a Interceptors
+- ✅ Railway Oriented Programming - Superior a Exception Filters
+- ✅ `IRequestContext` - Contexto compartido (UserId, TenantId, CorrelationId)
 
 ---
 
@@ -629,51 +660,130 @@ export class CatsResolver {
 - ✅ Subscriptions (WebSocket)
 - ✅ Federation support
 
-#### SimpleMediator: Sin soporte GraphQL
+#### SimpleMediator: HotChocolate Bridge ✅
 
-**Estado actual:**
+**Estado actual: IMPLEMENTADO**
 
-- ❌ Sin concepto de resolvers
-- ❌ Sin generación de schema
-- ❌ Sin subscriptions GraphQL
-
-#### Brecha Identificada 🔴
-
-**SimpleMediator NO tiene:**
-
-- Soporte GraphQL nativo
-- Mapping de Commands/Queries a GraphQL operations
-- Schema generation
-
-#### Oportunidad 💡
-
-**Propuesta: Adapter pattern**
+`SimpleMediator.GraphQL` proporciona integración completa con HotChocolate 15.1.11:
 
 ```csharp
-// Concepto: GraphQL → Mediator bridge
-[GraphQLResolver]
+// 1. Registrar SimpleMediator.GraphQL
+services.AddSimpleMediator(config => { }, typeof(Program).Assembly);
+services.AddSimpleMediatorGraphQL(options =>
+{
+    options.Path = "/graphql";
+    options.EnableGraphQLIDE = true;        // Nitro IDE
+    options.EnableIntrospection = true;
+    options.EnableSubscriptions = true;
+    options.EnablePersistedQueries = true;
+    options.MaxExecutionDepth = 15;
+    options.ExecutionTimeout = TimeSpan.FromSeconds(30);
+    options.IncludeExceptionDetails = builder.Environment.IsDevelopment();
+});
+
+// 2. Bridge para usar en resolvers
 public class CatsResolver
 {
-    private readonly IMediator _mediator;
-    
-    [Query("cats")]
-    public Task<Either<MediatorError, IEnumerable<Cat>>> GetCats()
-        => _mediator.Send(new GetCatsQuery());
-    
-    [Mutation("createCat")]
-    public Task<Either<MediatorError, Cat>> CreateCat(CreateCatInput input)
-        => _mediator.Send(new CreateCatCommand(input));
+    private readonly IGraphQLMediatorBridge _bridge;
+
+    public CatsResolver(IGraphQLMediatorBridge bridge) => _bridge = bridge;
+
+    // Query → IRequest<TResult>
+    [GraphQLQuery]
+    public async Task<IEnumerable<Cat>> GetCats(CancellationToken ct)
+    {
+        var result = await _bridge.QueryAsync<GetCatsQuery, IEnumerable<Cat>>(
+            new GetCatsQuery(), ct);
+        return result.Match(
+            Right: cats => cats,
+            Left: error => throw new GraphQLException(error.Message));
+    }
+
+    // Mutation → IRequest<TResult>
+    [GraphQLMutation]
+    public async Task<Cat> CreateCat(CreateCatInput input, CancellationToken ct)
+    {
+        var result = await _bridge.MutateAsync<CreateCatCommand, Cat>(
+            new CreateCatCommand(input.Name, input.Age), ct);
+        return result.Match(
+            Right: cat => cat,
+            Left: error => throw new GraphQLException(error.Message));
+    }
+
+    // Subscription → IAsyncEnumerable
+    [GraphQLSubscription]
+    public IAsyncEnumerable<Cat> OnCatCreated(CancellationToken ct)
+    {
+        return _bridge.SubscribeAsync<SubscribeToCatsRequest, Cat>(
+            new SubscribeToCatsRequest(), ct)
+            .Where(r => r.IsRight)
+            .Select(r => r.IfLeft(default!));
+    }
+}
+
+// 3. Configurar HotChocolate
+services.AddGraphQLServer()
+    .AddQueryType<QueryResolver>()
+    .AddMutationType<MutationResolver>()
+    .AddSubscriptionType<SubscriptionResolver>()
+    .AddFiltering()
+    .AddSorting()
+    .AddProjections();
+
+app.MapGraphQL(); // /graphql endpoint
+```
+
+**IGraphQLMediatorBridge - Interface:**
+
+```csharp
+public interface IGraphQLMediatorBridge
+{
+    // Para queries (lectura)
+    ValueTask<Either<MediatorError, TResult>> QueryAsync<TQuery, TResult>(
+        TQuery query, CancellationToken ct)
+        where TQuery : class, IRequest<TResult>;
+
+    // Para mutations (escritura)
+    ValueTask<Either<MediatorError, TResult>> MutateAsync<TMutation, TResult>(
+        TMutation mutation, CancellationToken ct)
+        where TMutation : class, IRequest<TResult>;
+
+    // Para subscriptions (streaming)
+    IAsyncEnumerable<Either<MediatorError, TResult>> SubscribeAsync<TSubscription, TResult>(
+        TSubscription subscription, CancellationToken ct)
+        where TSubscription : class;
 }
 ```
 
-Integración con HotChocolate:
+#### Comparación
 
-```csharp
-services.AddGraphQLServer()
-    .AddMediatorResolvers() // Extension method
-    .AddQueryType<Query>()
-    .AddMutationType<Mutation>();
-```
+| Característica | SimpleMediator.GraphQL | NestJS @nestjs/graphql |
+|----------------|------------------------|------------------------|
+| Code-first | ✅ HotChocolate | ✅ Built-in |
+| Schema-first | ✅ HotChocolate | ✅ Built-in |
+| Queries | ✅ QueryAsync → IRequest | ✅ @Query decorator |
+| Mutations | ✅ MutateAsync → IRequest | ✅ @Mutation decorator |
+| Subscriptions | ✅ SubscribeAsync → IAsyncEnumerable | ✅ @Subscription |
+| GraphQL IDE | ✅ Nitro | ✅ Playground/Sandbox |
+| Introspection | ✅ Configurable | ✅ Built-in |
+| Persisted Queries | ✅ Configurable | ⚠️ Apollo extension |
+| Error handling (ROP) | ✅ Either<MediatorError, T> | ❌ Exceptions |
+| DataLoader | ✅ HotChocolate built-in | ✅ Built-in |
+| Federation | ✅ HotChocolate | ✅ Apollo Federation |
+
+#### Estado ✅
+
+**SimpleMediator.GraphQL package implementado:**
+
+- ✅ `IGraphQLMediatorBridge` - Bridge tipado para queries/mutations/subscriptions
+- ✅ Integración nativa con HotChocolate 15.1.11
+- ✅ Soporte completo para subscriptions (WebSocket)
+- ✅ GraphQL IDE (Nitro) incluido
+- ✅ Persisted queries opcionales
+- ✅ Railway Oriented Programming (`Either<MediatorError, T>`)
+- ✅ Configuración flexible (timeout, depth, introspection)
+
+**Filosofía:** Usar HotChocolate (el mejor GraphQL server para .NET) y bridgear a SimpleMediator handlers
 
 ---
 
@@ -718,79 +828,140 @@ async handleUserCreated(data: Record<string, unknown>) {
 - gRPC
 - Custom transporters
 
-#### SimpleMediator: In-process + Extensiones Completas
+#### SimpleMediator: 12+ Messaging Transports ✅
 
-**Estado actual (ACTUALIZADO DIC 2025):**
+**Estado actual: COMPLETO (DIC 2025)**
 
-- ✅ In-process messaging (core)
-- ✅ `SimpleMediator.Hangfire` - Background jobs (fire-and-forget, delayed, recurring)
-- ✅ `SimpleMediator.Quartz` - Enterprise scheduling (CRON, clustering)
-- ✅ **10 Database Providers COMPLETOS:**
-  - **Dapper**: SqlServer, PostgreSQL, MySQL, Oracle, Sqlite
-  - **ADO.NET**: SqlServer, PostgreSQL, MySQL, Oracle, Sqlite
-- ✅ **Patrones Implementados** (todos los proveedores):
-  - Outbox Pattern (publicación confiable)
-  - Inbox Pattern (procesamiento idempotente)
-  - Saga Orchestration (transacciones distribuidas)
-  - Scheduled Messages (diferido/recurrente)
-- ✅ `SimpleMediator.Dapr` - Service mesh (service invocation, pub/sub, state, secrets)
-- ⏳ **PLANIFICADO:** MassTransit, Wolverine, Kafka, NATS (ver Roadmap)
+SimpleMediator ahora tiene **paridad completa** con NestJS en transports de mensajería, con 12 paquetes implementados:
 
-#### Comparación
+```csharp
+// 1. RabbitMQ - Message broker empresarial
+services.AddSimpleMediatorRabbitMQ(options =>
+{
+    options.HostName = "localhost";
+    options.Exchange = "mediator.events";
+    options.QueuePrefix = "myapp";
+});
+
+// 2. Kafka - Streaming de eventos
+services.AddSimpleMediatorKafka(options =>
+{
+    options.BootstrapServers = "localhost:9092";
+    options.GroupId = "mediator-consumers";
+});
+
+// 3. NATS - Cloud-native messaging
+services.AddSimpleMediatorNATS(options =>
+{
+    options.Url = "nats://localhost:4222";
+    options.UseJetStream = true; // Durabilidad
+});
+
+// 4. Azure Service Bus - Enterprise Azure
+services.AddSimpleMediatorAzureServiceBus(options =>
+{
+    options.ConnectionString = "Endpoint=sb://...";
+    options.TopicName = "mediator-events";
+});
+
+// 5. Amazon SQS/SNS - AWS native
+services.AddSimpleMediatorAmazonSQS(options =>
+{
+    options.Region = RegionEndpoint.USEast1;
+    options.QueueUrl = "https://sqs...";
+});
+
+// 6. gRPC - High-performance RPC
+services.AddSimpleMediatorGrpc(options =>
+{
+    options.Address = "https://localhost:5001";
+});
+
+// 7. GraphQL - Bridge HotChocolate
+services.AddSimpleMediatorGraphQL(); // Integra queries/mutations con handlers
+
+// 8. MQTT - IoT messaging
+services.AddSimpleMediatorMQTT(options =>
+{
+    options.Server = "localhost";
+    options.Port = 1883;
+});
+
+// 9. Redis Pub/Sub - In-memory messaging
+services.AddSimpleMediatorRedisPubSub(options =>
+{
+    options.Configuration = "localhost:6379";
+});
+
+// 10. In-Memory Channel - Ultra-fast local
+services.AddSimpleMediatorInMemory(); // System.Threading.Channels
+
+// 11. Wolverine - Modern .NET messaging
+services.AddSimpleMediatorWolverine();
+
+// 12. NServiceBus - Enterprise service bus
+services.AddSimpleMediatorNServiceBus();
+```
+
+**12 Messaging Transport Packages:**
+
+| Package | Technology | Use Case | Version |
+|---------|-----------|----------|---------|
+| `SimpleMediator.RabbitMQ` | RabbitMQ.Client 7.2.0 | Enterprise messaging | ✅ |
+| `SimpleMediator.Kafka` | Confluent.Kafka 2.12.0 | Event streaming | ✅ |
+| `SimpleMediator.NATS` | NATS.Net 2.6.11 | Cloud-native, JetStream | ✅ |
+| `SimpleMediator.AzureServiceBus` | Azure.Messaging 7.20.1 | Azure enterprise | ✅ |
+| `SimpleMediator.AmazonSQS` | AWSSDK 4.0.2.3 | AWS SQS/SNS | ✅ |
+| `SimpleMediator.gRPC` | Grpc.AspNetCore 2.71.0 | High-performance RPC | ✅ |
+| `SimpleMediator.GraphQL` | HotChocolate 15.1.11 | GraphQL bridge | ✅ |
+| `SimpleMediator.MQTT` | MQTTnet 5.0.1 | IoT messaging | ✅ |
+| `SimpleMediator.Redis.PubSub` | StackExchange.Redis | In-memory pub/sub | ✅ |
+| `SimpleMediator.InMemory` | Channels | Ultra-fast local | ✅ |
+| `SimpleMediator.Wolverine` | WolverineFx 5.7.1 | Modern .NET | ✅ |
+| `SimpleMediator.NServiceBus` | NServiceBus 9.2.8 | Enterprise bus | ✅ |
+
+**Además:**
+
+- ✅ `SimpleMediator.Hangfire` - Background jobs
+- ✅ `SimpleMediator.Quartz` - Enterprise CRON scheduling
+- ✅ `SimpleMediator.Dapr` - Service mesh integration
+- ✅ **10 Database Providers** (Dapper + ADO.NET × 5 DBs)
+
+#### Comparación Actualizada
 
 | Transporte | SimpleMediator | NestJS |
 |-----------|---------------|--------|
 | In-process | ✅ Core | ✅ Core |
-| HTTP | ❌ (usa ASP.NET Core) | ✅ Built-in |
-| WebSocket | ❌ | ✅ Built-in |
-| gRPC | ❌ | ✅ @nestjs/microservices |
-| NATS | ❌ | ✅ @nestjs/microservices |
-| RabbitMQ | ❌ | ✅ @nestjs/microservices |
-| Kafka | ❌ | ✅ @nestjs/microservices |
-| Redis | ❌ | ✅ @nestjs/microservices |
-| Background jobs | ✅ Hangfire/Quartz | ⚠️ (Bull, agenda) |
+| HTTP | ✅ AspNetCore | ✅ Built-in |
+| WebSocket | ✅ SignalR | ✅ Built-in |
+| gRPC | ✅ SimpleMediator.gRPC | ✅ @nestjs/microservices |
+| NATS | ✅ SimpleMediator.NATS | ✅ @nestjs/microservices |
+| RabbitMQ | ✅ SimpleMediator.RabbitMQ | ✅ @nestjs/microservices |
+| Kafka | ✅ SimpleMediator.Kafka | ✅ @nestjs/microservices |
+| Redis | ✅ SimpleMediator.Redis.PubSub | ✅ @nestjs/microservices |
+| MQTT | ✅ SimpleMediator.MQTT | ✅ @nestjs/microservices |
+| Azure Service Bus | ✅ SimpleMediator.AzureServiceBus | ⚠️ Custom |
+| Amazon SQS | ✅ SimpleMediator.AmazonSQS | ⚠️ Custom |
+| GraphQL | ✅ SimpleMediator.GraphQL | ⚠️ @nestjs/graphql |
+| Background jobs | ✅ Hangfire/Quartz | ⚠️ Bull/agenda |
+| Service mesh | ✅ Dapr | ❌ |
 
-#### Brecha Identificada 🔴
+#### Estado ✅
 
-**SimpleMediator NO tiene:**
+**SimpleMediator tiene PARIDAD COMPLETA con NestJS en transports:**
 
-- Transporters nativos para message brokers
-- Decoradores para message patterns
-- Request-response sobre message brokers
-- Event sourcing built-in
+- ✅ 12 messaging transport packages implementados
+- ✅ Todos los brokers principales soportados
+- ✅ Cloud providers (Azure, AWS) nativos
+- ✅ Protocols modernos (gRPC, GraphQL, MQTT)
+- ✅ Service mesh (Dapr)
 
-#### Oportunidad 💡
+**Ventajas sobre NestJS:**
 
-**Propuesta: `SimpleMediator.Messaging`**
-
-```csharp
-// Publicar evento a RabbitMQ
-services.AddMediator()
-    .AddRabbitMQPublisher(cfg => 
-    {
-        cfg.HostName = "localhost";
-        cfg.Exchange = "events";
-    });
-
-// Consumir eventos de RabbitMQ
-[RabbitMQSubscribe("user.created")]
-public class UserCreatedHandler : INotificationHandler<UserCreatedEvent>
-{
-    public async Task Handle(UserCreatedEvent notification, CancellationToken ct)
-    {
-        // Process event
-    }
-}
-
-// Alternativa: usar MassTransit/NServiceBus como infraestructura
-services.AddMassTransit(x =>
-{
-    x.AddMediator(cfg => cfg.ConfigureMediator((context, mcfg) =>
-    {
-        mcfg.UseSimpleMediator(); // Bridge
-    }));
-});
-```
+- Azure Service Bus y Amazon SQS como paquetes first-class
+- GraphQL bridge nativo con HotChocolate
+- Dapr integration para service mesh
+- Railway Oriented Programming en todos los transports
 
 ---
 
@@ -821,21 +992,87 @@ export class EventsGateway {
 - ✅ Guards y Pipes aplicables
 - ✅ Integration con authentication
 
-#### SimpleMediator: Sin soporte WebSocket
+#### SimpleMediator: Integración SignalR ✅
 
-**Estado actual:**
+**Estado actual: IMPLEMENTADO**
 
-- ❌ Sin concepto de WebSocket gateway
-- ❌ Sin handlers para eventos WebSocket
+SimpleMediator no reinventa WebSocket (usa ASP.NET Core SignalR), pero ofrece integración completa:
 
-#### Brecha Identificada 🔴
+```csharp
+// 1. Registrar SimpleMediator.SignalR
+services.AddSimpleMediator(config => { }, typeof(Program).Assembly);
+services.AddSimpleMediatorSignalR(options =>
+{
+    options.EnableNotificationBroadcast = true;
+    options.AuthorizationPolicy = "RequireAuth";
+    options.IncludeDetailedErrors = builder.Environment.IsDevelopment();
+});
+services.AddSignalRBroadcasting(); // Habilita [BroadcastToSignalR]
 
-**SimpleMediator NO tiene:**
+// 2. MediatorHub - Enviar commands/queries desde clientes WebSocket
+public class AppHub : MediatorHub
+{
+    public AppHub(IMediator mediator, IOptions<SignalROptions> options, ILogger<AppHub> logger)
+        : base(mediator, options, logger) { }
 
-- WebSocket support nativo
-- Concepto de "gateways"
+    // Heredado: SendCommand, SendQuery, PublishNotification
 
-**Nota:** SimpleMediator es una biblioteca de mensajería, no un framework web. WebSocket debería manejarse en la capa de infraestructura (ASP.NET Core SignalR).
+    // Métodos personalizados
+    public async Task JoinOrderGroup(string orderId)
+        => await Groups.AddToGroupAsync(Context.ConnectionId, $"order:{orderId}");
+}
+
+// Cliente JavaScript:
+// const result = await connection.invoke("SendCommand", "CreateOrderCommand", { items: [...] });
+// const data = await connection.invoke("SendQuery", "GetOrderQuery", { orderId: "123" });
+
+// 3. Recibir notificaciones automáticamente
+[BroadcastToSignalR(Method = "OrderCreated")]
+public record OrderCreatedNotification(Guid OrderId, string CustomerName) : INotification;
+
+// Cuando se publica OrderCreatedNotification, automáticamente se envía a todos los clientes
+
+// 4. Grupos y usuarios específicos
+[BroadcastToSignalR(
+    Method = "OrderUpdated",
+    TargetUsers = "{CustomerId}",      // Solo al usuario dueño del pedido
+    TargetGroups = "Admins")]          // O al grupo de admins
+public record OrderUpdatedNotification(Guid OrderId, string CustomerId) : INotification;
+
+// 5. Filtrado condicional
+[BroadcastToSignalR(Method = "PriceChanged", ConditionalProperty = "ShouldBroadcast")]
+public record PriceChangedNotification(string ProductId, decimal NewPrice, decimal OldPrice) : INotification
+{
+    // Solo broadcast si el cambio es significativo (>5%)
+    public bool ShouldBroadcast => Math.Abs(NewPrice - OldPrice) / OldPrice > 0.05m;
+}
+```
+
+**SimpleMediator.SignalR - Características:**
+
+| Característica | NestJS | SimpleMediator.SignalR |
+|----------------|--------|------------------------|
+| WebSocket handlers | ✅ @SubscribeMessage | ✅ MediatorHub base class |
+| Rooms/Groups | ✅ socket.join() | ✅ TargetGroups attribute |
+| User targeting | ✅ socket.to(userId) | ✅ TargetUsers attribute |
+| Guards/Authorization | ✅ @UseGuards | ✅ AuthorizationPolicy option |
+| Notification broadcast | ❌ Manual | ✅ [BroadcastToSignalR] automático |
+| Conditional broadcast | ❌ Manual | ✅ ConditionalProperty |
+| Bidireccional | ✅ Nativo | ✅ Commands in, Notifications out |
+| Error handling (ROP) | ❌ Exceptions | ✅ Either<MediatorError, T> |
+
+#### Estado ✅
+
+**SimpleMediator.SignalR package implementado:**
+
+- ✅ `MediatorHub` base class - Commands/Queries desde clientes WebSocket
+- ✅ `[BroadcastToSignalR]` attribute - Notificaciones automáticas a clientes
+- ✅ `SignalRBroadcastHandler<T>` - Handler que intercepta notificaciones
+- ✅ Property placeholders `{PropertyName}` en TargetUsers/TargetGroups
+- ✅ ConditionalProperty para broadcast condicional
+- ✅ Integración con ASP.NET Core SignalR (no reinventa)
+
+**Filosofía:** Usar SignalR de ASP.NET Core, solo agregar la capa de integración con el mediador.
 
 ---
 
@@ -1386,35 +1623,49 @@ export class CatsController {
 }
 ```
 
-#### SimpleMediator: Pipeline Behaviors
+#### SimpleMediator: AuthorizationPipelineBehavior ✅
+
+SimpleMediator incluye `AuthorizationPipelineBehavior` out-of-the-box que integra con ASP.NET Core Authorization:
 
 ```csharp
-// Authorization behavior
-public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
-{
-    public async Task<TResponse> Handle(
-        TRequest request,
-        RequestHandlerDelegate<TResponse> next,
-        CancellationToken ct)
-    {
-        var user = _httpContextAccessor.HttpContext?.User;
-        if (user?.Identity?.IsAuthenticated != true)
-            return Unauthorized<TResponse>();
-        
-        var requiredRoles = GetRequiredRoles<TRequest>();
-        if (!user.IsInRole(requiredRoles))
-            return Forbidden<TResponse>();
-        
-        return await next();
-    }
-}
+// Autenticación básica requerida
+[Authorize]
+public record DeleteUserCommand(int UserId) : ICommand<Unit>;
 
-// Atributo para requerimientos
-[RequireRoles("Admin", "Manager")]
-public record DeleteOrderCommand : IRequest<Either<MediatorError, Unit>>
+// Autorización basada en roles
+[Authorize(Roles = "Admin")]
+public record BanUserCommand(int UserId) : ICommand<Unit>;
+
+// Autorización basada en políticas
+[Authorize(Policy = "RequireElevation")]
+public record TransferMoneyCommand(decimal Amount) : ICommand<Receipt>;
+
+// Múltiples requisitos (todos deben cumplirse - AND logic)
+[Authorize(Roles = "Admin")]
+[Authorize(Policy = "RequireApproval")]
+public record DeleteAccountCommand(int AccountId) : ICommand<Unit>;
+
+// Opt-out de autorización
+[AllowAnonymous]
+public record GetPublicDataQuery : IQuery<PublicData>;
+```
+
+**Errores detallados (Railway Oriented Programming):**
+
+```csharp
+// Códigos de error estructurados
+"authorization.no_http_context"   // Sin contexto HTTP
+"authorization.unauthenticated"   // Usuario no autenticado
+"authorization.policy_failed"     // Política no satisfecha
+"authorization.insufficient_roles" // Roles insuficientes
+
+// Detalles incluidos en MediatorError
 {
-    public string OrderId { get; init; }
+    "requestType": "DeleteOrderCommand",
+    "stage": "authorization",
+    "requirement": "roles",
+    "requiredRoles": ["Admin", "Manager"],
+    "userId": "user-123"
 }
 ```
 
@@ -1422,35 +1673,38 @@ public record DeleteOrderCommand : IRequest<Either<MediatorError, Unit>>
 
 | Aspecto | SimpleMediator | NestJS |
 |---------|---------------|--------|
-| Autorización declarativa | ⚠️ (vía atributos + behavior) | ✅ Guards + @Roles |
-| Per-handler authorization | ⚠️ (reflection en behavior) | ✅ (metadata + guard) |
-| Authentication flow | ⚠️ (ASP.NET Core middleware) | ✅ (Guards) |
-| Policy-based | ⚠️ (ASP.NET Core policies) | ⚠️ (custom guards) |
+| Autorización declarativa | ✅ `[Authorize]` + behavior | ✅ Guards + @Roles |
+| Per-handler authorization | ✅ Atributos en request | ✅ (metadata + guard) |
+| Role-based | ✅ `[Authorize(Roles = "X")]` | ✅ @Roles |
+| Policy-based | ✅ `[Authorize(Policy = "X")]` | ⚠️ (custom guards) |
+| Múltiples requisitos | ✅ Múltiples atributos (AND) | ✅ Composición de guards |
+| Allow anonymous | ✅ `[AllowAnonymous]` | ✅ @Public |
+| Resource-based auth | ✅ Request pasado como resource | ⚠️ Manual |
+| Errores estructurados | ✅ MediatorError con detalles | ❌ Excepciones |
 
-#### Brecha Identificada 🟡
+#### Estado Actual ✅
 
-**SimpleMediator NO tiene:**
+**SimpleMediator YA tiene:**
 
-- Sistema de Guards separado del pipeline
-- Metadata reflector para autorización declarativa
-- AuthGuard/RolesGuard out-of-the-box
+- ✅ `AuthorizationPipelineBehavior` completo
+- ✅ Integración nativa con ASP.NET Core `[Authorize]`
+- ✅ Soporte para roles y políticas
+- ✅ `[AllowAnonymous]` para opt-out
+- ✅ Errores detallados con Railway Oriented Programming
+- ✅ Múltiples atributos con lógica AND
 
-**Nota:** SimpleMediator delega auth a ASP.NET Core, pero podría ofrecer helpers.
+**Filosofía:** SimpleMediator aprovecha ASP.NET Core Authorization en lugar de reinventar. Esto es una **ventaja**: los desarrolladores usan las mismas políticas que en controllers.
 
-#### Oportunidad 💡
-
-**Propuesta: Authorization extensions**
+#### Registro del Behavior
 
 ```csharp
-services.AddMediator()
-    .AddAuthorization(auth =>
-    {
-        auth.AddPolicy("AdminOnly", p => p.RequireRole("Admin"));
-        auth.AddPolicy("CanDeleteOrders", p => p.RequireClaim("Permission", "Orders.Delete"));
-    });
+services.AddSimpleMediatorAspNetCore(config =>
+{
+    config.AddAuthorizationBehavior(); // Registra AuthorizationPipelineBehavior
+});
 
-[Authorize("AdminOnly")]
-public record DeleteOrderCommand : IRequest<Either<MediatorError, Unit>> { }
+// O manualmente:
+services.AddScoped(typeof(IPipelineBehavior<,>), typeof(AuthorizationPipelineBehavior<,>));
 ```
 
 ---

@@ -21,6 +21,8 @@ namespace SimpleMediator.AspNetCore;
 /// <item><description><b>Role-based authorization</b>: [Authorize(Roles = "Admin")]</description></item>
 /// <item><description><b>Policy-based authorization</b>: [Authorize(Policy = "RequireElevation")]</description></item>
 /// <item><description><b>Multiple attributes</b>: All must pass (AND logic)</description></item>
+/// <item><description><b>Allow anonymous</b>: [AllowAnonymous] bypasses all authorization</description></item>
+/// <item><description><b>Resource-based authorization</b>: Request is passed as resource to policies</description></item>
 /// </list>
 /// </para>
 /// <para>
@@ -46,6 +48,10 @@ namespace SimpleMediator.AspNetCore;
 /// [Authorize(Roles = "Admin")]
 /// [Authorize(Policy = "RequireApproval")]
 /// public record DeleteAccountCommand(int AccountId) : ICommand&lt;Unit&gt;;
+///
+/// // Opt-out of authorization (public endpoint)
+/// [AllowAnonymous]
+/// public record GetPublicDataQuery : IQuery&lt;PublicData&gt;;
 /// </code>
 /// </example>
 public sealed class AuthorizationPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
@@ -74,6 +80,16 @@ public sealed class AuthorizationPipelineBehavior<TRequest, TResponse> : IPipeli
         RequestHandlerCallback<TResponse> nextStep,
         CancellationToken cancellationToken)
     {
+        // Check for AllowAnonymous first - bypasses all authorization
+        var hasAllowAnonymous = typeof(TRequest)
+            .GetCustomAttributes(typeof(AllowAnonymousAttribute), inherit: true)
+            .Length > 0;
+
+        if (hasAllowAnonymous)
+        {
+            return await nextStep().ConfigureAwait(false);
+        }
+
         // Get authorize attributes from request type
         var authorizeAttributes = typeof(TRequest)
             .GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true)
@@ -124,7 +140,7 @@ public sealed class AuthorizationPipelineBehavior<TRequest, TResponse> : IPipeli
             {
                 var policyResult = await _authorizationService.AuthorizeAsync(
                     user,
-                    resource: null,
+                    resource: request, // Pass request as resource for resource-based authorization
                     policyName: authorizeAttribute.Policy)
                     .ConfigureAwait(false);
 

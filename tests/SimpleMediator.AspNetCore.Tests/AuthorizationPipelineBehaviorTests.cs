@@ -285,6 +285,77 @@ public class AuthorizationPipelineBehaviorTests
         });
     }
 
+    [Fact]
+    public async Task Handle_AllowAnonymous_BypassesAuthorization()
+    {
+        // Arrange - No HTTP context, no authenticated user
+        var behavior = CreateBehavior<PublicRequest, Unit>(httpContext: null);
+        var request = new PublicRequest();
+        var context = RequestContext.CreateForTest();
+        var nextStepCalled = false;
+
+        RequestHandlerCallback<Unit> nextStep = () =>
+        {
+            nextStepCalled = true;
+            return ValueTask.FromResult(Right<MediatorError, Unit>(Unit.Default));
+        };
+
+        // Act
+        var result = await behavior.Handle(request, context, nextStep, CancellationToken.None);
+
+        // Assert
+        nextStepCalled.Should().BeTrue();
+        result.IsRight.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Handle_AllowAnonymous_WithAuthorize_AllowAnonymousWins()
+    {
+        // Arrange - AllowAnonymous should override Authorize even without authentication
+        var behavior = CreateBehavior<MixedAuthRequest, Unit>(httpContext: null);
+        var request = new MixedAuthRequest();
+        var context = RequestContext.CreateForTest();
+        var nextStepCalled = false;
+
+        RequestHandlerCallback<Unit> nextStep = () =>
+        {
+            nextStepCalled = true;
+            return ValueTask.FromResult(Right<MediatorError, Unit>(Unit.Default));
+        };
+
+        // Act
+        var result = await behavior.Handle(request, context, nextStep, CancellationToken.None);
+
+        // Assert
+        nextStepCalled.Should().BeTrue();
+        result.IsRight.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Handle_PolicyAuthorization_ReceivesRequestAsResource()
+    {
+        // Arrange
+        var httpContext = CreateAuthenticatedContext("user-123");
+        var capturedResource = (object?)null;
+        var authorizationService = new ResourceCapturingAuthorizationService(
+            shouldSucceed: true,
+            onAuthorize: resource => capturedResource = resource);
+        var behavior = CreateBehavior<PolicyProtectedRequest, Unit>(httpContext, authorizationService);
+        var request = new PolicyProtectedRequest();
+        var context = RequestContext.CreateForTest();
+
+        RequestHandlerCallback<Unit> nextStep = () =>
+            ValueTask.FromResult(Right<MediatorError, Unit>(Unit.Default));
+
+        // Act
+        await behavior.Handle(request, context, nextStep, CancellationToken.None);
+
+        // Assert
+        capturedResource.Should().NotBeNull();
+        capturedResource.Should().BeOfType<PolicyProtectedRequest>();
+        capturedResource.Should().BeSameAs(request);
+    }
+
     // Test request types
     private sealed record UnauthorizedRequest : ICommand<Unit>;
 
@@ -303,6 +374,13 @@ public class AuthorizationPipelineBehaviorTests
     [Authorize(Roles = "Admin")]
     [Authorize(Policy = "RequireApproval")]
     private sealed record MultipleRequirementsRequest : ICommand<Unit>;
+
+    [AllowAnonymous]
+    private sealed record PublicRequest : ICommand<Unit>;
+
+    [Authorize(Roles = "Admin")]
+    [AllowAnonymous]
+    private sealed record MixedAuthRequest : ICommand<Unit>;
 
     // Helper methods
     private static AuthorizationPipelineBehavior<TRequest, TResponse> CreateBehavior<TRequest, TResponse>(
@@ -382,6 +460,57 @@ public class TestAuthorizationService : IAuthorizationService, IAuthorizationHan
         object? resource,
         string policyName)
     {
+        var result = _shouldSucceed
+            ? AuthorizationResult.Success()
+            : AuthorizationResult.Failed(
+                AuthorizationFailure.Failed(new[] { new AuthorizationFailureReason(this, $"Policy '{policyName}' failed") }));
+
+        return Task.FromResult(result);
+    }
+
+    public Task HandleAsync(AuthorizationHandlerContext context)
+    {
+        // Not used in tests
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>
+/// Authorization service that captures the resource passed to it for testing resource-based authorization.
+/// </summary>
+public class ResourceCapturingAuthorizationService : IAuthorizationService, IAuthorizationHandler
+{
+    private readonly bool _shouldSucceed;
+    private readonly Action<object?> _onAuthorize;
+
+    public ResourceCapturingAuthorizationService(bool shouldSucceed, Action<object?> onAuthorize)
+    {
+        _shouldSucceed = shouldSucceed;
+        _onAuthorize = onAuthorize;
+    }
+
+    public Task<AuthorizationResult> AuthorizeAsync(
+        ClaimsPrincipal user,
+        object? resource,
+        IEnumerable<IAuthorizationRequirement> requirements)
+    {
+        _onAuthorize(resource);
+
+        var result = _shouldSucceed
+            ? AuthorizationResult.Success()
+            : AuthorizationResult.Failed(
+                AuthorizationFailure.Failed(new[] { new AuthorizationFailureReason(this, "Policy failed") }));
+
+        return Task.FromResult(result);
+    }
+
+    public Task<AuthorizationResult> AuthorizeAsync(
+        ClaimsPrincipal user,
+        object? resource,
+        string policyName)
+    {
+        _onAuthorize(resource);
+
         var result = _shouldSucceed
             ? AuthorizationResult.Success()
             : AuthorizationResult.Failed(
