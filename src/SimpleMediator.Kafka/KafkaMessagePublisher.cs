@@ -10,7 +10,6 @@ namespace SimpleMediator.Kafka;
 /// <summary>
 /// Kafka-based implementation of the message publisher.
 /// </summary>
-#pragma warning disable CA1848 // Use LoggerMessage delegates
 public sealed class KafkaMessagePublisher : IKafkaMessagePublisher, IDisposable
 {
     private readonly IProducer<string, byte[]> _producer;
@@ -51,10 +50,7 @@ public sealed class KafkaMessagePublisher : IKafkaMessagePublisher, IDisposable
 
         try
         {
-            _logger.LogDebug(
-                "Producing message of type {MessageType} to topic {Topic}",
-                typeof(TMessage).Name,
-                effectiveTopic);
+            Log.ProducingMessage(_logger, typeof(TMessage).Name, effectiveTopic);
 
             var kafkaMessage = new Message<string, byte[]>
             {
@@ -71,8 +67,8 @@ public sealed class KafkaMessagePublisher : IKafkaMessagePublisher, IDisposable
                 kafkaMessage,
                 cancellationToken).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully produced message to topic {Topic} partition {Partition} offset {Offset}",
+            Log.SuccessfullyProducedMessage(
+                _logger,
                 deliveryResult.Topic,
                 deliveryResult.Partition.Value,
                 deliveryResult.Offset.Value);
@@ -86,11 +82,7 @@ public sealed class KafkaMessagePublisher : IKafkaMessagePublisher, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to produce message of type {MessageType} to topic {Topic}",
-                typeof(TMessage).Name,
-                effectiveTopic);
+            Log.FailedToProduceMessage(_logger, ex, typeof(TMessage).Name, effectiveTopic);
 
             return Left<MediatorError, KafkaDeliveryResult>(
                 MediatorErrors.FromException(
@@ -133,10 +125,7 @@ public sealed class KafkaMessagePublisher : IKafkaMessagePublisher, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to produce batch of messages of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.FailedToProduceBatch(_logger, ex, typeof(TMessage).Name);
 
             return Left<MediatorError, IReadOnlyList<KafkaDeliveryResult>>(
                 MediatorErrors.FromException(
@@ -162,11 +151,7 @@ public sealed class KafkaMessagePublisher : IKafkaMessagePublisher, IDisposable
 
         try
         {
-            _logger.LogDebug(
-                "Producing message of type {MessageType} with {HeaderCount} headers to topic {Topic}",
-                typeof(TMessage).Name,
-                headers.Count,
-                effectiveTopic);
+            Log.ProducingMessageWithHeaders(_logger, typeof(TMessage).Name, headers.Count, effectiveTopic);
 
             var kafkaHeaders = new Headers();
             foreach (var header in headers)
@@ -197,10 +182,7 @@ public sealed class KafkaMessagePublisher : IKafkaMessagePublisher, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to produce message of type {MessageType} with headers",
-                typeof(TMessage).Name);
+            Log.FailedToProduceMessageWithHeaders(_logger, ex, typeof(TMessage).Name);
 
             return Left<MediatorError, KafkaDeliveryResult>(
                 MediatorErrors.FromException(

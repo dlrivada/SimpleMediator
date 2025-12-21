@@ -10,7 +10,6 @@ namespace SimpleMediator.InMemory;
 /// <summary>
 /// In-memory implementation of the message bus using System.Threading.Channels.
 /// </summary>
-#pragma warning disable CA1848 // Use LoggerMessage delegates
 public sealed class InMemoryMessageBus : IInMemoryMessageBus, IDisposable
 {
     private readonly Channel<object> _channel;
@@ -69,9 +68,7 @@ public sealed class InMemoryMessageBus : IInMemoryMessageBus, IDisposable
             _ = ProcessMessagesAsync(_cts.Token);
         }
 
-        _logger.LogInformation(
-            "In-memory message bus started with {WorkerCount} workers",
-            _options.WorkerCount);
+        Log.MessageBusStarted(_logger, _options.WorkerCount);
     }
 
     /// <inheritdoc />
@@ -90,9 +87,7 @@ public sealed class InMemoryMessageBus : IInMemoryMessageBus, IDisposable
 
         try
         {
-            _logger.LogDebug(
-                "Publishing message of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.PublishingMessage(_logger, typeof(TMessage).Name);
 
             if (_subscribers.TryGetValue(typeof(TMessage), out var handlers))
             {
@@ -105,18 +100,13 @@ public sealed class InMemoryMessageBus : IInMemoryMessageBus, IDisposable
                 }
             }
 
-            _logger.LogDebug(
-                "Successfully published message of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.SuccessfullyPublishedMessage(_logger, typeof(TMessage).Name);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to publish message of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.FailedToPublishMessage(_logger, ex, typeof(TMessage).Name);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -136,25 +126,18 @@ public sealed class InMemoryMessageBus : IInMemoryMessageBus, IDisposable
 
         try
         {
-            _logger.LogDebug(
-                "Enqueueing message of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.EnqueuingMessage(_logger, typeof(TMessage).Name);
 
             await _channel.Writer.WriteAsync(message, cancellationToken).ConfigureAwait(false);
             Interlocked.Increment(ref _pendingCount);
 
-            _logger.LogDebug(
-                "Successfully enqueued message of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.SuccessfullyEnqueuedMessage(_logger, typeof(TMessage).Name);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to enqueue message of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.FailedToEnqueueMessage(_logger, ex, typeof(TMessage).Name);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -176,9 +159,7 @@ public sealed class InMemoryMessageBus : IInMemoryMessageBus, IDisposable
             handlers.Add(handler);
         }
 
-        _logger.LogDebug(
-            "Subscribed to messages of type {MessageType}",
-            typeof(TMessage).Name);
+        Log.SubscribedToMessages(_logger, typeof(TMessage).Name);
 
         return new Subscription<TMessage>(this, handler);
     }
@@ -207,17 +188,14 @@ public sealed class InMemoryMessageBus : IInMemoryMessageBus, IDisposable
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(
-                                ex,
-                                "Error processing message of type {MessageType}",
-                                messageType.Name);
+                            Log.ErrorProcessingMessage(_logger, ex, messageType.Name);
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing queued message");
+                Log.ErrorProcessingQueuedMessage(_logger, ex);
             }
         }
     }

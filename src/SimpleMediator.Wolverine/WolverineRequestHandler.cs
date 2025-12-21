@@ -37,14 +37,11 @@ public abstract class WolverineRequestHandler<TRequest, TResponse>
     /// <param name="request">The request message.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The response or throws on error.</returns>
-#pragma warning disable CA1848 // Use LoggerMessage delegates
     public async Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        _logger.LogDebug(
-            "Handling Wolverine message of type {MessageType} via SimpleMediator",
-            typeof(TRequest).Name);
+        Log.HandlingMessage(_logger, typeof(TRequest).Name);
 
         var result = await _mediator.Send<TResponse>(
             request,
@@ -53,21 +50,15 @@ public abstract class WolverineRequestHandler<TRequest, TResponse>
         return result.Match(
             Right: response =>
             {
-                _logger.LogDebug(
-                    "Successfully handled message of type {MessageType}",
-                    typeof(TRequest).Name);
+                Log.SuccessfullyHandledMessage(_logger, typeof(TRequest).Name);
                 return response;
             },
             Left: error =>
             {
-                _logger.LogWarning(
-                    "Message handling failed for type {MessageType}: {Error}",
-                    typeof(TRequest).Name,
-                    error.Message);
+                Log.MessageHandlingFailed(_logger, typeof(TRequest).Name, error.Message);
                 throw new WolverineMediatorException(error);
             });
     }
-#pragma warning restore CA1848
 }
 
 /// <summary>
@@ -101,22 +92,16 @@ public abstract class WolverineNotificationHandler<TNotification>
     /// </summary>
     /// <param name="notification">The notification message.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-#pragma warning disable CA1848 // Use LoggerMessage delegates
     public async Task Handle(TNotification notification, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(notification);
 
-        _logger.LogDebug(
-            "Handling Wolverine notification of type {NotificationType} via SimpleMediator",
-            typeof(TNotification).Name);
+        Log.HandlingNotification(_logger, typeof(TNotification).Name);
 
         await _mediator.Publish(
             notification,
             cancellationToken).ConfigureAwait(false);
 
-        _logger.LogDebug(
-            "Successfully published notification of type {NotificationType}",
-            typeof(TNotification).Name);
+        Log.SuccessfullyPublishedNotification(_logger, typeof(TNotification).Name);
     }
-#pragma warning restore CA1848
 }

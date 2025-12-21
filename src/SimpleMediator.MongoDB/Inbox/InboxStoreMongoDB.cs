@@ -46,7 +46,7 @@ public sealed class InboxStoreMongoDB : IInboxStore
 
         if (message is not null)
         {
-            _logger.LogDebug("Found inbox message {MessageId}", messageId);
+            Log.FoundInboxMessage(_logger, messageId);
         }
 
         return message;
@@ -71,7 +71,7 @@ public sealed class InboxStoreMongoDB : IInboxStore
         };
 
         await _collection.InsertOneAsync(mongoMessage, cancellationToken: cancellationToken).ConfigureAwait(false);
-        _logger.LogDebug("Added inbox message {MessageId} of type {RequestType}", message.MessageId, message.RequestType);
+        Log.AddedInboxMessage(_logger, message.MessageId);
     }
 
     /// <inheritdoc />
@@ -88,11 +88,11 @@ public sealed class InboxStoreMongoDB : IInboxStore
 
         if (result.ModifiedCount == 0)
         {
-            _logger.LogWarning("Inbox message {MessageId} not found for marking as processed", messageId);
+            Log.InboxMessageNotFoundForProcessed(_logger, messageId);
         }
         else
         {
-            _logger.LogDebug("Marked inbox message {MessageId} as processed", messageId);
+            Log.MarkedInboxMessageAsProcessed(_logger, messageId);
         }
     }
 
@@ -115,11 +115,11 @@ public sealed class InboxStoreMongoDB : IInboxStore
 
         if (result.ModifiedCount == 0)
         {
-            _logger.LogWarning("Inbox message {MessageId} not found for marking as failed", messageId);
+            Log.InboxMessageNotFoundForFailed(_logger, messageId);
         }
         else
         {
-            _logger.LogDebug("Marked inbox message {MessageId} as failed: {ErrorMessage}", messageId, errorMessage);
+            Log.MarkedInboxMessageAsFailed(_logger, messageId, errorMessage);
         }
     }
 
@@ -138,7 +138,7 @@ public sealed class InboxStoreMongoDB : IInboxStore
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        _logger.LogDebug("Retrieved {Count} expired inbox messages", messages.Count);
+        Log.RetrievedExpiredInboxMessages(_logger, messages.Count);
         return messages;
     }
 
@@ -158,7 +158,7 @@ public sealed class InboxStoreMongoDB : IInboxStore
         var filter = Builders<InboxMessage>.Filter.In(m => m.MessageId, idList);
         var result = await _collection.DeleteManyAsync(filter, cancellationToken).ConfigureAwait(false);
 
-        _logger.LogDebug("Removed {Count} expired inbox messages", result.DeletedCount);
+        Log.RemovedExpiredInboxMessages(_logger, result.DeletedCount);
     }
 
     /// <inheritdoc />

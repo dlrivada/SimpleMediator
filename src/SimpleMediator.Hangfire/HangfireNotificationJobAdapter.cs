@@ -42,23 +42,16 @@ public sealed class HangfireNotificationJobAdapter<TNotification>
 
         try
         {
-            _logger.LogInformation(
-                "Publishing Hangfire notification job for {NotificationType}",
-                typeof(TNotification).Name);
+            Log.PublishingNotificationJob(_logger, typeof(TNotification).Name);
 
             await _mediator.Publish(notification, cancellationToken)
                 .ConfigureAwait(false);
 
-            _logger.LogInformation(
-                "Hangfire notification job completed successfully for {NotificationType}",
-                typeof(TNotification).Name);
+            Log.NotificationJobCompleted(_logger, typeof(TNotification).Name);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Unhandled exception in Hangfire notification job for {NotificationType}",
-                typeof(TNotification).Name);
+            Log.NotificationJobException(_logger, ex, typeof(TNotification).Name);
 
             throw;
         }

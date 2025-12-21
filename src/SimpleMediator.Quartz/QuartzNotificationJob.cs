@@ -43,35 +43,23 @@ public sealed class QuartzNotificationJob<TNotification> : IJob
 
         if (notificationObj is not TNotification notification)
         {
-            _logger.LogError(
-                "Notification not found in JobDataMap for job {JobKey}",
-                context.JobDetail.Key);
+            Log.NotificationNotFoundInJobDataMap(_logger, context.JobDetail.Key);
 
             throw new JobExecutionException($"Notification of type {typeof(TNotification).Name} not found in JobDataMap");
         }
 
         try
         {
-            _logger.LogInformation(
-                "Publishing Quartz notification job {JobKey} for {NotificationType}",
-                context.JobDetail.Key,
-                typeof(TNotification).Name);
+            Log.PublishingNotificationJob(_logger, context.JobDetail.Key, typeof(TNotification).Name);
 
             await _mediator.Publish(notification, context.CancellationToken)
                 .ConfigureAwait(false);
 
-            _logger.LogInformation(
-                "Quartz notification job {JobKey} completed successfully for {NotificationType}",
-                context.JobDetail.Key,
-                typeof(TNotification).Name);
+            Log.NotificationJobCompleted(_logger, context.JobDetail.Key, typeof(TNotification).Name);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Unhandled exception in Quartz notification job {JobKey} for {NotificationType}",
-                context.JobDetail.Key,
-                typeof(TNotification).Name);
+            Log.NotificationJobException(_logger, ex, context.JobDetail.Key, typeof(TNotification).Name);
 
             throw new JobExecutionException(ex);
         }

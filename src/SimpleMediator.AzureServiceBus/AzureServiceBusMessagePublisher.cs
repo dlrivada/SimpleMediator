@@ -10,7 +10,6 @@ namespace SimpleMediator.AzureServiceBus;
 /// <summary>
 /// Azure Service Bus-based implementation of the message publisher.
 /// </summary>
-#pragma warning disable CA1848 // Use LoggerMessage delegates
 public sealed class AzureServiceBusMessagePublisher : IAzureServiceBusMessagePublisher, IAsyncDisposable
 {
     private readonly ServiceBusClient _client;
@@ -50,10 +49,7 @@ public sealed class AzureServiceBusMessagePublisher : IAzureServiceBusMessagePub
 
         try
         {
-            _logger.LogDebug(
-                "Sending message of type {MessageType} to queue {Queue}",
-                typeof(TMessage).Name,
-                effectiveQueueName);
+            Log.SendingToQueue(_logger, typeof(TMessage).Name, effectiveQueueName);
 
             await using var sender = _client.CreateSender(effectiveQueueName);
 
@@ -66,20 +62,13 @@ public sealed class AzureServiceBusMessagePublisher : IAzureServiceBusMessagePub
 
             await sender.SendMessageAsync(serviceBusMessage, cancellationToken).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully sent message of type {MessageType} to queue {Queue}",
-                typeof(TMessage).Name,
-                effectiveQueueName);
+            Log.SuccessfullySentToQueue(_logger, typeof(TMessage).Name, effectiveQueueName);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to send message of type {MessageType} to queue {Queue}",
-                typeof(TMessage).Name,
-                effectiveQueueName);
+            Log.FailedToSendToQueue(_logger, ex, typeof(TMessage).Name, effectiveQueueName);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -102,10 +91,7 @@ public sealed class AzureServiceBusMessagePublisher : IAzureServiceBusMessagePub
 
         try
         {
-            _logger.LogDebug(
-                "Publishing message of type {MessageType} to topic {Topic}",
-                typeof(TMessage).Name,
-                effectiveTopicName);
+            Log.PublishingToTopic(_logger, typeof(TMessage).Name, effectiveTopicName);
 
             await using var sender = _client.CreateSender(effectiveTopicName);
 
@@ -118,20 +104,13 @@ public sealed class AzureServiceBusMessagePublisher : IAzureServiceBusMessagePub
 
             await sender.SendMessageAsync(serviceBusMessage, cancellationToken).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully published message of type {MessageType} to topic {Topic}",
-                typeof(TMessage).Name,
-                effectiveTopicName);
+            Log.SuccessfullyPublishedToTopic(_logger, typeof(TMessage).Name, effectiveTopicName);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to publish message of type {MessageType} to topic {Topic}",
-                typeof(TMessage).Name,
-                effectiveTopicName);
+            Log.FailedToPublishToTopic(_logger, ex, typeof(TMessage).Name, effectiveTopicName);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -155,11 +134,7 @@ public sealed class AzureServiceBusMessagePublisher : IAzureServiceBusMessagePub
 
         try
         {
-            _logger.LogDebug(
-                "Scheduling message of type {MessageType} for {ScheduledTime} to queue {Queue}",
-                typeof(TMessage).Name,
-                scheduledEnqueueTime,
-                effectiveQueueName);
+            Log.SchedulingMessage(_logger, typeof(TMessage).Name, scheduledEnqueueTime, effectiveQueueName);
 
             await using var sender = _client.CreateSender(effectiveQueueName);
 
@@ -175,19 +150,13 @@ public sealed class AzureServiceBusMessagePublisher : IAzureServiceBusMessagePub
                 scheduledEnqueueTime,
                 cancellationToken).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully scheduled message of type {MessageType} with sequence number {SequenceNumber}",
-                typeof(TMessage).Name,
-                sequenceNumber);
+            Log.SuccessfullyScheduledMessage(_logger, typeof(TMessage).Name, sequenceNumber);
 
             return Right<MediatorError, long>(sequenceNumber);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to schedule message of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.FailedToScheduleMessage(_logger, ex, typeof(TMessage).Name);
 
             return Left<MediatorError, long>(
                 MediatorErrors.FromException(
@@ -207,26 +176,18 @@ public sealed class AzureServiceBusMessagePublisher : IAzureServiceBusMessagePub
 
         try
         {
-            _logger.LogDebug(
-                "Cancelling scheduled message with sequence number {SequenceNumber} from queue {Queue}",
-                sequenceNumber,
-                effectiveQueueName);
+            Log.CancellingScheduledMessage(_logger, sequenceNumber, effectiveQueueName);
 
             await using var sender = _client.CreateSender(effectiveQueueName);
             await sender.CancelScheduledMessageAsync(sequenceNumber, cancellationToken).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully cancelled scheduled message with sequence number {SequenceNumber}",
-                sequenceNumber);
+            Log.SuccessfullyCancelledMessage(_logger, sequenceNumber);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to cancel scheduled message with sequence number {SequenceNumber}",
-                sequenceNumber);
+            Log.FailedToCancelMessage(_logger, ex, sequenceNumber);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(

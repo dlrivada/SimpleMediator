@@ -1,5 +1,3 @@
-#pragma warning disable CA1848 // Use LoggerMessage delegates for performance
-
 using LanguageExt;
 using Microsoft.Extensions.Logging;
 using static LanguageExt.Prelude;
@@ -49,7 +47,7 @@ public sealed class SignalRBroadcastHandler<TNotification> : INotificationHandle
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to broadcast notification {NotificationType} to SignalR", typeof(TNotification).Name);
+            Log.FailedToBroadcastNotificationToSignalR(_logger, ex, typeof(TNotification).Name);
             // Don't fail the notification - broadcasting is fire-and-forget
             return Right(Unit.Default);
         }

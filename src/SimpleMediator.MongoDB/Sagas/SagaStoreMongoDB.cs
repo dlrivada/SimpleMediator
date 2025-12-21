@@ -44,7 +44,11 @@ public sealed class SagaStoreMongoDB : ISagaStore
 
         if (saga is not null)
         {
-            _logger.LogDebug("Found saga {SagaId} with status {Status}", sagaId, saga.Status);
+            Log.RetrievedSaga(_logger, sagaId);
+        }
+        else
+        {
+            Log.SagaNotFound(_logger, sagaId);
         }
 
         return saga;
@@ -69,7 +73,7 @@ public sealed class SagaStoreMongoDB : ISagaStore
         };
 
         await _collection.InsertOneAsync(mongoSaga, cancellationToken: cancellationToken).ConfigureAwait(false);
-        _logger.LogDebug("Added saga {SagaId} of type {SagaType}", saga.SagaId, saga.SagaType);
+        Log.CreatedSaga(_logger, saga.SagaId, saga.SagaType);
     }
 
     /// <inheritdoc />
@@ -90,11 +94,11 @@ public sealed class SagaStoreMongoDB : ISagaStore
 
         if (result.ModifiedCount == 0)
         {
-            _logger.LogWarning("Saga {SagaId} not found for update", saga.SagaId);
+            Log.SagaNotFoundForStateUpdate(_logger, saga.SagaId);
         }
         else
         {
-            _logger.LogDebug("Updated saga {SagaId} to status {Status}", saga.SagaId, saga.Status);
+            Log.UpdatedSagaState(_logger, saga.SagaId, saga.CurrentStep);
         }
     }
 
@@ -117,7 +121,7 @@ public sealed class SagaStoreMongoDB : ISagaStore
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        _logger.LogDebug("Retrieved {Count} stuck sagas older than {OlderThan}", sagas.Count, olderThan);
+        Log.RetrievedStuckSagas(_logger, sagas.Count);
         return sagas;
     }
 

@@ -9,7 +9,6 @@ namespace SimpleMediator.GraphQL;
 /// <summary>
 /// GraphQL-based bridge to SimpleMediator.
 /// </summary>
-#pragma warning disable CA1848 // Use LoggerMessage delegates
 public sealed class GraphQLMediatorBridge : IGraphQLMediatorBridge
 {
     private readonly IMediator _mediator;
@@ -46,23 +45,16 @@ public sealed class GraphQLMediatorBridge : IGraphQLMediatorBridge
 
         try
         {
-            _logger.LogDebug(
-                "Executing GraphQL query of type {QueryType}",
-                typeof(TQuery).Name);
+            Log.ExecutingQuery(_logger, typeof(TQuery).Name);
 
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(_options.ExecutionTimeout);
 
             var result = await _mediator.Send<TResult>(query, cts.Token).ConfigureAwait(false);
 
-            result.IfRight(_ => _logger.LogDebug(
-                "Successfully executed GraphQL query of type {QueryType}",
-                typeof(TQuery).Name));
+            result.IfRight(_ => Log.SuccessfullyExecutedQuery(_logger, typeof(TQuery).Name));
 
-            result.IfLeft(error => _logger.LogWarning(
-                "GraphQL query of type {QueryType} failed: {Error}",
-                typeof(TQuery).Name,
-                error.Message));
+            result.IfLeft(error => Log.QueryFailed(_logger, typeof(TQuery).Name, error.Message));
 
             return result;
         }
@@ -75,10 +67,7 @@ public sealed class GraphQLMediatorBridge : IGraphQLMediatorBridge
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to execute GraphQL query of type {QueryType}",
-                typeof(TQuery).Name);
+            Log.FailedToExecuteQuery(_logger, ex, typeof(TQuery).Name);
 
             return Left<MediatorError, TResult>(
                 MediatorErrors.FromException(
@@ -98,23 +87,16 @@ public sealed class GraphQLMediatorBridge : IGraphQLMediatorBridge
 
         try
         {
-            _logger.LogDebug(
-                "Executing GraphQL mutation of type {MutationType}",
-                typeof(TMutation).Name);
+            Log.ExecutingMutation(_logger, typeof(TMutation).Name);
 
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(_options.ExecutionTimeout);
 
             var result = await _mediator.Send<TResult>(mutation, cts.Token).ConfigureAwait(false);
 
-            result.IfRight(_ => _logger.LogDebug(
-                "Successfully executed GraphQL mutation of type {MutationType}",
-                typeof(TMutation).Name));
+            result.IfRight(_ => Log.SuccessfullyExecutedMutation(_logger, typeof(TMutation).Name));
 
-            result.IfLeft(error => _logger.LogWarning(
-                "GraphQL mutation of type {MutationType} failed: {Error}",
-                typeof(TMutation).Name,
-                error.Message));
+            result.IfLeft(error => Log.MutationFailed(_logger, typeof(TMutation).Name, error.Message));
 
             return result;
         }
@@ -127,10 +109,7 @@ public sealed class GraphQLMediatorBridge : IGraphQLMediatorBridge
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to execute GraphQL mutation of type {MutationType}",
-                typeof(TMutation).Name);
+            Log.FailedToExecuteMutation(_logger, ex, typeof(TMutation).Name);
 
             return Left<MediatorError, TResult>(
                 MediatorErrors.FromException(

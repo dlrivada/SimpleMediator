@@ -42,16 +42,12 @@ public sealed class MassTransitMessagePublisher : IMassTransitMessagePublisher
 
         var notificationType = typeof(TNotification).Name;
 
-        _logger.LogInformation(
-            "Publishing notification {NotificationType} via MassTransit",
-            notificationType);
+        Log.PublishingNotification(_logger, notificationType);
 
         await _publishEndpoint.Publish(notification, cancellationToken)
             .ConfigureAwait(false);
 
-        _logger.LogInformation(
-            "Successfully published notification {NotificationType} via MassTransit",
-            notificationType);
+        Log.PublishedNotification(_logger, notificationType);
     }
 
     /// <inheritdoc />
@@ -66,10 +62,7 @@ public sealed class MassTransitMessagePublisher : IMassTransitMessagePublisher
 
         var requestType = typeof(TRequest).Name;
 
-        _logger.LogInformation(
-            "Sending request {RequestType} to {DestinationAddress} via MassTransit",
-            requestType,
-            destinationAddress);
+        Log.SendingRequest(_logger, requestType, destinationAddress);
 
         var sendEndpoint = await _sendEndpointProvider
             .GetSendEndpoint(destinationAddress)
@@ -78,9 +71,6 @@ public sealed class MassTransitMessagePublisher : IMassTransitMessagePublisher
         await sendEndpoint.Send(request, cancellationToken)
             .ConfigureAwait(false);
 
-        _logger.LogInformation(
-            "Successfully sent request {RequestType} to {DestinationAddress} via MassTransit",
-            requestType,
-            destinationAddress);
+        Log.SentRequest(_logger, requestType, destinationAddress);
     }
 }

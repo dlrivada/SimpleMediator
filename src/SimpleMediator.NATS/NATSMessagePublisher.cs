@@ -12,7 +12,6 @@ namespace SimpleMediator.NATS;
 /// <summary>
 /// NATS-based implementation of the message publisher.
 /// </summary>
-#pragma warning disable CA1848 // Use LoggerMessage delegates
 public sealed class NATSMessagePublisher : INATSMessagePublisher, IAsyncDisposable
 {
     private readonly INatsConnection _connection;
@@ -56,10 +55,7 @@ public sealed class NATSMessagePublisher : INATSMessagePublisher, IAsyncDisposab
 
         try
         {
-            _logger.LogDebug(
-                "Publishing message of type {MessageType} to subject {Subject}",
-                typeof(TMessage).Name,
-                effectiveSubject);
+            Log.PublishingMessage(_logger, typeof(TMessage).Name, effectiveSubject);
 
             var data = JsonSerializer.SerializeToUtf8Bytes(message);
 
@@ -68,19 +64,13 @@ public sealed class NATSMessagePublisher : INATSMessagePublisher, IAsyncDisposab
                 data,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully published message to subject {Subject}",
-                effectiveSubject);
+            Log.SuccessfullyPublishedMessage(_logger, effectiveSubject);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to publish message of type {MessageType} to subject {Subject}",
-                typeof(TMessage).Name,
-                effectiveSubject);
+            Log.FailedToPublishMessage(_logger, ex, typeof(TMessage).Name, effectiveSubject);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -106,10 +96,7 @@ public sealed class NATSMessagePublisher : INATSMessagePublisher, IAsyncDisposab
 
         try
         {
-            _logger.LogDebug(
-                "Sending request of type {RequestType} to subject {Subject}",
-                typeof(TRequest).Name,
-                effectiveSubject);
+            Log.SendingRequest(_logger, typeof(TRequest).Name, effectiveSubject);
 
             var data = JsonSerializer.SerializeToUtf8Bytes(request);
 
@@ -131,9 +118,7 @@ public sealed class NATSMessagePublisher : INATSMessagePublisher, IAsyncDisposab
                         "Failed to deserialize response."));
             }
 
-            _logger.LogDebug(
-                "Successfully received response for request of type {RequestType}",
-                typeof(TRequest).Name);
+            Log.SuccessfullyReceivedResponse(_logger, typeof(TRequest).Name);
 
             return Right<MediatorError, TResponse>(response);
         }
@@ -146,10 +131,7 @@ public sealed class NATSMessagePublisher : INATSMessagePublisher, IAsyncDisposab
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to send request of type {RequestType}",
-                typeof(TRequest).Name);
+            Log.FailedToSendRequest(_logger, ex, typeof(TRequest).Name);
 
             return Left<MediatorError, TResponse>(
                 MediatorErrors.FromException(
@@ -180,10 +162,7 @@ public sealed class NATSMessagePublisher : INATSMessagePublisher, IAsyncDisposab
 
         try
         {
-            _logger.LogDebug(
-                "Publishing message of type {MessageType} to JetStream subject {Subject}",
-                typeof(TMessage).Name,
-                effectiveSubject);
+            Log.PublishingToJetStream(_logger, typeof(TMessage).Name, effectiveSubject);
 
             var data = JsonSerializer.SerializeToUtf8Bytes(message);
 
@@ -192,20 +171,14 @@ public sealed class NATSMessagePublisher : INATSMessagePublisher, IAsyncDisposab
                 data,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully published message to stream {Stream} with sequence {Sequence}",
-                ack.Stream,
-                ack.Seq);
+            Log.SuccessfullyPublishedToJetStream(_logger, ack.Stream ?? string.Empty, ack.Seq);
 
             return Right<MediatorError, NATSPublishAck>(
                 new NATSPublishAck(ack.Stream ?? string.Empty, ack.Seq, ack.Duplicate));
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to publish message of type {MessageType} to JetStream",
-                typeof(TMessage).Name);
+            Log.FailedToPublishToJetStream(_logger, ex, typeof(TMessage).Name);
 
             return Left<MediatorError, NATSPublishAck>(
                 MediatorErrors.FromException(

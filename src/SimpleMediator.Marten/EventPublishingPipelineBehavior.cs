@@ -71,10 +71,7 @@ public sealed class EventPublishingPipelineBehavior<TRequest, TResponse> : IPipe
             return result;
         }
 
-        _logger.LogDebug(
-            "Publishing {EventCount} domain events after command {CommandType}",
-            pendingEvents.Count,
-            typeof(TRequest).Name);
+        Log.PublishingDomainEvents(_logger, pendingEvents.Count, typeof(TRequest).Name);
 
         // Publish each domain event
         foreach (var domainEvent in pendingEvents)
@@ -87,10 +84,7 @@ public sealed class EventPublishingPipelineBehavior<TRequest, TResponse> : IPipe
                     Left: err => err,
                     Right: _ => MediatorErrors.Unknown);
 
-                _logger.LogError(
-                    "Failed to publish domain event {EventType}: {ErrorMessage}",
-                    domainEvent.GetType().Name,
-                    error.Message);
+                Log.FailedToPublishDomainEvent(_logger, domainEvent.GetType().Name, error.Message);
 
                 return Left<MediatorError, TResponse>(
                     MediatorErrors.Create(
@@ -99,10 +93,7 @@ public sealed class EventPublishingPipelineBehavior<TRequest, TResponse> : IPipe
             }
         }
 
-        _logger.LogInformation(
-            "Successfully published {EventCount} domain events after command {CommandType}",
-            pendingEvents.Count,
-            typeof(TRequest).Name);
+        Log.PublishedDomainEvents(_logger, pendingEvents.Count, typeof(TRequest).Name);
 
         return result;
     }

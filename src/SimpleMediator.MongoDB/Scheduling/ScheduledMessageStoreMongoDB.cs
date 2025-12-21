@@ -56,7 +56,7 @@ public sealed class ScheduledMessageStoreMongoDB : IScheduledMessageStore
         };
 
         await _collection.InsertOneAsync(mongoMessage, cancellationToken: cancellationToken).ConfigureAwait(false);
-        _logger.LogDebug("Added scheduled message {MessageId} for {ScheduledAt}", message.Id, message.ScheduledAtUtc);
+        Log.AddedScheduledMessage(_logger, message.Id, message.ScheduledAtUtc);
     }
 
     /// <inheritdoc />
@@ -84,7 +84,7 @@ public sealed class ScheduledMessageStoreMongoDB : IScheduledMessageStore
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        _logger.LogDebug("Retrieved {Count} due scheduled messages", messages.Count);
+        Log.RetrievedDueScheduledMessages(_logger, messages.Count);
         return messages;
     }
 
@@ -100,11 +100,11 @@ public sealed class ScheduledMessageStoreMongoDB : IScheduledMessageStore
 
         if (result.ModifiedCount == 0)
         {
-            _logger.LogWarning("Scheduled message {MessageId} not found for marking as processed", messageId);
+            Log.ScheduledMessageNotFoundForProcessed(_logger, messageId);
         }
         else
         {
-            _logger.LogDebug("Marked scheduled message {MessageId} as processed", messageId);
+            Log.MarkedScheduledMessageAsProcessed(_logger, messageId);
         }
     }
 
@@ -125,11 +125,11 @@ public sealed class ScheduledMessageStoreMongoDB : IScheduledMessageStore
 
         if (result.ModifiedCount == 0)
         {
-            _logger.LogWarning("Scheduled message {MessageId} not found for marking as failed", messageId);
+            Log.ScheduledMessageNotFoundForFailed(_logger, messageId);
         }
         else
         {
-            _logger.LogDebug("Marked scheduled message {MessageId} as failed: {ErrorMessage}", messageId, errorMessage);
+            Log.MarkedScheduledMessageAsFailed(_logger, messageId, errorMessage);
         }
     }
 
@@ -151,11 +151,11 @@ public sealed class ScheduledMessageStoreMongoDB : IScheduledMessageStore
 
         if (result.ModifiedCount == 0)
         {
-            _logger.LogWarning("Scheduled message {MessageId} not found for rescheduling", messageId);
+            Log.ScheduledMessageNotFoundForRescheduling(_logger, messageId);
         }
         else
         {
-            _logger.LogDebug("Rescheduled message {MessageId} for {NextScheduledAt}", messageId, nextScheduledAt);
+            Log.RescheduledMessage(_logger, messageId, nextScheduledAt);
         }
     }
 
@@ -167,11 +167,11 @@ public sealed class ScheduledMessageStoreMongoDB : IScheduledMessageStore
 
         if (result.DeletedCount == 0)
         {
-            _logger.LogWarning("Scheduled message {MessageId} not found for cancellation", messageId);
+            Log.ScheduledMessageNotFoundForCancellation(_logger, messageId);
         }
         else
         {
-            _logger.LogDebug("Cancelled scheduled message {MessageId}", messageId);
+            Log.CancelledScheduledMessage(_logger, messageId);
         }
     }
 

@@ -48,10 +48,7 @@ public sealed class MassTransitRequestConsumer<TRequest, TResponse> : IConsumer<
 
         var requestType = typeof(TRequest).Name;
 
-        _logger.LogInformation(
-            "Consuming MassTransit message {RequestType} with MessageId {MessageId}",
-            requestType,
-            context.MessageId);
+        Log.ConsumingRequest(_logger, requestType, context.MessageId);
 
         var result = await _mediator.Send(context.Message, context.CancellationToken)
             .ConfigureAwait(false);
@@ -59,18 +56,11 @@ public sealed class MassTransitRequestConsumer<TRequest, TResponse> : IConsumer<
         result.Match(
             Right: response =>
             {
-                _logger.LogInformation(
-                    "Successfully processed request {RequestType} with MessageId {MessageId}",
-                    requestType,
-                    context.MessageId);
+                Log.ProcessedRequest(_logger, requestType, context.MessageId);
             },
             Left: error =>
             {
-                _logger.LogError(
-                    "Failed to process request {RequestType} with MessageId {MessageId}: {ErrorMessage}",
-                    requestType,
-                    context.MessageId,
-                    error.Message);
+                Log.FailedToProcessRequest(_logger, requestType, context.MessageId, error.Message);
 
                 if (_options.ThrowOnMediatorError)
                 {

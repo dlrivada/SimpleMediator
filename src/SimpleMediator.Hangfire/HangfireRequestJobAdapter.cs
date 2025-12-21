@@ -44,30 +44,20 @@ public sealed class HangfireRequestJobAdapter<TRequest, TResponse>
 
         try
         {
-            _logger.LogInformation(
-                "Executing Hangfire job for request {RequestType}",
-                typeof(TRequest).Name);
+            Log.ExecutingRequestJob(_logger, typeof(TRequest).Name);
 
             var result = await _mediator.Send(request, cancellationToken)
                 .ConfigureAwait(false);
 
             result.Match(
-                Right: _ => _logger.LogInformation(
-                    "Hangfire job completed successfully for request {RequestType}",
-                    typeof(TRequest).Name),
-                Left: error => _logger.LogError(
-                    "Hangfire job failed for request {RequestType}: {ErrorMessage}",
-                    typeof(TRequest).Name,
-                    error.Message));
+                Right: _ => Log.RequestJobCompleted(_logger, typeof(TRequest).Name),
+                Left: error => Log.RequestJobFailed(_logger, typeof(TRequest).Name, error.Message));
 
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Unhandled exception in Hangfire job for request {RequestType}",
-                typeof(TRequest).Name);
+            Log.RequestJobException(_logger, ex, typeof(TRequest).Name);
 
             throw;
         }

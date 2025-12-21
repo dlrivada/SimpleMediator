@@ -45,12 +45,12 @@ public sealed class OutboxProcessor : BackgroundService
     {
         if (!_options.EnableProcessor)
         {
-            _logger.LogInformation("Outbox processor is disabled");
+            Log.OutboxProcessorDisabled(_logger);
             return;
         }
 
-        _logger.LogInformation(
-            "Outbox processor started. Interval: {Interval}, BatchSize: {BatchSize}",
+        Log.OutboxProcessorStarted(
+            _logger,
             _options.ProcessingInterval,
             _options.BatchSize);
 
@@ -62,7 +62,7 @@ public sealed class OutboxProcessor : BackgroundService
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.LogError(ex, "Error processing outbox messages");
+                Log.ErrorProcessingOutboxMessages(_logger, ex);
             }
 
             await Task.Delay(_options.ProcessingInterval, stoppingToken).ConfigureAwait(false);
@@ -84,7 +84,7 @@ public sealed class OutboxProcessor : BackgroundService
         if (messagesList.Count == 0)
             return;
 
-        _logger.LogDebug("Processing {Count} pending outbox messages", messagesList.Count);
+        Log.ProcessingPendingOutboxMessages(_logger, messagesList.Count);
 
         var successCount = 0;
         var failureCount = 0;
@@ -136,8 +136,8 @@ public sealed class OutboxProcessor : BackgroundService
                 await store.MarkAsProcessedAsync(message.Id, cancellationToken).ConfigureAwait(false);
                 successCount++;
 
-                _logger.LogDebug(
-                    "Processed outbox message {MessageId} of type {NotificationType}",
+                Log.ProcessedOutboxMessage(
+                    _logger,
                     message.Id,
                     message.NotificationType);
             }
@@ -154,9 +154,9 @@ public sealed class OutboxProcessor : BackgroundService
                     cancellationToken).ConfigureAwait(false);
                 failureCount++;
 
-                _logger.LogWarning(
+                Log.FailedToProcessOutboxMessage(
+                    _logger,
                     ex,
-                    "Failed to process outbox message {MessageId}. Retry {RetryCount}/{MaxRetries}. Next retry at {NextRetry}",
                     message.Id,
                     message.RetryCount + 1,
                     _options.MaxRetries,
@@ -168,8 +168,8 @@ public sealed class OutboxProcessor : BackgroundService
 
         if (successCount > 0 || failureCount > 0)
         {
-            _logger.LogInformation(
-                "Processed {TotalCount} outbox messages (Success: {SuccessCount}, Failed: {FailureCount})",
+            Log.ProcessedOutboxMessages(
+                _logger,
                 successCount + failureCount,
                 successCount,
                 failureCount);

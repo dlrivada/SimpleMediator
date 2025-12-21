@@ -44,19 +44,14 @@ public sealed class QuartzRequestJob<TRequest, TResponse> : IJob
 
         if (requestObj is not TRequest request)
         {
-            _logger.LogError(
-                "Request not found in JobDataMap for job {JobKey}",
-                context.JobDetail.Key);
+            Log.RequestNotFoundInJobDataMap(_logger, context.JobDetail.Key);
 
             throw new JobExecutionException($"Request of type {typeof(TRequest).Name} not found in JobDataMap");
         }
 
         try
         {
-            _logger.LogInformation(
-                "Executing Quartz job {JobKey} for request {RequestType}",
-                context.JobDetail.Key,
-                typeof(TRequest).Name);
+            Log.ExecutingRequestJob(_logger, context.JobDetail.Key, typeof(TRequest).Name);
 
             var result = await _mediator.Send(request, context.CancellationToken)
                 .ConfigureAwait(false);
@@ -64,21 +59,14 @@ public sealed class QuartzRequestJob<TRequest, TResponse> : IJob
             result.Match(
                 Right: response =>
                 {
-                    _logger.LogInformation(
-                        "Quartz job {JobKey} completed successfully for request {RequestType}",
-                        context.JobDetail.Key,
-                        typeof(TRequest).Name);
+                    Log.RequestJobCompleted(_logger, context.JobDetail.Key, typeof(TRequest).Name);
 
                     // Store result in JobDataMap for retrieval
                     context.Result = response;
                 },
                 Left: error =>
                 {
-                    _logger.LogError(
-                        "Quartz job {JobKey} failed for request {RequestType}: {ErrorMessage}",
-                        context.JobDetail.Key,
-                        typeof(TRequest).Name,
-                        error.Message);
+                    Log.RequestJobFailed(_logger, context.JobDetail.Key, typeof(TRequest).Name, error.Message);
 
                     // Throw to trigger Quartz retry mechanism
                     throw new JobExecutionException(error.Message);
@@ -86,11 +74,7 @@ public sealed class QuartzRequestJob<TRequest, TResponse> : IJob
         }
         catch (Exception ex) when (ex is not JobExecutionException)
         {
-            _logger.LogError(
-                ex,
-                "Unhandled exception in Quartz job {JobKey} for request {RequestType}",
-                context.JobDetail.Key,
-                typeof(TRequest).Name);
+            Log.RequestJobException(_logger, ex, context.JobDetail.Key, typeof(TRequest).Name);
 
             throw new JobExecutionException(ex);
         }

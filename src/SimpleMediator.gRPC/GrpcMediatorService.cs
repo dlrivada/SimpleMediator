@@ -9,7 +9,6 @@ namespace SimpleMediator.gRPC;
 /// <summary>
 /// gRPC-based implementation of the mediator service.
 /// </summary>
-#pragma warning disable CA1848 // Use LoggerMessage delegates
 public sealed class GrpcMediatorService : IGrpcMediatorService
 {
     private readonly IMediator _mediator;
@@ -49,9 +48,7 @@ public sealed class GrpcMediatorService : IGrpcMediatorService
 
         try
         {
-            _logger.LogDebug(
-                "Processing gRPC request of type {RequestType}",
-                requestType);
+            Log.ProcessingRequest(_logger, requestType);
 
             var type = ResolveType(requestType, _requestTypeCache);
             if (type is null)
@@ -102,10 +99,7 @@ public sealed class GrpcMediatorService : IGrpcMediatorService
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to process gRPC request of type {RequestType}",
-                requestType);
+            Log.FailedToProcessRequest(_logger, ex, requestType);
 
             return Left<MediatorError, byte[]>(
                 MediatorErrors.FromException(
@@ -126,9 +120,7 @@ public sealed class GrpcMediatorService : IGrpcMediatorService
 
         try
         {
-            _logger.LogDebug(
-                "Processing gRPC notification of type {NotificationType}",
-                notificationType);
+            Log.ProcessingNotification(_logger, notificationType);
 
             var type = ResolveType(notificationType, _notificationTypeCache);
             if (type is null)
@@ -161,10 +153,7 @@ public sealed class GrpcMediatorService : IGrpcMediatorService
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to process gRPC notification of type {NotificationType}",
-                notificationType);
+            Log.FailedToProcessNotification(_logger, ex, notificationType);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(

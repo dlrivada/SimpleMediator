@@ -62,21 +62,14 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
         var messageId = context.IdempotencyKey;
         if (string.IsNullOrWhiteSpace(messageId))
         {
-            _logger.LogWarning(
-                "Idempotent request {RequestType} received without MessageId/IdempotencyKey (CorrelationId: {CorrelationId})",
-                typeof(TRequest).Name,
-                context.CorrelationId);
+            Log.MissingIdempotencyKey(_logger, typeof(TRequest).Name, context.CorrelationId);
 
             return MediatorErrors.Create(
                 "inbox.missing_message_id",
                 "Idempotent requests require a MessageId (IdempotencyKey)");
         }
 
-        _logger.LogDebug(
-            "Processing idempotent request {RequestType} with MessageId {MessageId} (CorrelationId: {CorrelationId})",
-            typeof(TRequest).Name,
-            messageId,
-            context.CorrelationId);
+        Log.ProcessingIdempotentRequest(_logger, typeof(TRequest).Name, messageId, context.CorrelationId);
 
         // Check if message already exists in inbox
         var existingMessage = await _inboxStore.GetMessageAsync(messageId, cancellationToken).ConfigureAwait(false);
@@ -86,10 +79,7 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
             // Message already processed - return cached response
             if (existingMessage.IsProcessed && existingMessage.Response != null)
             {
-                _logger.LogInformation(
-                    "Returning cached response for duplicate message {MessageId} (CorrelationId: {CorrelationId})",
-                    messageId,
-                    context.CorrelationId);
+                Log.ReturningCachedResponse(_logger, messageId, context.CorrelationId);
 
                 return DeserializeResponse(existingMessage.Response);
             }
@@ -97,11 +87,7 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
             // Message exists but failed - retry if within limit
             if (existingMessage.RetryCount >= _options.MaxRetries)
             {
-                _logger.LogWarning(
-                    "Message {MessageId} exceeded max retries ({MaxRetries}) (CorrelationId: {CorrelationId})",
-                    messageId,
-                    _options.MaxRetries,
-                    context.CorrelationId);
+                Log.MaxRetriesExceeded(_logger, messageId, _options.MaxRetries, context.CorrelationId);
 
                 return MediatorErrors.Create(
                     "inbox.max_retries_exceeded",
@@ -154,20 +140,13 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
 
             await _inboxStore.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-            _logger.LogInformation(
-                "Successfully processed and cached message {MessageId} (CorrelationId: {CorrelationId})",
-                messageId,
-                context.CorrelationId);
+            Log.ProcessedAndCachedMessage(_logger, messageId, context.CorrelationId);
 
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Error processing message {MessageId} (CorrelationId: {CorrelationId})",
-                messageId,
-                context.CorrelationId);
+            Log.ErrorProcessingMessage(_logger, ex, messageId, context.CorrelationId);
 
             await _inboxStore.MarkAsFailedAsync(
                 messageId,

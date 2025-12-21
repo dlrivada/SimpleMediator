@@ -9,8 +9,7 @@ namespace SimpleMediator.NServiceBus;
 /// <summary>
 /// NServiceBus-based implementation of the message publisher.
 /// </summary>
-#pragma warning disable CA1848 // Use LoggerMessage delegates
-#pragma warning disable CA2016 // Forward CancellationToken to methods
+#pragma warning disable CA2016 // Forward CancellationToken to methods - NServiceBus doesn't accept CancellationToken
 public sealed class NServiceBusMessagePublisher : INServiceBusMessagePublisher
 {
     private readonly IMessageSession _messageSession;
@@ -47,25 +46,18 @@ public sealed class NServiceBusMessagePublisher : INServiceBusMessagePublisher
 
         try
         {
-            _logger.LogDebug(
-                "Sending command of type {CommandType} via NServiceBus",
-                typeof(TCommand).Name);
+            Log.SendingCommand(_logger, typeof(TCommand).Name);
 
             var sendOptions = new SendOptions();
             await _messageSession.Send(command, sendOptions).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully sent command of type {CommandType}",
-                typeof(TCommand).Name);
+            Log.SuccessfullySentCommand(_logger, typeof(TCommand).Name);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to send command of type {CommandType}",
-                typeof(TCommand).Name);
+            Log.FailedToSendCommand(_logger, ex, typeof(TCommand).Name);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -85,25 +77,18 @@ public sealed class NServiceBusMessagePublisher : INServiceBusMessagePublisher
 
         try
         {
-            _logger.LogDebug(
-                "Publishing event of type {EventType} via NServiceBus",
-                typeof(TEvent).Name);
+            Log.PublishingEvent(_logger, typeof(TEvent).Name);
 
             var publishOptions = new PublishOptions();
             await _messageSession.Publish(eventMessage, publishOptions).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully published event of type {EventType}",
-                typeof(TEvent).Name);
+            Log.SuccessfullyPublishedEvent(_logger, typeof(TEvent).Name);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to publish event of type {EventType}",
-                typeof(TEvent).Name);
+            Log.FailedToPublishEvent(_logger, ex, typeof(TEvent).Name);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -124,29 +109,20 @@ public sealed class NServiceBusMessagePublisher : INServiceBusMessagePublisher
 
         try
         {
-            _logger.LogDebug(
-                "Scheduling message of type {MessageType} for {DeliveryTime} via NServiceBus",
-                typeof(TMessage).Name,
-                deliveryTime);
+            Log.SchedulingMessage(_logger, typeof(TMessage).Name, deliveryTime);
 
             var sendOptions = new SendOptions();
             sendOptions.DoNotDeliverBefore(deliveryTime);
 
             await _messageSession.Send(message, sendOptions).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully scheduled message of type {MessageType} for {DeliveryTime}",
-                typeof(TMessage).Name,
-                deliveryTime);
+            Log.SuccessfullyScheduledMessage(_logger, typeof(TMessage).Name, deliveryTime);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to schedule message of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.FailedToScheduleMessage(_logger, ex, typeof(TMessage).Name);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -157,4 +133,3 @@ public sealed class NServiceBusMessagePublisher : INServiceBusMessagePublisher
     }
 }
 #pragma warning restore CA2016
-#pragma warning restore CA1848

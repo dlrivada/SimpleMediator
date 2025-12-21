@@ -58,8 +58,8 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
         var messageId = context.IdempotencyKey;
         if (string.IsNullOrWhiteSpace(messageId))
         {
-            _logger.LogWarning(
-                "Idempotent request {RequestType} received without MessageId/IdempotencyKey (CorrelationId: {CorrelationId})",
+            Log.IdempotentRequestMissingMessageId(
+                _logger,
                 typeof(TRequest).Name,
                 context.CorrelationId);
 
@@ -68,8 +68,8 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
                 "Idempotent requests require a MessageId (IdempotencyKey)");
         }
 
-        _logger.LogDebug(
-            "Processing idempotent request {RequestType} with MessageId {MessageId} (CorrelationId: {CorrelationId})",
+        Log.ProcessingIdempotentRequest(
+            _logger,
             typeof(TRequest).Name,
             messageId,
             context.CorrelationId);
@@ -82,8 +82,8 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
             // Message already processed - return cached response
             if (existingMessage.IsProcessed && existingMessage.Response != null)
             {
-                _logger.LogInformation(
-                    "Returning cached response for duplicate message {MessageId} (CorrelationId: {CorrelationId})",
+                Log.ReturningCachedResponse(
+                    _logger,
                     messageId,
                     context.CorrelationId);
 
@@ -93,8 +93,8 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
             // Message exists but failed - retry if within limit
             if (existingMessage.RetryCount >= _options.MaxRetries)
             {
-                _logger.LogWarning(
-                    "Message {MessageId} exceeded max retries ({MaxRetries}) (CorrelationId: {CorrelationId})",
+                Log.MessageExceededMaxRetries(
+                    _logger,
                     messageId,
                     _options.MaxRetries,
                     context.CorrelationId);
@@ -150,8 +150,8 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
 
             await _inboxStore.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-            _logger.LogInformation(
-                "Successfully processed and cached message {MessageId} (CorrelationId: {CorrelationId})",
+            Log.SuccessfullyProcessedMessage(
+                _logger,
                 messageId,
                 context.CorrelationId);
 
@@ -159,9 +159,9 @@ public sealed class InboxPipelineBehavior<TRequest, TResponse> : IPipelineBehavi
         }
         catch (Exception ex)
         {
-            _logger.LogError(
+            Log.ErrorProcessingMessage(
+                _logger,
                 ex,
-                "Error processing message {MessageId} (CorrelationId: {CorrelationId})",
                 messageId,
                 context.CorrelationId);
 

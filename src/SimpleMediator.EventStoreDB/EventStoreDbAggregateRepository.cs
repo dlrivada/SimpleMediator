@@ -51,13 +51,7 @@ public sealed class EventStoreDbAggregateRepository<TAggregate> : IAggregateRepo
 
         try
         {
-#pragma warning disable CA1848 // Use LoggerMessage delegates
-            _logger.LogDebug(
-                "Loading aggregate {AggregateType} with ID {AggregateId} from stream {StreamName}",
-                typeof(TAggregate).Name,
-                id,
-                streamName);
-#pragma warning restore CA1848
+            Log.LoadingAggregate(_logger, typeof(TAggregate).Name, id, streamName);
 
             var aggregate = new TAggregate { Id = id };
             var eventCount = 0L;
@@ -78,12 +72,7 @@ public sealed class EventStoreDbAggregateRepository<TAggregate> : IAggregateRepo
 
             if (eventCount == 0)
             {
-#pragma warning disable CA1848
-                _logger.LogWarning(
-                    "Aggregate {AggregateType} with ID {AggregateId} not found (empty stream)",
-                    typeof(TAggregate).Name,
-                    id);
-#pragma warning restore CA1848
+                Log.AggregateNotFoundEmpty(_logger, typeof(TAggregate).Name, id);
 
                 return Left<MediatorError, TAggregate>(
                     MediatorErrors.Create(
@@ -91,26 +80,13 @@ public sealed class EventStoreDbAggregateRepository<TAggregate> : IAggregateRepo
                         $"Aggregate {typeof(TAggregate).Name} with ID {id} was not found."));
             }
 
-#pragma warning disable CA1848
-            _logger.LogDebug(
-                "Loaded aggregate {AggregateType} with ID {AggregateId} at version {Version} ({EventCount} events)",
-                typeof(TAggregate).Name,
-                id,
-                aggregate.Version,
-                eventCount);
-#pragma warning restore CA1848
+            Log.LoadedAggregate(_logger, typeof(TAggregate).Name, id, aggregate.Version, eventCount);
 
             return Right<MediatorError, TAggregate>(aggregate);
         }
         catch (StreamNotFoundException)
         {
-#pragma warning disable CA1848
-            _logger.LogWarning(
-                "Stream {StreamName} not found for aggregate {AggregateType} with ID {AggregateId}",
-                streamName,
-                typeof(TAggregate).Name,
-                id);
-#pragma warning restore CA1848
+            Log.StreamNotFound(_logger, streamName, typeof(TAggregate).Name, id);
 
             return Left<MediatorError, TAggregate>(
                 MediatorErrors.Create(
@@ -119,13 +95,7 @@ public sealed class EventStoreDbAggregateRepository<TAggregate> : IAggregateRepo
         }
         catch (Exception ex)
         {
-#pragma warning disable CA1848
-            _logger.LogError(
-                ex,
-                "Error loading aggregate {AggregateType} with ID {AggregateId}",
-                typeof(TAggregate).Name,
-                id);
-#pragma warning restore CA1848
+            Log.ErrorLoadingAggregate(_logger, ex, typeof(TAggregate).Name, id);
 
             return Left<MediatorError, TAggregate>(
                 MediatorErrors.FromException(
@@ -145,13 +115,7 @@ public sealed class EventStoreDbAggregateRepository<TAggregate> : IAggregateRepo
 
         try
         {
-#pragma warning disable CA1848
-            _logger.LogDebug(
-                "Loading aggregate {AggregateType} with ID {AggregateId} at version {Version}",
-                typeof(TAggregate).Name,
-                id,
-                version);
-#pragma warning restore CA1848
+            Log.LoadingAggregateAtVersion(_logger, typeof(TAggregate).Name, id, version);
 
             var aggregate = new TAggregate { Id = id };
             var eventCount = 0L;
@@ -215,24 +179,13 @@ public sealed class EventStoreDbAggregateRepository<TAggregate> : IAggregateRepo
 
         if (uncommittedEvents.Count == 0)
         {
-#pragma warning disable CA1848
-            _logger.LogDebug(
-                "No uncommitted events for aggregate {AggregateType} with ID {AggregateId}",
-                typeof(TAggregate).Name,
-                aggregate.Id);
-#pragma warning restore CA1848
+            Log.NoUncommittedEvents(_logger, typeof(TAggregate).Name, aggregate.Id);
             return Right<MediatorError, Unit>(Unit.Default);
         }
 
         try
         {
-#pragma warning disable CA1848
-            _logger.LogDebug(
-                "Saving {EventCount} events for aggregate {AggregateType} with ID {AggregateId}",
-                uncommittedEvents.Count,
-                typeof(TAggregate).Name,
-                aggregate.Id);
-#pragma warning restore CA1848
+            Log.SavingEvents(_logger, uncommittedEvents.Count, typeof(TAggregate).Name, aggregate.Id);
 
             // Calculate expected version
             var expectedVersion = aggregate.Version - uncommittedEvents.Count;
@@ -255,25 +208,13 @@ public sealed class EventStoreDbAggregateRepository<TAggregate> : IAggregateRepo
             // Clear uncommitted events after successful save
             aggregate.ClearUncommittedEvents();
 
-#pragma warning disable CA1848
-            _logger.LogInformation(
-                "Saved {EventCount} events for aggregate {AggregateType} with ID {AggregateId}",
-                uncommittedEvents.Count,
-                typeof(TAggregate).Name,
-                aggregate.Id);
-#pragma warning restore CA1848
+            Log.SavedEvents(_logger, uncommittedEvents.Count, typeof(TAggregate).Name, aggregate.Id);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (WrongExpectedVersionException ex)
         {
-#pragma warning disable CA1848
-            _logger.LogWarning(
-                ex,
-                "Concurrency conflict saving aggregate {AggregateType} with ID {AggregateId}",
-                typeof(TAggregate).Name,
-                aggregate.Id);
-#pragma warning restore CA1848
+            Log.ConcurrencyConflict(_logger, ex, typeof(TAggregate).Name, aggregate.Id);
 
             if (_options.ThrowOnConcurrencyConflict)
             {
@@ -288,13 +229,7 @@ public sealed class EventStoreDbAggregateRepository<TAggregate> : IAggregateRepo
         }
         catch (Exception ex)
         {
-#pragma warning disable CA1848
-            _logger.LogError(
-                ex,
-                "Error saving aggregate {AggregateType} with ID {AggregateId}",
-                typeof(TAggregate).Name,
-                aggregate.Id);
-#pragma warning restore CA1848
+            Log.ErrorSavingAggregate(_logger, ex, typeof(TAggregate).Name, aggregate.Id);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -325,13 +260,7 @@ public sealed class EventStoreDbAggregateRepository<TAggregate> : IAggregateRepo
 
         try
         {
-#pragma warning disable CA1848
-            _logger.LogDebug(
-                "Creating aggregate {AggregateType} with ID {AggregateId} with {EventCount} events",
-                typeof(TAggregate).Name,
-                aggregate.Id,
-                uncommittedEvents.Count);
-#pragma warning restore CA1848
+            Log.CreatingAggregate(_logger, typeof(TAggregate).Name, aggregate.Id, uncommittedEvents.Count);
 
             // Serialize events
             var eventData = uncommittedEvents
@@ -348,24 +277,13 @@ public sealed class EventStoreDbAggregateRepository<TAggregate> : IAggregateRepo
             // Clear uncommitted events after successful save
             aggregate.ClearUncommittedEvents();
 
-#pragma warning disable CA1848
-            _logger.LogInformation(
-                "Created aggregate {AggregateType} with ID {AggregateId}",
-                typeof(TAggregate).Name,
-                aggregate.Id);
-#pragma warning restore CA1848
+            Log.CreatedAggregate(_logger, typeof(TAggregate).Name, aggregate.Id);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (WrongExpectedVersionException ex)
         {
-#pragma warning disable CA1848
-            _logger.LogWarning(
-                ex,
-                "Stream already exists for aggregate {AggregateType} with ID {AggregateId}",
-                typeof(TAggregate).Name,
-                aggregate.Id);
-#pragma warning restore CA1848
+            Log.StreamAlreadyExists(_logger, ex, typeof(TAggregate).Name, aggregate.Id);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -375,13 +293,7 @@ public sealed class EventStoreDbAggregateRepository<TAggregate> : IAggregateRepo
         }
         catch (Exception ex)
         {
-#pragma warning disable CA1848
-            _logger.LogError(
-                ex,
-                "Error creating aggregate {AggregateType} with ID {AggregateId}",
-                typeof(TAggregate).Name,
-                aggregate.Id);
-#pragma warning restore CA1848
+            Log.ErrorCreatingAggregate(_logger, ex, typeof(TAggregate).Name, aggregate.Id);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(

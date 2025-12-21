@@ -10,7 +10,6 @@ namespace SimpleMediator.Redis.PubSub;
 /// <summary>
 /// Redis Pub/Sub-based implementation of the message publisher.
 /// </summary>
-#pragma warning disable CA1848 // Use LoggerMessage delegates
 public sealed class RedisPubSubMessagePublisher : IRedisPubSubMessagePublisher
 {
     private readonly IConnectionMultiplexer _redis;
@@ -52,10 +51,7 @@ public sealed class RedisPubSubMessagePublisher : IRedisPubSubMessagePublisher
 
         try
         {
-            _logger.LogDebug(
-                "Publishing message of type {MessageType} to channel {Channel}",
-                typeof(TMessage).Name,
-                effectiveChannel);
+            Log.PublishingMessage(_logger, typeof(TMessage).Name, effectiveChannel);
 
             var payload = JsonSerializer.Serialize(new RedisMessageWrapper<TMessage>
             {
@@ -68,19 +64,13 @@ public sealed class RedisPubSubMessagePublisher : IRedisPubSubMessagePublisher
                 RedisChannel.Literal(effectiveChannel),
                 payload).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully published message to {SubscriberCount} subscribers",
-                subscriberCount);
+            Log.SuccessfullyPublishedMessage(_logger, subscriberCount);
 
             return Right<MediatorError, long>(subscriberCount);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to publish message of type {MessageType} to channel {Channel}",
-                typeof(TMessage).Name,
-                effectiveChannel);
+            Log.FailedToPublishMessage(_logger, ex, typeof(TMessage).Name, effectiveChannel);
 
             return Left<MediatorError, long>(
                 MediatorErrors.FromException(
@@ -101,10 +91,7 @@ public sealed class RedisPubSubMessagePublisher : IRedisPubSubMessagePublisher
 
         var effectiveChannel = channel ?? $"{_options.ChannelPrefix}:{_options.EventChannel}";
 
-        _logger.LogDebug(
-            "Subscribing to channel {Channel} for messages of type {MessageType}",
-            effectiveChannel,
-            typeof(TMessage).Name);
+        Log.SubscribingToChannel(_logger, effectiveChannel, typeof(TMessage).Name);
 
         var channelQueue = await _subscriber.SubscribeAsync(
             RedisChannel.Literal(effectiveChannel)).ConfigureAwait(false);
@@ -121,10 +108,7 @@ public sealed class RedisPubSubMessagePublisher : IRedisPubSubMessagePublisher
             }
             catch (Exception ex)
             {
-                _logger.LogError(
-                    ex,
-                    "Error processing message from channel {Channel}",
-                    effectiveChannel);
+                Log.ErrorProcessingMessage(_logger, ex, effectiveChannel);
             }
         });
 
@@ -143,10 +127,7 @@ public sealed class RedisPubSubMessagePublisher : IRedisPubSubMessagePublisher
 
         var fullPattern = $"{_options.ChannelPrefix}:{pattern}";
 
-        _logger.LogDebug(
-            "Subscribing to pattern {Pattern} for messages of type {MessageType}",
-            fullPattern,
-            typeof(TMessage).Name);
+        Log.SubscribingToPattern(_logger, fullPattern, typeof(TMessage).Name);
 
         var channelQueue = await _subscriber.SubscribeAsync(
             RedisChannel.Pattern(fullPattern)).ConfigureAwait(false);
@@ -163,10 +144,7 @@ public sealed class RedisPubSubMessagePublisher : IRedisPubSubMessagePublisher
             }
             catch (Exception ex)
             {
-                _logger.LogError(
-                    ex,
-                    "Error processing message from channel {Channel}",
-                    message.Channel);
+                Log.ErrorProcessingMessage(_logger, ex, message.Channel!);
             }
         });
 

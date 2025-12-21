@@ -86,10 +86,7 @@ public sealed class TransactionPipelineBehavior<TRequest, TResponse> : IPipeline
         // Check if already in transaction (nested transaction scenario)
         if (_dbContext.Database.CurrentTransaction != null)
         {
-            _logger.LogDebug(
-                "Request {RequestType} is already in a transaction, reusing existing transaction (CorrelationId: {CorrelationId})",
-                typeof(TRequest).Name,
-                context.CorrelationId);
+            Log.ReusingExistingTransaction(_logger, typeof(TRequest).Name, context.CorrelationId);
 
             return await nextStep();
         }
@@ -97,11 +94,7 @@ public sealed class TransactionPipelineBehavior<TRequest, TResponse> : IPipeline
         // Get isolation level from attribute or use default
         var isolationLevel = GetIsolationLevel(request);
 
-        _logger.LogDebug(
-            "Beginning transaction for request {RequestType} with isolation level {IsolationLevel} (CorrelationId: {CorrelationId})",
-            typeof(TRequest).Name,
-            isolationLevel,
-            context.CorrelationId);
+        Log.BeginningTransaction(_logger, typeof(TRequest).Name, isolationLevel, context.CorrelationId);
 
         IDbContextTransaction? transaction = null;
 
@@ -119,20 +112,13 @@ public sealed class TransactionPipelineBehavior<TRequest, TResponse> : IPipeline
             await result.Match(
                 Right: async _ =>
                 {
-                    _logger.LogDebug(
-                        "Committing transaction for request {RequestType} (CorrelationId: {CorrelationId})",
-                        typeof(TRequest).Name,
-                        context.CorrelationId);
+                    Log.CommittingTransaction(_logger, typeof(TRequest).Name, context.CorrelationId);
 
                     await transaction.CommitAsync(cancellationToken);
                 },
                 Left: async error =>
                 {
-                    _logger.LogWarning(
-                        "Rolling back transaction for request {RequestType} due to error: {ErrorMessage} (CorrelationId: {CorrelationId})",
-                        typeof(TRequest).Name,
-                        error.Message,
-                        context.CorrelationId);
+                    Log.RollingBackTransactionDueToError(_logger, typeof(TRequest).Name, error.Message, context.CorrelationId);
 
                     await transaction.RollbackAsync(cancellationToken);
                 });
@@ -141,11 +127,7 @@ public sealed class TransactionPipelineBehavior<TRequest, TResponse> : IPipeline
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Rolling back transaction for request {RequestType} due to exception (CorrelationId: {CorrelationId})",
-                typeof(TRequest).Name,
-                context.CorrelationId);
+            Log.RollingBackTransactionDueToException(_logger, ex, typeof(TRequest).Name, context.CorrelationId);
 
             if (transaction != null)
                 await transaction.RollbackAsync(cancellationToken);

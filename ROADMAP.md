@@ -736,7 +736,7 @@ services.AddSimpleMediatorInMemory();
 
 **Technical Notes**:
 
-- ⚠️ **Pending: LoggerMessage Delegates** - All packages use `#pragma warning disable CA1848` suppressions for logging. A future optimization pass will replace `ILogger.LogXxx()` calls with high-performance `LoggerMessage` delegates (see section 6.1 in Core Improvements).
+- ✅ **Completed: LoggerMessage Delegates (2025-12-21)** - All packages now use high-performance `LoggerMessage` source generators instead of `ILogger.LogXxx()` extension methods (CA1848 compliance).
 
 ---
 
@@ -1449,7 +1449,7 @@ await mediator.Publish(new OrderPlacedEvent(orderId, total)); // Goes to broker
 - Topic auto-creation option
 - Configurable producer settings
 - Message key support for partitioning
-- Tests: Unit tests with CA1848 suppression (LoggerMessage delegates pending)
+- Tests: Unit tests with LoggerMessage source generators (CA1848 compliant)
 
 **Technology Options**:
 
@@ -1923,57 +1923,55 @@ public record UpdateCustomerCommand(int Id, ...) : ICommand<Customer>;
 
 ---
 
-#### 6.1 LoggerMessage Delegates for Messaging Packages
+#### 6.1 LoggerMessage Delegates for All Packages
 
 **Priority**: ⭐⭐⭐ (Medium - performance optimization)
 **Complexity**: ⭐⭐ (Low)
-**Status**: ⏳ Pending
+**Status**: ✅ **COMPLETED** (2025-12-21)
 
-**Objective**: Replace `ILogger.LogXxx()` extension methods with high-performance `LoggerMessage` delegates (CA1848 compliance).
+**Objective**: Replace `ILogger.LogXxx()` extension methods with high-performance `LoggerMessage` source generators (CA1848 compliance).
 
-**Current State**:
-All 12 messaging transport packages currently use `#pragma warning disable CA1848` suppressions:
+**Packages Updated**:
 
-| Package | Files with CA1848 Suppression |
-|---------|-------------------------------|
-| SimpleMediator.Wolverine | WolverineMessagePublisher.cs, WolverineRequestHandler.cs |
-| SimpleMediator.NServiceBus | NServiceBusMessagePublisher.cs |
-| SimpleMediator.RabbitMQ | RabbitMQMessagePublisher.cs |
-| SimpleMediator.AzureServiceBus | AzureServiceBusMessagePublisher.cs |
-| SimpleMediator.AmazonSQS | AmazonSQSMessagePublisher.cs |
-| SimpleMediator.Kafka | KafkaMessagePublisher.cs |
-| SimpleMediator.Redis.PubSub | RedisPubSubMessagePublisher.cs |
-| SimpleMediator.InMemory | InMemoryMessageBus.cs |
-| SimpleMediator.NATS | NATSMessagePublisher.cs |
-| SimpleMediator.MQTT | MQTTMessagePublisher.cs |
-| SimpleMediator.gRPC | GrpcMediatorService.cs |
-| SimpleMediator.GraphQL | GraphQLMediatorBridge.cs |
+| Package | Log.cs Created | Files Updated |
+|---------|----------------|---------------|
+| SimpleMediator.EntityFrameworkCore | ✅ 38 EventIds | TransactionPipelineBehavior, InboxPipelineBehavior, OutboxPostProcessor, OutboxProcessor |
+| SimpleMediator.Dapper.SqlServer | ✅ 15 EventIds | InboxPipelineBehavior, OutboxPostProcessor, OutboxProcessor |
+| SimpleMediator.Dapper.PostgreSQL | ✅ 15 EventIds | InboxPipelineBehavior, OutboxPostProcessor, OutboxProcessor |
+| SimpleMediator.Dapper.MySQL | ✅ 15 EventIds | InboxPipelineBehavior, OutboxPostProcessor, OutboxProcessor |
+| SimpleMediator.Dapper.Sqlite | ✅ 15 EventIds | InboxPipelineBehavior, OutboxPostProcessor, OutboxProcessor |
+| SimpleMediator.Dapper.Oracle | ✅ 15 EventIds | InboxPipelineBehavior, OutboxPostProcessor, OutboxProcessor |
+| SimpleMediator.ADO.SqlServer | ✅ 15 EventIds | InboxPipelineBehavior, OutboxPostProcessor, OutboxProcessor |
+| SimpleMediator.ADO.PostgreSQL | ✅ 15 EventIds | InboxPipelineBehavior, OutboxPostProcessor, OutboxProcessor |
+| SimpleMediator.ADO.MySQL | ✅ 15 EventIds | InboxPipelineBehavior, OutboxPostProcessor, OutboxProcessor |
+| SimpleMediator.ADO.Sqlite | ✅ 15 EventIds | InboxPipelineBehavior, OutboxPostProcessor, OutboxProcessor |
+| SimpleMediator.ADO.Oracle | ✅ 15 EventIds | InboxPipelineBehavior, OutboxPostProcessor, OutboxProcessor |
+| SimpleMediator.Marten | ✅ 20 EventIds | MartenAggregateRepository, EventPublishingPipelineBehavior |
+| SimpleMediator.MassTransit | ✅ 12 EventIds | MassTransitMessagePublisher, MassTransitRequestConsumer, MassTransitNotificationConsumer |
+| SimpleMediator.Hangfire | ✅ 7 EventIds | HangfireRequestJobAdapter, HangfireNotificationJobAdapter |
+| SimpleMediator.Quartz | ✅ 9 EventIds | QuartzRequestJob, QuartzNotificationJob |
 
-**Implementation Pattern**:
+**Implementation Pattern Used**:
 
 ```csharp
-// Before (current)
-_logger.LogDebug("Publishing message of type {MessageType}", typeof(TMessage).Name);
-
-// After (optimized)
-private static partial class Log
+// Each package has a Log.cs file with high-performance logging
+internal static partial class Log
 {
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Publishing message of type {MessageType}")]
+    [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = "Publishing message of type {MessageType}")]
     public static partial void PublishingMessage(ILogger logger, string messageType);
 }
 
-// Usage
+// Usage in code
 Log.PublishingMessage(_logger, typeof(TMessage).Name);
 ```
 
-**Benefits**:
+**Benefits Achieved**:
 
-- Zero-allocation logging in hot paths
-- Compile-time validation of log message parameters
-- Better performance under high throughput
-- CA1848 compliance without suppressions
-
-**Estimated Work**: ~2-4 hours per package (create LogMessages partial class, replace all logging calls)
+- ✅ Zero-allocation logging in hot paths
+- ✅ Compile-time validation of log message parameters
+- ✅ Better performance under high throughput
+- ✅ CA1848 compliance without suppressions
+- ✅ Structured EventIds for filtering and monitoring
 
 ---
 

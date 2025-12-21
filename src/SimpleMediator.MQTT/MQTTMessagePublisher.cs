@@ -11,7 +11,6 @@ namespace SimpleMediator.MQTT;
 /// <summary>
 /// MQTT-based implementation of the message publisher.
 /// </summary>
-#pragma warning disable CA1848 // Use LoggerMessage delegates
 public sealed class MQTTMessagePublisher : IMQTTMessagePublisher, IAsyncDisposable
 {
     private readonly MqttClient _client;
@@ -57,11 +56,7 @@ public sealed class MQTTMessagePublisher : IMQTTMessagePublisher, IAsyncDisposab
 
         try
         {
-            _logger.LogDebug(
-                "Publishing message of type {MessageType} to topic {Topic} with QoS {QoS}",
-                typeof(TMessage).Name,
-                effectiveTopic,
-                effectiveQos);
+            Log.PublishingMessage(_logger, typeof(TMessage).Name, effectiveTopic, effectiveQos);
 
             var payload = JsonSerializer.SerializeToUtf8Bytes(message);
 
@@ -82,19 +77,13 @@ public sealed class MQTTMessagePublisher : IMQTTMessagePublisher, IAsyncDisposab
 
             await _client.PublishAsync(mqttMessage, cancellationToken).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully published message to topic {Topic}",
-                effectiveTopic);
+            Log.SuccessfullyPublishedMessage(_logger, effectiveTopic);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to publish message of type {MessageType} to topic {Topic}",
-                typeof(TMessage).Name,
-                effectiveTopic);
+            Log.FailedToPublishMessage(_logger, ex, typeof(TMessage).Name, effectiveTopic);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -125,10 +114,7 @@ public sealed class MQTTMessagePublisher : IMQTTMessagePublisher, IAsyncDisposab
             _ => MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce
         };
 
-        _logger.LogDebug(
-            "Subscribing to topic {Topic} for messages of type {MessageType}",
-            topic,
-            typeof(TMessage).Name);
+        Log.SubscribingToTopic(_logger, topic, typeof(TMessage).Name);
 
         var subscribeOptions = new MqttClientSubscribeOptionsBuilder()
             .WithTopicFilter(f => f.WithTopic(topic).WithQualityOfServiceLevel(mqttQos))
@@ -162,10 +148,7 @@ public sealed class MQTTMessagePublisher : IMQTTMessagePublisher, IAsyncDisposab
             _ => MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce
         };
 
-        _logger.LogDebug(
-            "Subscribing to topic pattern {TopicFilter} for messages of type {MessageType}",
-            topicFilter,
-            typeof(TMessage).Name);
+        Log.SubscribingToPattern(_logger, topicFilter, typeof(TMessage).Name);
 
         var subscribeOptions = new MqttClientSubscribeOptionsBuilder()
             .WithTopicFilter(f => f.WithTopic(topicFilter).WithQualityOfServiceLevel(mqttQos))
@@ -226,7 +209,7 @@ internal sealed class MqttSubscription<TMessage> : IAsyncDisposable
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing MQTT message from topic {Topic}", _topic);
+                Log.ErrorProcessingMessage(_logger, ex, _topic);
             }
         }
     }
@@ -280,7 +263,7 @@ internal sealed class MqttPatternSubscription<TMessage> : IAsyncDisposable
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing MQTT message from topic {Topic}", args.ApplicationMessage.Topic);
+                Log.ErrorProcessingMessage(_logger, ex, args.ApplicationMessage.Topic);
             }
         }
     }

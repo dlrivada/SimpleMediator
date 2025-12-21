@@ -1,5 +1,3 @@
-#pragma warning disable CA1848 // Use LoggerMessage delegates for performance
-
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text.Json;
@@ -77,7 +75,7 @@ public sealed class SignalRNotificationBroadcaster : ISignalRNotificationBroadca
         // Check conditional property
         if (!ShouldBroadcast(notification, attribute))
         {
-            _logger.LogDebug("Notification {NotificationType} skipped due to conditional property", notificationType.Name);
+            Log.NotificationSkippedConditional(_logger, notificationType.Name);
             return;
         }
 
@@ -91,7 +89,7 @@ public sealed class SignalRNotificationBroadcaster : ISignalRNotificationBroadca
 
             if (hubContext == null)
             {
-                _logger.LogWarning("No hub context available for broadcasting notification {NotificationType}", notificationType.Name);
+                Log.NoHubContextAvailable(_logger, notificationType.Name);
                 return;
             }
 
@@ -119,11 +117,11 @@ public sealed class SignalRNotificationBroadcaster : ISignalRNotificationBroadca
 
             await clients.SendAsync(methodName, payload, cancellationToken);
 
-            _logger.LogDebug("Broadcast notification {NotificationType} via method {MethodName}", notificationType.Name, methodName);
+            Log.BroadcastNotification(_logger, notificationType.Name, methodName);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to broadcast notification {NotificationType}", notificationType.Name);
+            Log.FailedToBroadcastNotification(_logger, ex, notificationType.Name);
         }
     }
 
@@ -147,10 +145,7 @@ public sealed class SignalRNotificationBroadcaster : ISignalRNotificationBroadca
 
         if (property == null || property.PropertyType != typeof(bool))
         {
-            _logger.LogWarning(
-                "Conditional property '{PropertyName}' not found or not boolean on {NotificationType}",
-                attribute.ConditionalProperty,
-                notificationType.Name);
+            Log.ConditionalPropertyNotFound(_logger, attribute.ConditionalProperty, notificationType.Name);
             return true;
         }
 
@@ -178,7 +173,7 @@ public sealed class SignalRNotificationBroadcaster : ISignalRNotificationBroadca
 
             if (property == null)
             {
-                _logger.LogWarning("Property '{PropertyName}' not found on {NotificationType}", propertyName, typeof(TNotification).Name);
+                Log.PropertyNotFound(_logger, propertyName, typeof(TNotification).Name);
                 return match.Value;
             }
 

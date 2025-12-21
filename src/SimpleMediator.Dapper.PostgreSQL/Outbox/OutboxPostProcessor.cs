@@ -58,11 +58,7 @@ public sealed class OutboxPostProcessor<TRequest, TResponse> : IRequestPostProce
         await result.Match(
             Right: async _ =>
             {
-                _logger.LogDebug(
-                    "Storing {Count} notifications in outbox for request {RequestType} (CorrelationId: {CorrelationId})",
-                    notifications.Count,
-                    typeof(TRequest).Name,
-                    context.CorrelationId);
+                Log.StoringNotificationsInOutbox(_logger, notifications.Count, typeof(TRequest).Name, context.CorrelationId.ToString());
 
                 foreach (var notification in notifications)
                 {
@@ -82,18 +78,11 @@ public sealed class OutboxPostProcessor<TRequest, TResponse> : IRequestPostProce
 
                 await _outboxStore.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-                _logger.LogInformation(
-                    "Stored {Count} notifications in outbox (CorrelationId: {CorrelationId})",
-                    notifications.Count,
-                    context.CorrelationId);
+                Log.StoredNotificationsInOutbox(_logger, notifications.Count, context.CorrelationId.ToString());
             },
             Left: error =>
             {
-                _logger.LogDebug(
-                    "Skipping outbox storage for {Count} notifications due to error: {ErrorMessage} (CorrelationId: {CorrelationId})",
-                    notifications.Count,
-                    error.Message,
-                    context.CorrelationId);
+                Log.SkippingOutboxStorageDueToError(_logger, notifications.Count, error.Message, context.CorrelationId.ToString());
 
                 return Task.CompletedTask;
             });

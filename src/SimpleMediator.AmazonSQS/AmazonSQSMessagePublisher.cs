@@ -17,7 +17,6 @@ namespace SimpleMediator.AmazonSQS;
 /// <summary>
 /// Amazon SQS/SNS-based implementation of the message publisher.
 /// </summary>
-#pragma warning disable CA1848 // Use LoggerMessage delegates
 public sealed class AmazonSQSMessagePublisher : IAmazonSQSMessagePublisher
 {
     private readonly IAmazonSQS _sqsClient;
@@ -70,10 +69,7 @@ public sealed class AmazonSQSMessagePublisher : IAmazonSQSMessagePublisher
 
         try
         {
-            _logger.LogDebug(
-                "Sending message of type {MessageType} to queue {Queue}",
-                typeof(TMessage).Name,
-                effectiveQueueUrl);
+            Log.SendingToQueue(_logger, typeof(TMessage).Name, effectiveQueueUrl);
 
             var request = new SendMessageRequest
             {
@@ -91,20 +87,13 @@ public sealed class AmazonSQSMessagePublisher : IAmazonSQSMessagePublisher
 
             var response = await _sqsClient.SendMessageAsync(request, cancellationToken).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully sent message of type {MessageType} with ID {MessageId}",
-                typeof(TMessage).Name,
-                response.MessageId);
+            Log.SuccessfullySentMessage(_logger, typeof(TMessage).Name, response.MessageId);
 
             return Right<MediatorError, string>(response.MessageId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to send message of type {MessageType} to queue {Queue}",
-                typeof(TMessage).Name,
-                effectiveQueueUrl);
+            Log.FailedToSendToQueue(_logger, ex, typeof(TMessage).Name, effectiveQueueUrl);
 
             return Left<MediatorError, string>(
                 MediatorErrors.FromException(
@@ -135,10 +124,7 @@ public sealed class AmazonSQSMessagePublisher : IAmazonSQSMessagePublisher
 
         try
         {
-            _logger.LogDebug(
-                "Publishing message of type {MessageType} to topic {Topic}",
-                typeof(TMessage).Name,
-                effectiveTopicArn);
+            Log.PublishingToTopic(_logger, typeof(TMessage).Name, effectiveTopicArn);
 
             var request = new PublishRequest
             {
@@ -156,20 +142,13 @@ public sealed class AmazonSQSMessagePublisher : IAmazonSQSMessagePublisher
 
             var response = await _snsClient.PublishAsync(request, cancellationToken).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully published message of type {MessageType} with ID {MessageId}",
-                typeof(TMessage).Name,
-                response.MessageId);
+            Log.SuccessfullyPublishedMessage(_logger, typeof(TMessage).Name, response.MessageId);
 
             return Right<MediatorError, string>(response.MessageId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to publish message of type {MessageType} to topic {Topic}",
-                typeof(TMessage).Name,
-                effectiveTopicArn);
+            Log.FailedToPublishToTopic(_logger, ex, typeof(TMessage).Name, effectiveTopicArn);
 
             return Left<MediatorError, string>(
                 MediatorErrors.FromException(
@@ -214,10 +193,7 @@ public sealed class AmazonSQSMessagePublisher : IAmazonSQSMessagePublisher
                 }
             }).ToList();
 
-            _logger.LogDebug(
-                "Sending batch of {Count} messages of type {MessageType}",
-                entries.Count,
-                typeof(TMessage).Name);
+            Log.SendingBatch(_logger, entries.Count, typeof(TMessage).Name);
 
             var request = new SendMessageBatchRequest
             {
@@ -229,26 +205,18 @@ public sealed class AmazonSQSMessagePublisher : IAmazonSQSMessagePublisher
 
             if (response.Failed.Count > 0)
             {
-                _logger.LogWarning(
-                    "Batch send partially failed: {FailedCount} of {TotalCount} messages failed",
-                    response.Failed.Count,
-                    entries.Count);
+                Log.BatchPartiallyFailed(_logger, response.Failed.Count, entries.Count);
             }
 
             var messageIds = response.Successful.Select(s => s.MessageId).ToList();
 
-            _logger.LogDebug(
-                "Successfully sent {Count} messages",
-                messageIds.Count);
+            Log.SuccessfullySentBatch(_logger, messageIds.Count);
 
             return Right<MediatorError, IReadOnlyList<string>>(messageIds);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to send batch of messages of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.FailedToSendBatch(_logger, ex, typeof(TMessage).Name);
 
             return Left<MediatorError, IReadOnlyList<string>>(
                 MediatorErrors.FromException(
@@ -282,11 +250,7 @@ public sealed class AmazonSQSMessagePublisher : IAmazonSQSMessagePublisher
 
         try
         {
-            _logger.LogDebug(
-                "Sending FIFO message of type {MessageType} to queue {Queue} with group {Group}",
-                typeof(TMessage).Name,
-                effectiveQueueUrl,
-                messageGroupId);
+            Log.SendingFifoMessage(_logger, typeof(TMessage).Name, effectiveQueueUrl, messageGroupId);
 
             var request = new SendMessageRequest
             {
@@ -306,18 +270,13 @@ public sealed class AmazonSQSMessagePublisher : IAmazonSQSMessagePublisher
 
             var response = await _sqsClient.SendMessageAsync(request, cancellationToken).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully sent FIFO message with ID {MessageId}",
-                response.MessageId);
+            Log.SuccessfullySentFifoMessage(_logger, response.MessageId);
 
             return Right<MediatorError, string>(response.MessageId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to send FIFO message of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.FailedToSendFifoMessage(_logger, ex, typeof(TMessage).Name);
 
             return Left<MediatorError, string>(
                 MediatorErrors.FromException(

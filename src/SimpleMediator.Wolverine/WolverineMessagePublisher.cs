@@ -9,7 +9,6 @@ namespace SimpleMediator.Wolverine;
 /// <summary>
 /// Wolverine-based implementation of the message publisher.
 /// </summary>
-#pragma warning disable CA1848 // Use LoggerMessage delegates
 public sealed class WolverineMessagePublisher : IWolverineMessagePublisher
 {
     private readonly IMessageBus _messageBus;
@@ -46,24 +45,17 @@ public sealed class WolverineMessagePublisher : IWolverineMessagePublisher
 
         try
         {
-            _logger.LogDebug(
-                "Publishing message of type {MessageType} via Wolverine",
-                typeof(TMessage).Name);
+            Log.PublishingMessage(_logger, typeof(TMessage).Name);
 
             await _messageBus.PublishAsync(message).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully published message of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.SuccessfullyPublishedMessage(_logger, typeof(TMessage).Name);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to publish message of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.FailedToPublishMessage(_logger, ex, typeof(TMessage).Name);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -85,27 +77,17 @@ public sealed class WolverineMessagePublisher : IWolverineMessagePublisher
 
         try
         {
-            _logger.LogDebug(
-                "Sending message of type {MessageType} to endpoint {Endpoint}",
-                typeof(TMessage).Name,
-                endpointName);
+            Log.SendingToEndpoint(_logger, typeof(TMessage).Name, endpointName);
 
             await _messageBus.EndpointFor(endpointName).SendAsync(message).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully sent message of type {MessageType} to endpoint {Endpoint}",
-                typeof(TMessage).Name,
-                endpointName);
+            Log.SuccessfullySentToEndpoint(_logger, typeof(TMessage).Name, endpointName);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to send message of type {MessageType} to endpoint {Endpoint}",
-                typeof(TMessage).Name,
-                endpointName);
+            Log.FailedToSendToEndpoint(_logger, ex, typeof(TMessage).Name, endpointName);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -126,27 +108,17 @@ public sealed class WolverineMessagePublisher : IWolverineMessagePublisher
 
         try
         {
-            _logger.LogDebug(
-                "Scheduling message of type {MessageType} for {ScheduledTime}",
-                typeof(TMessage).Name,
-                scheduledTime);
+            Log.SchedulingMessage(_logger, typeof(TMessage).Name, scheduledTime);
 
             await _messageBus.ScheduleAsync(message, scheduledTime).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully scheduled message of type {MessageType} for {ScheduledTime}",
-                typeof(TMessage).Name,
-                scheduledTime);
+            Log.SuccessfullyScheduledMessage(_logger, typeof(TMessage).Name, scheduledTime);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to schedule message of type {MessageType} for {ScheduledTime}",
-                typeof(TMessage).Name,
-                scheduledTime);
+            Log.FailedToScheduleMessage(_logger, ex, typeof(TMessage).Name, scheduledTime);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -156,4 +128,3 @@ public sealed class WolverineMessagePublisher : IWolverineMessagePublisher
         }
     }
 }
-#pragma warning restore CA1848

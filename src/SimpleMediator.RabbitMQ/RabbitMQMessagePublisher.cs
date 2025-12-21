@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
@@ -11,7 +10,6 @@ namespace SimpleMediator.RabbitMQ;
 /// <summary>
 /// RabbitMQ-based implementation of the message publisher.
 /// </summary>
-#pragma warning disable CA1848 // Use LoggerMessage delegates
 public sealed class RabbitMQMessagePublisher : IRabbitMQMessagePublisher, IAsyncDisposable
 {
     private readonly IConnection _connection;
@@ -56,11 +54,7 @@ public sealed class RabbitMQMessagePublisher : IRabbitMQMessagePublisher, IAsync
         {
             var effectiveRoutingKey = routingKey ?? typeof(TMessage).Name;
 
-            _logger.LogDebug(
-                "Publishing message of type {MessageType} to exchange {Exchange} with routing key {RoutingKey}",
-                typeof(TMessage).Name,
-                _options.ExchangeName,
-                effectiveRoutingKey);
+            Log.PublishingMessage(_logger, typeof(TMessage).Name, _options.ExchangeName, effectiveRoutingKey);
 
             var body = JsonSerializer.SerializeToUtf8Bytes(message);
             var properties = new BasicProperties
@@ -79,18 +73,13 @@ public sealed class RabbitMQMessagePublisher : IRabbitMQMessagePublisher, IAsync
                 body: body,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully published message of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.SuccessfullyPublishedMessage(_logger, typeof(TMessage).Name);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to publish message of type {MessageType}",
-                typeof(TMessage).Name);
+            Log.FailedToPublishMessage(_logger, ex, typeof(TMessage).Name);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -112,10 +101,7 @@ public sealed class RabbitMQMessagePublisher : IRabbitMQMessagePublisher, IAsync
 
         try
         {
-            _logger.LogDebug(
-                "Sending message of type {MessageType} to queue {Queue}",
-                typeof(TMessage).Name,
-                queueName);
+            Log.SendingToQueue(_logger, typeof(TMessage).Name, queueName);
 
             var body = JsonSerializer.SerializeToUtf8Bytes(message);
             var properties = new BasicProperties
@@ -134,20 +120,13 @@ public sealed class RabbitMQMessagePublisher : IRabbitMQMessagePublisher, IAsync
                 body: body,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Successfully sent message of type {MessageType} to queue {Queue}",
-                typeof(TMessage).Name,
-                queueName);
+            Log.SuccessfullySentToQueue(_logger, typeof(TMessage).Name, queueName);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to send message of type {MessageType} to queue {Queue}",
-                typeof(TMessage).Name,
-                queueName);
+            Log.FailedToSendToQueue(_logger, ex, typeof(TMessage).Name, queueName);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(

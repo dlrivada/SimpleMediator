@@ -54,11 +54,11 @@ internal sealed class MongoDbIndexCreator : IHostedService
                 await CreateSchedulingIndexesAsync(database, cancellationToken).ConfigureAwait(false);
             }
 
-            _logger.LogInformation("MongoDB indexes created successfully");
+            Log.IndexesCreatedSuccessfully(_logger);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create MongoDB indexes");
+            Log.FailedToCreateIndexes(_logger, ex);
             throw;
         }
     }
@@ -88,7 +88,7 @@ internal sealed class MongoDbIndexCreator : IHostedService
         };
 
         await collection.Indexes.CreateManyAsync(indexModels, cancellationToken).ConfigureAwait(false);
-        _logger.LogDebug("Created outbox indexes");
+        Log.CreatedOutboxIndexes(_logger);
     }
 
     private async Task CreateInboxIndexesAsync(IMongoDatabase database, CancellationToken cancellationToken)
@@ -114,7 +114,7 @@ internal sealed class MongoDbIndexCreator : IHostedService
         };
 
         await collection.Indexes.CreateManyAsync(indexModels, cancellationToken).ConfigureAwait(false);
-        _logger.LogDebug("Created inbox indexes");
+        Log.CreatedInboxIndexes(_logger);
     }
 
     private async Task CreateSagaIndexesAsync(IMongoDatabase database, CancellationToken cancellationToken)
@@ -143,7 +143,7 @@ internal sealed class MongoDbIndexCreator : IHostedService
         };
 
         await collection.Indexes.CreateManyAsync(indexModels, cancellationToken).ConfigureAwait(false);
-        _logger.LogDebug("Created saga indexes");
+        Log.CreatedSagaIndexes(_logger);
     }
 
     private async Task CreateSchedulingIndexesAsync(IMongoDatabase database, CancellationToken cancellationToken)
@@ -174,6 +174,6 @@ internal sealed class MongoDbIndexCreator : IHostedService
         };
 
         await collection.Indexes.CreateManyAsync(indexModels, cancellationToken).ConfigureAwait(false);
-        _logger.LogDebug("Created scheduling indexes");
+        Log.CreatedSchedulingIndexes(_logger);
     }
 }

@@ -52,7 +52,7 @@ public sealed class OutboxStoreMongoDB : IOutboxStore
         };
 
         await _collection.InsertOneAsync(mongoMessage, cancellationToken: cancellationToken).ConfigureAwait(false);
-        _logger.LogDebug("Added outbox message {MessageId} of type {NotificationType}", message.Id, message.NotificationType);
+        Log.AddedOutboxMessage(_logger, message.Id);
     }
 
     /// <inheritdoc />
@@ -79,7 +79,7 @@ public sealed class OutboxStoreMongoDB : IOutboxStore
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        _logger.LogDebug("Retrieved {Count} pending outbox messages", messages.Count);
+        Log.RetrievedPendingOutboxMessages(_logger, messages.Count);
         return messages;
     }
 
@@ -94,11 +94,11 @@ public sealed class OutboxStoreMongoDB : IOutboxStore
 
         if (result.ModifiedCount == 0)
         {
-            _logger.LogWarning("Outbox message {MessageId} not found for marking as processed", messageId);
+            Log.OutboxMessageNotFoundForProcessed(_logger, messageId);
         }
         else
         {
-            _logger.LogDebug("Marked outbox message {MessageId} as processed", messageId);
+            Log.MarkedOutboxMessageAsProcessed(_logger, messageId);
         }
     }
 
@@ -119,11 +119,11 @@ public sealed class OutboxStoreMongoDB : IOutboxStore
 
         if (result.ModifiedCount == 0)
         {
-            _logger.LogWarning("Outbox message {MessageId} not found for marking as failed", messageId);
+            Log.OutboxMessageNotFoundForFailed(_logger, messageId);
         }
         else
         {
-            _logger.LogDebug("Marked outbox message {MessageId} as failed: {ErrorMessage}", messageId, errorMessage);
+            Log.MarkedOutboxMessageAsFailed(_logger, messageId, errorMessage);
         }
     }
 

@@ -1,4 +1,3 @@
-#pragma warning disable CA1848 // Use LoggerMessage delegates for performance
 #pragma warning disable CA1822 // Member can be static
 
 using System.Text.Json;
@@ -107,7 +106,7 @@ public abstract class MediatorHub : Hub
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error executing command {CommandType}", commandTypeName);
+            Log.ErrorExecutingCommand(_logger, ex, commandTypeName);
             return CreateErrorResponse("command.execution_failed", GetErrorMessage(ex));
         }
     }
@@ -140,7 +139,7 @@ public abstract class MediatorHub : Hub
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error executing query {QueryType}", queryTypeName);
+            Log.ErrorExecutingQuery(_logger, ex, queryTypeName);
             return CreateErrorResponse("query.execution_failed", GetErrorMessage(ex));
         }
     }
@@ -158,14 +157,14 @@ public abstract class MediatorHub : Hub
             var notificationType = ResolveType(notificationTypeName);
             if (notificationType == null)
             {
-                _logger.LogWarning("Notification type '{NotificationType}' not found", notificationTypeName);
+                Log.NotificationTypeNotFound(_logger, notificationTypeName);
                 return;
             }
 
             var notification = JsonSerializer.Deserialize(notificationJson.GetRawText(), notificationType, _options.JsonSerializerOptions);
             if (notification == null)
             {
-                _logger.LogWarning("Failed to deserialize notification of type '{NotificationType}'", notificationTypeName);
+                Log.FailedToDeserializeNotification(_logger, notificationTypeName);
                 return;
             }
 
@@ -173,7 +172,7 @@ public abstract class MediatorHub : Hub
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error publishing notification {NotificationType}", notificationTypeName);
+            Log.ErrorPublishingNotification(_logger, ex, notificationTypeName);
         }
     }
 

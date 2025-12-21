@@ -63,11 +63,7 @@ public sealed class OutboxProcessor : BackgroundService
     /// <inheritdoc/>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation(
-            "Outbox Processor starting (Interval: {Interval}, BatchSize: {BatchSize}, MaxRetries: {MaxRetries})",
-            _options.ProcessingInterval,
-            _options.BatchSize,
-            _options.MaxRetries);
+        Log.OutboxProcessorStarting(_logger, _options.ProcessingInterval, _options.BatchSize, _options.MaxRetries);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -77,13 +73,13 @@ public sealed class OutboxProcessor : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing outbox messages");
+                Log.ErrorProcessingOutboxMessages(_logger, ex);
             }
 
             await Task.Delay(_options.ProcessingInterval, stoppingToken);
         }
 
-        _logger.LogInformation("Outbox Processor stopping");
+        Log.OutboxProcessorStopping(_logger);
     }
 
     private async Task ProcessPendingMessagesAsync(CancellationToken cancellationToken)
@@ -107,7 +103,7 @@ public sealed class OutboxProcessor : BackgroundService
         if (pendingMessages.Count == 0)
             return;
 
-        _logger.LogDebug("Processing {Count} pending outbox messages", pendingMessages.Count);
+        Log.ProcessingPendingOutboxMessages(_logger, pendingMessages.Count);
 
         var successCount = 0;
         var failureCount = 0;
@@ -120,10 +116,7 @@ public sealed class OutboxProcessor : BackgroundService
                 var notificationType = Type.GetType(message.NotificationType);
                 if (notificationType == null)
                 {
-                    _logger.LogError(
-                        "Cannot find type {NotificationType} for outbox message {MessageId}",
-                        message.NotificationType,
-                        message.Id);
+                    Log.TypeNotFound(_logger, message.NotificationType, message.Id);
 
                     message.ErrorMessage = $"Type not found: {message.NotificationType}";
                     message.RetryCount++;
@@ -135,9 +128,7 @@ public sealed class OutboxProcessor : BackgroundService
                 var notification = JsonSerializer.Deserialize(message.Content, notificationType, JsonOptions);
                 if (notification == null)
                 {
-                    _logger.LogError(
-                        "Failed to deserialize notification for outbox message {MessageId}",
-                        message.Id);
+                    Log.DeserializationFailed(_logger, message.Id);
 
                     message.ErrorMessage = "Deserialization failed";
                     message.RetryCount++;
@@ -154,17 +145,11 @@ public sealed class OutboxProcessor : BackgroundService
                 message.ErrorMessage = null;
                 successCount++;
 
-                _logger.LogDebug(
-                    "Published notification {NotificationType} from outbox message {MessageId}",
-                    notificationType.Name,
-                    message.Id);
+                Log.PublishedNotification(_logger, notificationType.Name, message.Id);
             }
             catch (Exception ex)
             {
-                _logger.LogError(
-                    ex,
-                    "Error processing outbox message {MessageId}",
-                    message.Id);
+                Log.ErrorProcessingOutboxMessage(_logger, ex, message.Id);
 
                 message.ErrorMessage = ex.Message;
                 message.RetryCount++;
@@ -180,11 +165,7 @@ public sealed class OutboxProcessor : BackgroundService
 
         if (successCount > 0 || failureCount > 0)
         {
-            _logger.LogInformation(
-                "Processed {TotalCount} outbox messages (Success: {SuccessCount}, Failed: {FailureCount})",
-                successCount + failureCount,
-                successCount,
-                failureCount);
+            Log.ProcessedOutboxMessages(_logger, successCount + failureCount, successCount, failureCount);
         }
     }
 

@@ -47,10 +47,7 @@ public sealed class MassTransitNotificationConsumer<TNotification> : IConsumer<T
 
         var notificationType = typeof(TNotification).Name;
 
-        _logger.LogInformation(
-            "Consuming MassTransit notification {NotificationType} with MessageId {MessageId}",
-            notificationType,
-            context.MessageId);
+        Log.ConsumingNotification(_logger, notificationType, context.MessageId);
 
         var result = await _mediator.Publish(context.Message, context.CancellationToken)
             .ConfigureAwait(false);
@@ -58,18 +55,11 @@ public sealed class MassTransitNotificationConsumer<TNotification> : IConsumer<T
         result.Match(
             Right: _ =>
             {
-                _logger.LogInformation(
-                    "Successfully published notification {NotificationType} with MessageId {MessageId}",
-                    notificationType,
-                    context.MessageId);
+                Log.PublishedNotificationWithMessageId(_logger, notificationType, context.MessageId);
             },
             Left: error =>
             {
-                _logger.LogError(
-                    "Failed to publish notification {NotificationType} with MessageId {MessageId}: {ErrorMessage}",
-                    notificationType,
-                    context.MessageId,
-                    error.Message);
+                Log.FailedToPublishNotification(_logger, notificationType, context.MessageId, error.Message);
 
                 if (_options.ThrowOnMediatorError)
                 {

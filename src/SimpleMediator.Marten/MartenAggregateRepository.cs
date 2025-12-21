@@ -45,10 +45,7 @@ public sealed class MartenAggregateRepository<TAggregate> : IAggregateRepository
     {
         try
         {
-            _logger.LogDebug(
-                "Loading aggregate {AggregateType} with ID {AggregateId}",
-                typeof(TAggregate).Name,
-                id);
+            Log.LoadingAggregate(_logger, typeof(TAggregate).Name, id);
 
             var aggregate = await _session.Events.AggregateStreamAsync<TAggregate>(
                 id,
@@ -56,10 +53,7 @@ public sealed class MartenAggregateRepository<TAggregate> : IAggregateRepository
 
             if (aggregate is null)
             {
-                _logger.LogWarning(
-                    "Aggregate {AggregateType} with ID {AggregateId} not found",
-                    typeof(TAggregate).Name,
-                    id);
+                Log.AggregateNotFound(_logger, typeof(TAggregate).Name, id);
 
                 return Left<MediatorError, TAggregate>(
                     MediatorErrors.Create(
@@ -67,21 +61,13 @@ public sealed class MartenAggregateRepository<TAggregate> : IAggregateRepository
                         $"Aggregate {typeof(TAggregate).Name} with ID {id} was not found."));
             }
 
-            _logger.LogDebug(
-                "Loaded aggregate {AggregateType} with ID {AggregateId} at version {Version}",
-                typeof(TAggregate).Name,
-                id,
-                aggregate.Version);
+            Log.LoadedAggregate(_logger, typeof(TAggregate).Name, id, aggregate.Version);
 
             return Right<MediatorError, TAggregate>(aggregate);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Error loading aggregate {AggregateType} with ID {AggregateId}",
-                typeof(TAggregate).Name,
-                id);
+            Log.ErrorLoadingAggregate(_logger, ex, typeof(TAggregate).Name, id);
 
             return Left<MediatorError, TAggregate>(
                 MediatorErrors.FromException(
@@ -99,11 +85,7 @@ public sealed class MartenAggregateRepository<TAggregate> : IAggregateRepository
     {
         try
         {
-            _logger.LogDebug(
-                "Loading aggregate {AggregateType} with ID {AggregateId} at version {Version}",
-                typeof(TAggregate).Name,
-                id,
-                version);
+            Log.LoadingAggregateAtVersion(_logger, typeof(TAggregate).Name, id, version);
 
             var aggregate = await _session.Events.AggregateStreamAsync<TAggregate>(
                 id,
@@ -142,18 +124,11 @@ public sealed class MartenAggregateRepository<TAggregate> : IAggregateRepository
             var uncommittedEvents = aggregate.UncommittedEvents;
             if (uncommittedEvents.Count == 0)
             {
-                _logger.LogDebug(
-                    "No uncommitted events for aggregate {AggregateType} with ID {AggregateId}",
-                    typeof(TAggregate).Name,
-                    aggregate.Id);
+                Log.NoUncommittedEvents(_logger, typeof(TAggregate).Name, aggregate.Id);
                 return Right<MediatorError, Unit>(Unit.Default);
             }
 
-            _logger.LogDebug(
-                "Saving {EventCount} events for aggregate {AggregateType} with ID {AggregateId}",
-                uncommittedEvents.Count,
-                typeof(TAggregate).Name,
-                aggregate.Id);
+            Log.SavingEvents(_logger, uncommittedEvents.Count, typeof(TAggregate).Name, aggregate.Id);
 
             // Append events to the stream
             var expectedVersion = aggregate.Version - uncommittedEvents.Count;
@@ -164,21 +139,13 @@ public sealed class MartenAggregateRepository<TAggregate> : IAggregateRepository
             // Clear uncommitted events after successful save
             aggregate.ClearUncommittedEvents();
 
-            _logger.LogInformation(
-                "Saved {EventCount} events for aggregate {AggregateType} with ID {AggregateId}",
-                uncommittedEvents.Count,
-                typeof(TAggregate).Name,
-                aggregate.Id);
+            Log.SavedEvents(_logger, uncommittedEvents.Count, typeof(TAggregate).Name, aggregate.Id);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex) when (IsConcurrencyException(ex))
         {
-            _logger.LogWarning(
-                ex,
-                "Concurrency conflict saving aggregate {AggregateType} with ID {AggregateId}",
-                typeof(TAggregate).Name,
-                aggregate.Id);
+            Log.ConcurrencyConflict(_logger, ex, typeof(TAggregate).Name, aggregate.Id);
 
             if (_options.ThrowOnConcurrencyConflict)
             {
@@ -193,11 +160,7 @@ public sealed class MartenAggregateRepository<TAggregate> : IAggregateRepository
         }
         catch (Exception ex) when (!IsConcurrencyException(ex))
         {
-            _logger.LogError(
-                ex,
-                "Error saving aggregate {AggregateType} with ID {AggregateId}",
-                typeof(TAggregate).Name,
-                aggregate.Id);
+            Log.ErrorSavingAggregate(_logger, ex, typeof(TAggregate).Name, aggregate.Id);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -225,11 +188,7 @@ public sealed class MartenAggregateRepository<TAggregate> : IAggregateRepository
                         "Cannot create aggregate without any events."));
             }
 
-            _logger.LogDebug(
-                "Creating aggregate {AggregateType} with ID {AggregateId} with {EventCount} events",
-                typeof(TAggregate).Name,
-                aggregate.Id,
-                uncommittedEvents.Count);
+            Log.CreatingAggregate(_logger, typeof(TAggregate).Name, aggregate.Id, uncommittedEvents.Count);
 
             // Start a new stream
             _session.Events.StartStream<TAggregate>(aggregate.Id, uncommittedEvents.ToArray());
@@ -239,20 +198,13 @@ public sealed class MartenAggregateRepository<TAggregate> : IAggregateRepository
             // Clear uncommitted events after successful save
             aggregate.ClearUncommittedEvents();
 
-            _logger.LogInformation(
-                "Created aggregate {AggregateType} with ID {AggregateId}",
-                typeof(TAggregate).Name,
-                aggregate.Id);
+            Log.CreatedAggregate(_logger, typeof(TAggregate).Name, aggregate.Id);
 
             return Right<MediatorError, Unit>(Unit.Default);
         }
         catch (Exception ex) when (IsStreamCollisionException(ex))
         {
-            _logger.LogWarning(
-                ex,
-                "Stream already exists for aggregate {AggregateType} with ID {AggregateId}",
-                typeof(TAggregate).Name,
-                aggregate.Id);
+            Log.StreamAlreadyExists(_logger, ex, typeof(TAggregate).Name, aggregate.Id);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
@@ -262,11 +214,7 @@ public sealed class MartenAggregateRepository<TAggregate> : IAggregateRepository
         }
         catch (Exception ex) when (!IsStreamCollisionException(ex))
         {
-            _logger.LogError(
-                ex,
-                "Error creating aggregate {AggregateType} with ID {AggregateId}",
-                typeof(TAggregate).Name,
-                aggregate.Id);
+            Log.ErrorCreatingAggregate(_logger, ex, typeof(TAggregate).Name, aggregate.Id);
 
             return Left<MediatorError, Unit>(
                 MediatorErrors.FromException(
