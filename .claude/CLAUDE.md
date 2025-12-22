@@ -415,8 +415,12 @@ var message = new OutboxMessageBuilder()
 ### Git Workflow
 
 - **No Force Push to main/master**: Never use `--force` on main branches
-- **Commit Messages**: Clear, descriptive, include emoji (🤖 Generated with Claude Code)
-- **Co-Authored-By**: Include Claude attribution on AI-assisted commits
+- **Commit Messages**: Clear, descriptive, in English
+- **No AI Attribution**: Do NOT include any AI signatures, co-author tags, or Claude references in commits
+  - ❌ Never add `Co-Authored-By: Claude...`
+  - ❌ Never add `🤖 Generated with Claude Code`
+  - ❌ Never add any reference to AI assistance in commit messages
+- **Author**: All commits should appear as authored solely by the repository owner
 
 ### Future Roadmap Items
 
@@ -429,9 +433,10 @@ var message = new OutboxMessageBuilder()
 ### Spanish/English
 
 - User communicates in Spanish
-- Code, comments, documentation: English
+- Code, comments, documentation: **English only**
 - Commit messages: English
 - User-facing messages: Spanish when responding to user
+- **Translation Rule**: If you encounter any Spanish comments in code while editing, translate them to English
 
 ## Current Project Status (Updated: 2025-12-21)
 
