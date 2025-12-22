@@ -1,6 +1,6 @@
 # SimpleMediator Roadmap
 
-**Last Updated**: 2025-12-21
+**Last Updated**: 2025-12-22
 **Version**: Pre-1.0 (breaking changes allowed)
 **Future Name**: Encina (to be renamed before 1.0)
 
@@ -36,6 +36,10 @@ SimpleMediator (future: **Encina**) is a functional mediation library for .NET t
 | **Developer Tooling** | 0/3 | 📋 Pending |
 | **EDA Enhancements** | 0/4 | 📋 Pending |
 | **Microservices Enhancements** | 0/4 | 📋 Pending |
+| **Modular Monolith** | 0/1 | 📋 Pending |
+| **Serverless** | 0/2 | 📋 Pending |
+| **DDD Tactical Patterns** | 0/1 | 📋 Pending |
+| **TDD Tooling** | 0/1 | 📋 Pending |
 
 ### Quality Metrics
 
@@ -178,6 +182,346 @@ Restructuring all test projects to use Testcontainers for real database integrat
 | **Distributed Lock Abstractions** | SimpleMediator.DistributedLock | ⭐⭐ | IDistributedLock interface |
 
 > **Note**: Service Discovery, Secret Management, and Configuration are delegated to infrastructure (Dapr, Kubernetes, Azure).
+
+### Modular Monolith Support
+
+**Package**: `SimpleMediator.Modules`
+
+Enable true modular monolith architecture with explicit module boundaries, lifecycle management, and controlled inter-module communication.
+
+#### Core Abstractions
+
+| Feature | Priority | Complexity | Notes |
+|---------|----------|------------|-------|
+| `IModule` interface | ⭐⭐⭐⭐⭐ | Low | Module definition with Name, Assembly, ConfigureServices |
+| `IModuleRegistry` | ⭐⭐⭐⭐⭐ | Low | Runtime module discovery and introspection |
+| Module lifecycle hooks | ⭐⭐⭐⭐ | Low | OnStartAsync/OnStopAsync for initialization |
+| Module-scoped behaviors | ⭐⭐⭐⭐ | Medium | Apply behaviors only to specific modules |
+| Event routing with filters | ⭐⭐⭐ | Medium | Selective notification subscription per module |
+| Module contracts | ⭐⭐⭐ | High | Compile-time validation of inter-module dependencies |
+| Anti-Corruption Layers | ⭐⭐ | High | Translation between module boundaries |
+
+#### Proposed API
+
+```csharp
+// Module definition
+public interface IModule
+{
+    string Name { get; }
+    Assembly Assembly { get; }
+    void ConfigureServices(IServiceCollection services);
+    Task OnStartAsync(CancellationToken ct);
+    Task OnStopAsync(CancellationToken ct);
+}
+
+// Registration
+services.AddSimpleMediator()
+    .AddModules(modules =>
+    {
+        modules.Register<OrdersModule>();
+        modules.Register<InvoicingModule>();
+        modules.Register<ShippingModule>();
+
+        // Explicit contracts between modules
+        modules.DefineContract<OrdersModule, InvoicingModule>(contract =>
+        {
+            contract.Publishes<OrderPlacedEvent>();
+            contract.Publishes<OrderCancelledEvent>();
+        });
+    });
+
+// Event with module scope
+[ModuleEvent(SourceModule = "Orders", TargetModules = new[] { "Invoicing", "Shipping" })]
+public record OrderPlacedEvent(Guid OrderId) : INotification;
+```
+
+#### Current Support (Without Package)
+
+Applications can still use modular patterns today:
+
+- ✅ Assembly-based handler discovery per module
+- ✅ `IRequestContext` with TenantId/UserId for isolation
+- ✅ Outbox/Inbox/Sagas for reliable inter-module messaging
+- ✅ Notifications for event-driven communication
+
+#### Gaps Addressed by This Package
+
+- ❌ → ✅ Explicit module registry and discovery
+- ❌ → ✅ Module lifecycle management
+- ❌ → ✅ Handler isolation (prevent cross-module collisions)
+- ❌ → ✅ Selective event routing (not global broadcast)
+- ❌ → ✅ Module boundary enforcement
+- ❌ → ✅ Module-scoped pipeline behaviors
+
+### Serverless Integration
+
+First-class support for serverless architectures with Azure Functions and AWS Lambda.
+
+#### Packages
+
+| Package | Priority | Notes |
+|---------|----------|-------|
+| `SimpleMediator.AzureFunctions` | ⭐⭐⭐⭐ | Azure Functions integration (.NET 10, Flex Consumption) |
+| `SimpleMediator.AwsLambda` | ⭐⭐⭐⭐ | AWS Lambda integration (managed instances, containers) |
+
+#### Features
+
+| Feature | Priority | Complexity | Notes |
+|---------|----------|------------|-------|
+| Function triggers as handlers | ⭐⭐⭐⭐⭐ | Low | HTTP, Timer, Queue, Blob triggers dispatch to mediator |
+| Cold start optimization | ⭐⭐⭐⭐ | Medium | Pre-warming, lazy initialization strategies |
+| Durable Functions orchestration | ⭐⭐⭐⭐ | Medium | Saga-like workflows with Durable Functions |
+| Step Functions integration | ⭐⭐⭐ | Medium | AWS Step Functions state machine support |
+| Context propagation | ⭐⭐⭐⭐⭐ | Low | RequestContext from function context/headers |
+| OpenTelemetry integration | ⭐⭐⭐⭐ | Low | Distributed tracing across function invocations |
+
+#### Proposed API
+
+```csharp
+// Azure Functions
+public class OrderFunctions
+{
+    private readonly IMediator _mediator;
+
+    [Function("CreateOrder")]
+    public async Task<IActionResult> CreateOrder(
+        [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequest req)
+    {
+        var command = await req.ReadFromJsonAsync<CreateOrderCommand>();
+        return await _mediator.SendToActionResult(command);
+    }
+
+    [Function("ProcessOrderQueue")]
+    public async Task ProcessOrder(
+        [QueueTrigger("orders")] CreateOrderCommand command,
+        FunctionContext context)
+    {
+        // Context automatically propagated (correlation, tenant, etc.)
+        await _mediator.Send(command, context.ToRequestContext());
+    }
+}
+
+// AWS Lambda
+public class OrderHandler : SimpleMediatorLambdaHandler<CreateOrderCommand, OrderResult>
+{
+    // Automatic serialization, context propagation, error handling
+}
+
+// Durable Functions with Sagas
+[Function("OrderSagaOrchestrator")]
+public async Task<OrderResult> RunOrchestrator(
+    [OrchestrationTrigger] TaskOrchestrationContext context)
+{
+    var saga = new OrderSaga();
+    return await _mediator.ExecuteSaga(saga, context);
+}
+```
+
+#### Current Support (Without Packages)
+
+SimpleMediator works in serverless today but requires manual setup:
+
+- ✅ DI registration in function startup
+- ✅ Manual context creation from headers
+- ✅ Basic request/response handling
+
+#### Gaps Addressed by These Packages
+
+- ❌ → ✅ Automatic context propagation from function context
+- ❌ → ✅ Cold start optimizations (pre-warming behaviors)
+- ❌ → ✅ Native trigger-to-handler mapping
+- ❌ → ✅ Durable Functions / Step Functions orchestration
+- ❌ → ✅ Lambda base classes with automatic serialization
+- ❌ → ✅ OpenTelemetry auto-instrumentation for functions
+
+### Domain-Driven Design (DDD) Support
+
+**Package**: `SimpleMediator.DomainModel`
+
+Tactical DDD patterns with first-class ROP integration for building rich domain models.
+
+#### Current Support
+
+| Pattern | Status | Location |
+|---------|--------|----------|
+| Aggregates | ✅ Strong | `AggregateBase` in Marten/EventStoreDB |
+| Domain Events | 🟡 Partial | Via `INotification` + auto-publishing |
+| Repositories | ✅ Strong | `IAggregateRepository<T>` with ROP |
+| Domain Errors | ✅ Excellent | `MediatorError` + Either monad |
+| Value Objects | ❌ Missing | No base class |
+| Entities | ❌ Missing | No interface |
+| Specifications | ❌ Missing | No support |
+| Strongly-Typed IDs | ❌ Missing | No base record |
+
+#### Proposed Abstractions
+
+| Feature | Priority | Complexity | Notes |
+|---------|----------|------------|-------|
+| `IDomainEvent` interface | ⭐⭐⭐⭐⭐ | Low | AggregateId, OccurredAtUtc, Version |
+| `ValueObject` base record | ⭐⭐⭐⭐⭐ | Low | Immutable, equality by value |
+| `Entity<TId>` base class | ⭐⭐⭐⭐ | Low | Identity-based equality |
+| `StronglyTypedId<T>` record | ⭐⭐⭐⭐ | Low | Avoid primitive obsession |
+| `ISpecification<T>` with ROP | ⭐⭐⭐⭐ | Medium | Composable business rules |
+| `IDomainService` marker | ⭐⭐⭐ | Low | Documentation/discovery |
+| `EnsureInvariant` in AggregateBase | ⭐⭐⭐⭐ | Low | ROP-based invariant validation |
+
+#### Proposed API
+
+```csharp
+// Domain Event with metadata
+public interface IDomainEvent : INotification
+{
+    Guid AggregateId { get; }
+    DateTimeOffset OccurredAtUtc { get; }
+    int Version { get; }
+}
+
+// Value Object (immutable, equality by value)
+public abstract record ValueObject
+{
+    protected abstract IEnumerable<object?> GetAtomicValues();
+}
+
+public record Money(decimal Amount, string Currency) : ValueObject
+{
+    protected override IEnumerable<object?> GetAtomicValues()
+    {
+        yield return Amount;
+        yield return Currency;
+    }
+}
+
+// Strongly-Typed ID (avoid primitive obsession)
+public abstract record StronglyTypedId<T>(T Value) where T : notnull;
+
+public record OrderId(Guid Value) : StronglyTypedId<Guid>(Value)
+{
+    public static OrderId New() => new(Guid.NewGuid());
+}
+
+// Specification Pattern with ROP
+public interface ISpecification<T>
+{
+    Either<MediatorError, bool> IsSatisfiedBy(T entity);
+    ISpecification<T> And(ISpecification<T> other);
+    ISpecification<T> Or(ISpecification<T> other);
+    ISpecification<T> Not();
+}
+
+public class OrderMustBeShippable : ISpecification<Order>
+{
+    public Either<MediatorError, bool> IsSatisfiedBy(Order order) =>
+        order.Status == OrderStatus.Paid && order.Items.Any()
+            ? true
+            : MediatorError.New("order.not_shippable");
+}
+
+// Invariant validation in aggregates
+public abstract class AggregateBase
+{
+    protected Either<MediatorError, Unit> EnsureInvariant(
+        bool condition, string errorCode, string message) =>
+        condition ? Unit.Default : MediatorError.New(errorCode, message);
+
+    public Either<MediatorError, Unit> Ship() =>
+        EnsureInvariant(Status == OrderStatus.Paid, "order.not_paid", "Cannot ship unpaid order")
+            .Map(_ => { RaiseEvent(new OrderShipped(Id)); return Unit.Default; });
+}
+```
+
+### Test-Driven Development (TDD) Support
+
+**Package**: `SimpleMediator.Testing`
+
+Fluent testing API for handlers, aggregates, and pipelines with first-class ROP assertions.
+
+#### Current Support
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| Test Infrastructure | ✅ Excellent | `SimpleMediator.TestInfrastructure` |
+| Database Fixtures | ✅ Strong | Testcontainers (5 DBs) |
+| Test Builders | ✅ Strong | `OutboxMessageBuilder`, etc. |
+| Handler Testing | 🟡 Partial | Basic fixtures only |
+| Assertion Extensions | 🟡 Incomplete | Planned |
+| MediatorFixture | ❌ Missing | In Developer Tooling |
+
+#### Proposed Abstractions
+
+| Feature | Priority | Complexity | Notes |
+|---------|----------|------------|-------|
+| `MediatorFixture` fluent builder | ⭐⭐⭐⭐⭐ | Medium | Configure handlers, behaviors, fakes |
+| `AggregateTestBase<T>` | ⭐⭐⭐⭐⭐ | Medium | Given/When/Then for event-sourced aggregates |
+| ROP Assertion Extensions | ⭐⭐⭐⭐⭐ | Low | `ShouldBeSuccess()`, `ShouldBeError()` |
+| Aggregate Assertions | ⭐⭐⭐⭐ | Low | `ShouldHaveRaisedEvent<T>()` |
+| `FakeRepository<T>` | ⭐⭐⭐⭐ | Low | In-memory aggregate store for tests |
+| Handler Test Base | ⭐⭐⭐ | Medium | Simplified handler unit testing |
+
+#### Proposed API
+
+```csharp
+// MediatorFixture - Fluent test setup
+var mediator = new MediatorFixture()
+    .WithHandler<CreateOrderHandler>()
+    .WithBehavior<ValidationBehavior<CreateOrderCommand, OrderId>>()
+    .WithFakeRepository(existingOrder, anotherOrder)
+    .Build();
+
+var result = await mediator.Send(new CreateOrderCommand(...));
+result.ShouldBeSuccess();
+
+// AggregateTestBase - Given/When/Then for Event Sourcing
+public class OrderAggregateTests : AggregateTestBase<Order>
+{
+    [Fact]
+    public void Ship_WhenPaid_RaisesOrderShippedEvent()
+    {
+        Given(new OrderCreated(orderId), new OrderPaid(orderId));
+        When(order => order.Ship());
+        Then<OrderShipped>(e => e.OrderId.Should().Be(orderId));
+    }
+
+    [Fact]
+    public void Ship_WhenNotPaid_ReturnsError()
+    {
+        Given(new OrderCreated(orderId));
+        When(order => order.Ship());
+        ThenError("order.not_paid");
+    }
+}
+
+// ROP Assertion Extensions
+public static class MediatorAssertions
+{
+    public static T ShouldBeSuccess<T>(this Either<MediatorError, T> result);
+    public static MediatorError ShouldBeError<T>(this Either<MediatorError, T> result);
+    public static void ShouldBeError<T>(this Either<MediatorError, T> result, string code);
+}
+
+// Aggregate Assertions
+public static class AggregateAssertions
+{
+    public static void ShouldHaveRaisedEvent<TEvent>(this IAggregate aggregate);
+    public static void ShouldHaveRaisedEvent<TEvent>(this IAggregate aggregate, Action<TEvent> assertions);
+    public static void ShouldHaveNoUncommittedEvents(this IAggregate aggregate);
+}
+
+// Usage
+var result = await mediator.Send(command);
+result.ShouldBeSuccess();
+
+order.ShouldHaveRaisedEvent<OrderCreated>(e =>
+    e.CustomerId.Should().Be(customerId));
+```
+
+#### Gaps Addressed by This Package
+
+- ❌ → ✅ Fluent mediator setup for isolated tests
+- ❌ → ✅ Given/When/Then syntax for aggregate testing
+- ❌ → ✅ Type-safe ROP assertions
+- ❌ → ✅ Aggregate event assertions
+- ❌ → ✅ In-memory repository fakes
+- ❌ → ✅ Reduced boilerplate in test code
 
 ### Additional Providers
 
